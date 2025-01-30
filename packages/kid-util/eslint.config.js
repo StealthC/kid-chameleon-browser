@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 // @ts-check
 import baseConfig from "@repo/eslint-config/base";
 import tseslint from "typescript-eslint";
