@@ -88,23 +88,32 @@ importers:
         specifier: ^2.2.0
         version: 2.2.0(typescript@5.7.3)
 
-  apps/kid-util:
+  packages/eslint-config:
     devDependencies:
-      '@codecompose/typescript-config':
-        specifier: ^1.2.0
-        version: 1.2.0
-      typescript:
-        specifier: ^5.7.3
-        version: 5.7.3
+      '@eslint/js':
+        specifier: ^9.19.0
+        version: 9.19.0
+      typescript-eslint:
+        specifier: ^8.22.0
+        version: 8.22.0(eslint@9.19.0(jiti@2.4.2))(typescript@5.7.3)
 
   packages/kid-util:
     devDependencies:
       '@codecompose/typescript-config':
         specifier: ^1.2.0
         version: 1.2.0
+      '@eslint/js':
+        specifier: ^9.19.0
+        version: 9.19.0
       '@jest/globals':
         specifier: ^29.7.0
         version: 29.7.0
+      '@repo/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@types/node':
+        specifier: ^22.10.7
+        version: 22.12.0
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3
@@ -129,14 +138,9 @@ importers:
       typescript:
         specifier: ^5.7.3
         version: 5.7.3
-
-  packages/typescript-example-1:
-    dependencies:
-      '@mme/typescript-example-2':
-        specifier: workspace:0.0.0-development
-        version: link:../typescript-example-2
-
-  packages/typescript-example-2: {}
+      typescript-eslint:
+        specifier: ^8.22.0
+        version: 8.22.0(eslint@9.19.0(jiti@2.4.2))(typescript@5.7.3)
 
 packages:
 

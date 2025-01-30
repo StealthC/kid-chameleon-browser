@@ -2,5 +2,8 @@
   "extends": "@codecompose/typescript-config/library.json",
   "compilerOptions": {
     "outDir": "dist"
-  }
+  },
+  "exclude": [
+      "**/*.test.ts"
+    ]
 }
