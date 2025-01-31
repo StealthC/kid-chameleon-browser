@@ -10,11 +10,11 @@ export type KidData = {
     data: DataView;
 }
 
-export function ReadPtr(data: DataView, ptr: number): number {
+export function readPtr(data: DataView, ptr: number): number {
     return data.getUint32(ptr, false);
 }
 
-export function ReadPackedGfx(data: DataView, ptr: number): KidData {
+export function readPackedGfx(data: DataView, ptr: number): KidData {
     const type = KidDataType.PackedGfx;
 
     //const bytes = new Uint8Array(data.buffer, ptr + 2, size);
@@ -28,6 +28,17 @@ export type KidUnpackResults = {
     inputDataSize: number;
     totalInputSize: number;
     output: Uint8Array;
+}
+
+export async function hashSha256(data: Uint8Array, upper = true): Promise<string> {
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const hash = Array.from(new Uint8Array(hashBuffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+    if (upper) {
+        return hash.toUpperCase();
+    }
+    return hash;
 }
 
 /**

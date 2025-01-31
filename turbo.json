@@ -1,48 +1,20 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "pipeline": {
-    "//#lint": {
-      "inputs": ["!.git/**", "!node_modules/**", "!packages/**"]
-    },
-    "//#lint:fix": {
-      "inputs": ["!.git/**", "!node_modules/**", "!packages/**"]
-    },
-    "//#format": {
-      "inputs": ["!.git/**", "!node_modules/**", "!packages/**"]
-    },
-    "//#format:fix": {
-      "inputs": ["!.git/**", "!node_modules/**", "!packages/**"]
-    },
+  "ui": "stream",
+  "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", "tsconfig.tsbuildinfo"]
+      "outputs": ["dist/**"]
     },
-    "clean:build": {
-      "dependsOn": ["build"]
+    "build-packages": {
+      "dependsOn": [],
+      "outputs": ["packages/*/dist/**"],
+      "inputs": ["packages/*/src/**", "packages/*/package.json"]
     },
     "dev": {
-      "dependsOn": ["build"],
-      "cache": false,
-      "persistent": true
-    },
-    "lint": {},
-    "lint:fix": {},
-    "format": {},
-    "format:fix": {},
-    "test": {
-      "dependsOn": ["build"]
-    },
-    "typecheck": {
-      "outputs": ["tsconfig.tsbuildinfo"]
+      "dependsOn": ["build-packages"],
+      "persistent": true,
+      "cache": false
     }
-  },
-  "globalDependencies": [
-    ".eslintrc.js",
-    ".eslintignore",
-    ".lintstagedrc.js",
-    ".prettierrc.yaml",
-    "tsconfig.base.json",
-    "tsconfig.build.json",
-    "tsconfig.json"
-  ]
+  }
 }

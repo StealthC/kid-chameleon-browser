@@ -3,7 +3,10 @@
   "files": [],
   "compilerOptions": {
     "lib": ["ESNext", "DOM"],
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "references": [
     {

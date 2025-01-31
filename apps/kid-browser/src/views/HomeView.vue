@@ -4,6 +4,5 @@ import ReadRom from '../components/ReadRom.vue'
 
 <template>
   <main>
-    <ReadRom />
   </main>
 </template>

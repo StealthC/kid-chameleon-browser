@@ -14,6 +14,7 @@
     "compile": "tsc --noEmit",
     "test": "cross-env TS_NODE_PROJECT=\"./tsconfig.jest.json\" jest",
     "build": "tsup && tsc --emitDeclarationOnly && tsc-alias --verbose",
+    "dev": "tsup --watch --onSuccess \"tsc --emitDeclarationOnly && tsc-alias --verbose\"",
     "clean": "del-cli dist tsconfig.tsbuildinfo"
   },
   "keywords": [],

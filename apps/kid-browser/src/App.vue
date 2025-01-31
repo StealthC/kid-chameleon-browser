@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
+import Toast from 'primevue/toast'
+import ReadRom from '@/components/ReadRom.vue'
 </script>
 
 <template>
+  <Toast />
   <header>
     <div class="wrapper">
       <nav>
@@ -12,6 +15,9 @@ import { RouterLink, RouterView } from 'vue-router'
     </div>
   </header>
   <RouterView />
+  <footer class="bottom-0 fixed w-full">
+    <ReadRom />
+  </footer>
 </template>
 
 <style scoped>

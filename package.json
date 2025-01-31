@@ -11,19 +11,13 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "turbo run build",
-    "build:clean": "turbo run clean:build",
-    "dev": "turbo run dev",
-    "lint-format": "turbo run --parallel lint format ",
-    "lint-format:fix": "turbo run --parallel lint:fix format:fix",
-    "lint": "eslint . --ext .js,.ts",
-    "lint:fix": "eslint . --ext .js,.ts --fix",
-    "format": "prettier --check .",
-    "format:fix": "prettier --write .",
+    "build": "turbo build",
+    "build-packages": "turbo build --filter='./packages/*'",
+    "dev": "turbo dev",
     "test": "turbo run --parallel test",
-    "typecheck": "turbo run --parallel typecheck",
     "prepare": "husky install"
   },
+  "packageManager": "pnpm@9.11.0",
   "devDependencies": {
     "husky": "^9.1.7",
     "prettier": "^3.4.2",
