@@ -1,4 +1,4 @@
-import { hashSha256, readPtr } from "./smd-bin-utils";
+import { hashSha256, readPtr, unpackKidFormat, type KidUnpackResults } from "./kid-utils";
 import { KnownRoms, type KnowRomDetails } from "./tables/known-roms";
 
 export type RomConfig = {
@@ -19,11 +19,10 @@ export type RomFileDetails = {
 
 export class Rom {
     data: DataView;
-    assetPtrTable: number[] = [];
+    private _assetPtrTable: number[] = [];
     private _details: RomFileDetails | null = null;
     constructor(public bytes: Uint8Array) {
         this.data = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-        //this._readAssetPtrTable();
     }
     async getRomFileDetails(): Promise<RomFileDetails> {
         if (this._details)
@@ -41,16 +40,22 @@ export class Rom {
         return readPtr(this.data, ptr);
     }
 
+    unpackKidFormat(ptr: number): KidUnpackResults {
+        return unpackKidFormat(new DataView(this.bytes.buffer, this.bytes.byteOffset + ptr, this.bytes.length - ptr));
+    }
     /** Read all the pointers of the Asset Point Table
      * The AssetPtrTable is a table of pointers to various asset types like 
      * color palletes, 
      * sprite frames and player sprite frames
      */
-    private _readAssetPtrTable() {
+    readAssetPtrTable(): number[] {
+        if (this._assetPtrTable.length > 0)
+            return this._assetPtrTable;
         const AssetPtrTableStart = 0xa09fe;
         const AssetPtrTableEnd = 0xa1c72;
         for (let ptr = AssetPtrTableStart; ptr < AssetPtrTableEnd; ptr += 4) {
-            this.assetPtrTable.push(this.readPtr(ptr));
+            this._assetPtrTable.push(this.readPtr(ptr));
         }
+        return this._assetPtrTable;
     }
 }
