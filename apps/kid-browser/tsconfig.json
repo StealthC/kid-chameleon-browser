@@ -1,12 +1,11 @@
 {
-  "extends": "@codecompose/typescript-config/library.json",
   "files": [],
   "compilerOptions": {
     "lib": ["ESNext", "DOM"],
     "noEmit": true,
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
   },
   "references": [
     {
