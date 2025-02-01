@@ -49,6 +49,7 @@ export type SpriteFrameData = {
     height: number
 }
 export class SpriteFrameResource implements Resource {
+    tableIndex?: number;
     data: SpriteFrameData;
     constructor(private rom: Rom, public baseAddress: number) {
         const tileId = rom.data.getUint16(baseAddress, false);
@@ -68,6 +69,7 @@ export type PlayerSpriteFrameData = {
     data: Uint8Array
 }
 export class PlayerSpriteFrameResource implements DataResource {
+    tableIndex?: number;
     data: PlayerSpriteFrameData;
     constructor(private rom: Rom, public baseAddress: number) {
         const xOffset = rom.data.getInt8(baseAddress);
@@ -85,6 +87,7 @@ export class PlayerSpriteFrameResource implements DataResource {
 }
 
 export class RawTileSheet implements DataResource {
+    tableIndex?: number;
     data: Uint8Array;
     constructor(private rom: Rom, public baseAddress: number, public size: number) {
         this.data = rom.bytes.subarray(baseAddress, baseAddress + size);
@@ -95,6 +98,7 @@ export class RawTileSheet implements DataResource {
 }
 
 export class PackedTileSheet implements DataResource {
+    tableIndex?: number;
     packed: PackedData;
     unpacked: UnpackedData;
     constructor(private rom: Rom, public baseAddress: number, format: PackedFormat = "kid") {

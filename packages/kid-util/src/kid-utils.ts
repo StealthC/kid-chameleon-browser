@@ -14,15 +14,6 @@ export function readPtr(data: DataView, ptr: number): number {
     return data.getUint32(ptr, false);
 }
 
-export function readPackedGfx(data: DataView, ptr: number): KidData {
-    const type = KidDataType.PackedGfx;
-
-    //const bytes = new Uint8Array(data.buffer, ptr + 2, size);
-    //return { type, ptr, size, bytes, data };
-    throw new Error("Not implemented");
-}
-
-
 export type KidUnpackResults = {
     keyDataSize: number;
     inputDataSize: number;

@@ -1,7 +1,7 @@
-import { PackedTileSheet, type TileSheetResource } from "./kid-resources";
+import { PackedTileSheet, PlayerSpriteFrameResource, SpriteFrameResource, type TileSheetResource } from "./kid-resources";
 import { findPattern, hashSha256, readPtr, unpackKidFormat, type KidUnpackResults } from "./kid-utils";
 import { KnownRoms, type KnowRomDetails } from "./tables/known-roms";
-import { AssetPtrTableTypes, PackedTileSheet as PSheetType } from "./tables/asset-ptr-table"
+import { AssetPtrTableTypes, PackedTileSheet as PackedTileSheetType, SpriteFrameType, SpriteFrameWithDataType as PlayerSpriteFrameType } from "./tables/asset-ptr-table"
 
 
 export type FrameCollision = {
@@ -31,6 +31,7 @@ export type RomFileDetails = {
 }
 
 export type RomResources = {
+    spriteFrames: (SpriteFrameResource | PlayerSpriteFrameResource)[];
     tileSheets: (TileSheetResource)[];
 }
 
@@ -40,6 +41,7 @@ export class Rom {
     private _assetPtrTable: number[] = [];
     private _details: RomFileDetails | null = null;
     resources: RomResources = {
+        spriteFrames: [],
         tileSheets: []
     }
     private _resourcesLoaded = false;
@@ -76,13 +78,25 @@ export class Rom {
         for (let i = 0; i < this._assetPtrTable.length; i++) {
             const ptr = this._assetPtrTable[i]!;
             const type = AssetPtrTableTypes[i];
-            if (type === PSheetType) {
-                this.resources.tileSheets.push(new PackedTileSheet(this, ptr));
+            if (type === PackedTileSheetType) {
+                const packedSheet = new PackedTileSheet(this, ptr)
+                packedSheet.tableIndex = i;
+                this.resources.tileSheets.push(packedSheet);
+            } else if (type === SpriteFrameType) {
+                const spriteFrame = new SpriteFrameResource(this, ptr);
+                spriteFrame.tableIndex = i;
+                this.resources.spriteFrames.push(spriteFrame);
+            } else if (type === PlayerSpriteFrameType) {
+                const playerSpriteFrame = new PlayerSpriteFrameResource(this, ptr);
+                playerSpriteFrame.tableIndex = i;
+                this.resources.spriteFrames.push(playerSpriteFrame);
+            } else if (type) {
+                console.error(`Unknown AssetPtrTable type ${type.toString()} at index ${i.toString(10)}`);
             }
         }
         this._resourcesLoaded = true;
         try {
-            console.log(this._readFrameCollisionTable());
+            this._readFrameCollisionTable();
         } catch (e) {
             console.error(e);
         }
@@ -92,7 +106,6 @@ export class Rom {
     private _getFrameCollisionFrameTable(): number {
         const pattern = "e2 40 49 f9 ?? ?? ?? ?? d8 f4 00 00"
         const ptr = this.readPtr(this.findPattern(pattern) + 4);
-        console.log("FrameCollisionFrameTable", ptr.toString(16));
         return ptr;
     }
 

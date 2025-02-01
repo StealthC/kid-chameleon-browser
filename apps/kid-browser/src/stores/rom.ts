@@ -3,19 +3,24 @@ import { defineStore } from 'pinia'
 import { Rom, type RomFileDetails, type RomResources } from '@repo/kid-util'
 
 const useRomStore = defineStore('rom', () => {
-  const rom = ref<Rom|null>(null)
+  const rom = ref<Rom | null>(null)
   const romDetails = ref<RomFileDetails|null>(null)
-  const emptyResources = { tileSheets: [] }
-  const romResources = ref<(RomResources)>(emptyResources)
+  const romResources = ref<(RomResources|null)>(null)
   async function loadRom(bytes: Uint8Array) {
     const newRom = new Rom(bytes)
-    romDetails.value = await newRom.getRomFileDetails()
-    try {
-      romResources.value = newRom.loadResources()
-    } catch (e) {
-      romResources.value = emptyResources
-      console.error("Error loading resources", e)
-    }
+
+    setTimeout(async () => {
+      romDetails.value = await newRom.getRomFileDetails()
+    }, 0);
+    setTimeout(async () => {
+      try {
+        romResources.value = newRom.loadResources()
+      } catch (e) {
+        romResources.value = { spriteFrames: [], tileSheets: [] }
+        console.error("Error loading resources", e)
+      }
+    }, 0);
+
     rom.value = newRom
   }
 
