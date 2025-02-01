@@ -1,6 +1,6 @@
 //@ts-check
 import {beforeAll, describe, expect, test} from '@jest/globals';
-import {unpackKidFormat} from './kid-utils'
+import {unpackKidFormat, calculatePlayerSpriteDataSize} from './kid-utils'
 
 describe('Data Utils Testing', () => {
   test('check kid unpack', () => {
@@ -10,5 +10,12 @@ describe('Data Utils Testing', () => {
     console.log(unpacked)
     expect(unpacked.totalInputSize).toBe(196)
     expect(unpacked.output.length).toBe(384)
+  })
+  test('calculatePlayerSpriteDataSize', () => {
+    expect(calculatePlayerSpriteDataSize(0xf, 0x12)).toBe(192)
+    expect(calculatePlayerSpriteDataSize(0x1f, 0x1e)).toBe(512)
+    expect(calculatePlayerSpriteDataSize(0x20, 0x22)).toBe(640)
+    expect(calculatePlayerSpriteDataSize(0x2B, 0x3F)).toBe(1536)
+    expect(calculatePlayerSpriteDataSize(0x23, 0x26)).toBe(800)
   })
 });

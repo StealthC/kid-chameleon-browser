@@ -326,3 +326,8 @@ export function findPattern(data: Uint8Array, pattern: string, startOffset = 0):
     }
     throw new Error(`Pattern not found in data`)
 }
+/** Calculate the total bytes attached in a Player Sprite Frame */
+export function calculatePlayerSpriteDataSize(width: number, height: number): number {
+    return Math.ceil(width / 8.0) * Math.ceil(height / 8.0) * 32
+}
+

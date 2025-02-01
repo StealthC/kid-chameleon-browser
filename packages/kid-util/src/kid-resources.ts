@@ -1,4 +1,4 @@
-import {unpackKidFormat} from "./kid-utils"
+import {calculatePlayerSpriteDataSize, unpackKidFormat} from "./kid-utils"
 import type { Rom } from "./rom";
 
 export type PackedFormat = "kid" | "enigma"
@@ -33,21 +33,68 @@ export function unpackData(data: DataView, packed: PackedData): UnpackedData {
 
 export type Resource = {
     baseAddress: number;
+    tableIndex?: number;
     size?: number;
-    getData(): Uint8Array;
 }
 
-export class RawTileSheet {
+export type DataResource = {
+    getData(): Uint8Array;
+} & Resource;
+
+export type SpriteFrameData = {
+    tileId: number
+    xOffset: number
+    yOffset: number
+    width: number
+    height: number
+}
+export class SpriteFrameResource implements Resource {
+    data: SpriteFrameData;
+    constructor(private rom: Rom, public baseAddress: number) {
+        const tileId = rom.data.getUint16(baseAddress, false);
+        const xOffset = rom.data.getInt8(baseAddress + 2);
+        const yOffset = rom.data.getInt8(baseAddress + 3);
+        const width = rom.data.getUint16(baseAddress + 4, false);
+        const height = rom.data.getUint16(baseAddress + 6, false);
+        this.data = {tileId, xOffset, yOffset, width, height};
+    }
+}
+
+export type PlayerSpriteFrameData = {
+    xOffset: number
+    yOffset: number
+    width: number
+    height: number
+    data: Uint8Array
+}
+export class PlayerSpriteFrameResource implements DataResource {
+    data: PlayerSpriteFrameData;
+    constructor(private rom: Rom, public baseAddress: number) {
+        const xOffset = rom.data.getInt8(baseAddress);
+        const yOffset = rom.data.getInt8(baseAddress + 1);
+        const width = rom.data.getUint16(baseAddress + 2, false);
+        const height = rom.data.getUint16(baseAddress + 4, false);
+        const start = baseAddress + 6;
+        const size = calculatePlayerSpriteDataSize(width, height);
+        const data = rom.bytes.subarray(start, start + size)
+        this.data = {xOffset, yOffset, width, height, data};
+    }
+    getData(): Uint8Array {
+        return new Uint8Array();
+    }
+}
+
+export class RawTileSheet implements DataResource {
     data: Uint8Array;
     constructor(private rom: Rom, public baseAddress: number, public size: number) {
-        this.data = new Uint8Array(rom.data.buffer, baseAddress, size);
+        this.data = rom.bytes.subarray(baseAddress, baseAddress + size);
     }
     getData(): Uint8Array {
         return this.data;
     }
 }
 
-export class PackedTileSheet {
+export class PackedTileSheet implements DataResource {
     packed: PackedData;
     unpacked: UnpackedData;
     constructor(private rom: Rom, public baseAddress: number, format: PackedFormat = "kid") {
