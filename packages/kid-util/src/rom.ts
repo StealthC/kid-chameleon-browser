@@ -1,4 +1,4 @@
-import { PackedTileSheet, RawTileSheet } from "./kid-resources";
+import { PackedTileSheet, type TileSheetResource } from "./kid-resources";
 import { hashSha256, readPtr, unpackKidFormat, type KidUnpackResults } from "./kid-utils";
 import { KnownRoms, type KnowRomDetails } from "./tables/known-roms";
 import { AssetPtrTableTypes, PackedTileSheet as PSheetType } from "./tables/asset-ptr-table"
@@ -21,7 +21,7 @@ export type RomFileDetails = {
 }
 
 export type RomResources = {
-    tileSheets: (RawTileSheet | PackedTileSheet)[];
+    tileSheets: (TileSheetResource)[];
 }
 
 export class Rom {

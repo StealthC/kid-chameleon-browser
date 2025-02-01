@@ -10,7 +10,8 @@
 				"esbenp.prettier-vscode",
 				"sdras.vue-vscode-snippets",
 				"bradlc.vscode-tailwindcss",
-				"Vue.volar"
+				"Vue.volar",
+				"EditorConfig.EditorConfig"
 			]
 		}
 	}

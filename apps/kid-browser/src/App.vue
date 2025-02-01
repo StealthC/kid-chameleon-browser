@@ -6,20 +6,22 @@ import ReadRom from '@/components/ReadRom.vue'
 
 <template>
   <Toast />
-  <header>
-    <div class="wrapper">
-      <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
-      </nav>
+  <div class="flex flex-col h-screen w-screen overflow-hidden">
+    <header>
+      <div class="wrapper">
+        <nav>
+          <RouterLink to="/">Home</RouterLink>
+          <RouterLink to="/about">About</RouterLink>
+        </nav>
+      </div>
+    </header>
+    <div class="flex-grow overflow-hidden">
+      <RouterView />
     </div>
-  </header>
-  <RouterView />
-  <footer class="bottom-0 fixed w-full">
-    <ReadRom />
-  </footer>
+    <footer class="w-full">
+      <ReadRom />
+    </footer>
+  </div>
 </template>
 
-<style scoped>
-
-</style>
+<style scoped></style>

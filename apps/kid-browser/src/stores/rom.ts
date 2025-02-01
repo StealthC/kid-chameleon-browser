@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { PackedTileSheet, RawTileSheet, Resource, Rom, type RomFileDetails, type RomResources } from '@repo/kid-util'
+import { Rom, type RomFileDetails, type RomResources } from '@repo/kid-util'
 
 const useRomStore = defineStore('rom', () => {
   const rom = ref<Rom|null>(null)

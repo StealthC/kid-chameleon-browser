@@ -31,29 +31,27 @@ export function unpackData(data: DataView, packed: PackedData): UnpackedData {
     }
 }
 
-
-export class Resource {
-    constructor(protected rom: Rom, public baseAddress: number) {
-    }
+export type Resource = {
+    baseAddress: number;
+    size?: number;
+    getData(): Uint8Array;
 }
 
-export class RawTileSheet extends Resource {
+export class RawTileSheet {
     data: Uint8Array;
-    constructor(rom: Rom, address: number, size: number) {
-        super(rom, address);
-        this.data = new Uint8Array(rom.data.buffer, address, size);
+    constructor(private rom: Rom, public baseAddress: number, public size: number) {
+        this.data = new Uint8Array(rom.data.buffer, baseAddress, size);
     }
     getData(): Uint8Array {
         return this.data;
     }
 }
 
-export class PackedTileSheet extends Resource {
+export class PackedTileSheet {
     packed: PackedData;
     unpacked: UnpackedData;
-    constructor(rom: Rom, address: number, format: PackedFormat = "kid") {
-        super(rom, address);
-        this.packed = {format, address};
+    constructor(private rom: Rom, public baseAddress: number, format: PackedFormat = "kid") {
+        this.packed = {format, address: baseAddress};
         this.unpacked = unpackData(this.rom.data, this.packed);
     }
     getData(): Uint8Array {
@@ -63,3 +61,5 @@ export class PackedTileSheet extends Resource {
         return this.unpacked.data;
     }
 }
+
+export type TileSheetResource = RawTileSheet | PackedTileSheet;
