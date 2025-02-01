@@ -27,4 +27,7 @@ coverage
 *.sln
 *.sw?
 
+vite.config.js
+eslint.config.js
+
 *.tsbuildinfo
