@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import GfxView from '@/components/GfxView.vue'
 import useRomStore from '@/stores/rom';
-import { bytesToPixels } from '@repo/kid-util';
+import { bytesToPixels, PackedTileSheet, Rom } from '@repo/kid-util';
 import { storeToRefs } from 'pinia';
 import { ref, watchEffect } from 'vue';
 
-const {rom} = storeToRefs(useRomStore() )
+const {rom, romResources} = storeToRefs(useRomStore() )
 const gfxData = ref<Uint8Array|null>(null)
 
 watchEffect(() => {
   if (rom.value) {
-    const unpackData = rom.value.unpackKidFormat(rom.value.readAssetPtrTable()[1016] as number)
-    const pixels = bytesToPixels(unpackData.output)
+    const testGfx = romResources.value.tileSheets[0]!
+    const pixels = bytesToPixels(testGfx.getData())
     gfxData.value = pixels
   }
 })

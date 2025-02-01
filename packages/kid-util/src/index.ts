@@ -9,3 +9,4 @@ export function sum(a: number, b: number): number {
 }
 export * from './rom'
 export * from './kid-utils'
+export * from './kid-resources'

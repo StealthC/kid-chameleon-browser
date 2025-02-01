@@ -1,5 +1,8 @@
+import { PackedTileSheet, RawTileSheet } from "./kid-resources";
 import { hashSha256, readPtr, unpackKidFormat, type KidUnpackResults } from "./kid-utils";
 import { KnownRoms, type KnowRomDetails } from "./tables/known-roms";
+import { AssetPtrTableTypes, PackedTileSheet as PSheetType } from "./tables/asset-ptr-table"
+
 
 export type RomConfig = {
     NumberOfLevels: number;
@@ -17,10 +20,18 @@ export type RomFileDetails = {
     known?: KnowRomDetails;
 }
 
+export type RomResources = {
+    tileSheets: (RawTileSheet | PackedTileSheet)[];
+}
+
 export class Rom {
     data: DataView;
     private _assetPtrTable: number[] = [];
     private _details: RomFileDetails | null = null;
+    resources: RomResources = {
+        tileSheets: []
+    }
+    private _resourcesLoaded = false;
     constructor(public bytes: Uint8Array) {
         this.data = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     }
@@ -43,6 +54,22 @@ export class Rom {
     unpackKidFormat(ptr: number): KidUnpackResults {
         return unpackKidFormat(new DataView(this.bytes.buffer, this.bytes.byteOffset + ptr, this.bytes.length - ptr));
     }
+
+    loadResources() {
+        if (this._resourcesLoaded)
+            return this.resources;
+        this.readAssetPtrTable();
+        for (let i = 0; i < this._assetPtrTable.length; i++) {
+            const ptr = this._assetPtrTable[i]!;
+            const type = AssetPtrTableTypes[i];
+            if (type === PSheetType) {
+                this.resources.tileSheets.push(new PackedTileSheet(this, ptr));
+            }
+        }
+        this._resourcesLoaded = true;
+        return this.resources;
+    }
+
     /** Read all the pointers of the Asset Point Table
      * The AssetPtrTable is a table of pointers to various asset types like 
      * color palletes, 

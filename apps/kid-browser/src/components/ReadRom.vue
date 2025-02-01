@@ -48,20 +48,18 @@ import useRomStore from '@/stores/rom'
 import ReadFile from './ReadFile.vue'
 import { storeToRefs } from 'pinia'
 import { useToast } from 'primevue/usetoast'
-import { ref, watchEffect } from 'vue'
+import { ref } from 'vue'
 import { Panel } from 'primevue'
 import type { RomFileDetails } from '@repo/kid-util'
 
 const minimized = ref(false)
-const { rom } = storeToRefs(useRomStore())
+const { rom, romDetails } = storeToRefs(useRomStore())
 const { loadRom } = useRomStore()
 const toast = useToast()
 
 const onToggle = () => {
   minimized.value = !minimized.value
 }
-
-const romDetails = ref<RomFileDetails | undefined>(undefined)
 
 const onFileRead = (bytes: ArrayBuffer) => {
   try {
@@ -77,12 +75,6 @@ const onFileRead = (bytes: ArrayBuffer) => {
     console.error(e)
   }
 }
-
-watchEffect(async () => {
-  if (rom.value) {
-    romDetails.value = await rom.value.getRomFileDetails()
-  }
-})
 </script>
 
 <style scoped></style>

@@ -1,6 +1,6 @@
-const SpriteFrameWithDataType = "SpriteFrameWithData";
-const SpriteFrameType = "SpriteFrame";
-const PackedGfxType = "PackedGfx";
+export const SpriteFrameWithDataType = "SFWD";
+export const SpriteFrameType = "SF";
+export const PackedTileSheet = "PSHEET";
 export const AssetPtrTableTypes = [
     null, //$000a09fe
     "Color(12)", //$000a0a02
@@ -1018,36 +1018,36 @@ export const AssetPtrTableTypes = [
     SpriteFrameType, //$000a19d2
     SpriteFrameType, //$000a19d6
     SpriteFrameType, //$000a19da
-    PackedGfxType, //$000a19de
-    PackedGfxType, //$000a19e2
-    PackedGfxType, //$000a19e6
-    PackedGfxType, //$000a19ea
-    PackedGfxType, //$000a19ee
-    PackedGfxType, //$000a19f2
-    PackedGfxType, //$000a19f6
-    PackedGfxType, //$000a19fa
-    PackedGfxType, //$000a19fe
-    PackedGfxType, //$000a1a02
-    PackedGfxType, //$000a1a06
-    PackedGfxType, //$000a1a0a
-    PackedGfxType, //$000a1a0e
-    PackedGfxType, //$000a1a12
-    PackedGfxType, //$000a1a16
-    PackedGfxType, //$000a1a1a
-    PackedGfxType, //$000a1a1e
-    PackedGfxType, //$000a1a22
-    PackedGfxType, //$000a1a26
-    PackedGfxType, //$000a1a2a
-    PackedGfxType, //$000a1a2e
-    PackedGfxType, //$000a1a32
-    PackedGfxType, //$000a1a36
-    PackedGfxType, //$000a1a3a
-    PackedGfxType, //$000a1a3e
-    PackedGfxType, //$000a1a42
-    PackedGfxType, //$000a1a46
-    PackedGfxType, //$000a1a4a
-    PackedGfxType, //$000a1a4e
-    PackedGfxType, //$000a1a52
+    PackedTileSheet, //$000a19de
+    PackedTileSheet, //$000a19e2
+    PackedTileSheet, //$000a19e6
+    PackedTileSheet, //$000a19ea
+    PackedTileSheet, //$000a19ee
+    PackedTileSheet, //$000a19f2
+    PackedTileSheet, //$000a19f6
+    PackedTileSheet, //$000a19fa
+    PackedTileSheet, //$000a19fe
+    PackedTileSheet, //$000a1a02
+    PackedTileSheet, //$000a1a06
+    PackedTileSheet, //$000a1a0a
+    PackedTileSheet, //$000a1a0e
+    PackedTileSheet, //$000a1a12
+    PackedTileSheet, //$000a1a16
+    PackedTileSheet, //$000a1a1a
+    PackedTileSheet, //$000a1a1e
+    PackedTileSheet, //$000a1a22
+    PackedTileSheet, //$000a1a26
+    PackedTileSheet, //$000a1a2a
+    PackedTileSheet, //$000a1a2e
+    PackedTileSheet, //$000a1a32
+    PackedTileSheet, //$000a1a36
+    PackedTileSheet, //$000a1a3a
+    PackedTileSheet, //$000a1a3e
+    PackedTileSheet, //$000a1a42
+    PackedTileSheet, //$000a1a46
+    PackedTileSheet, //$000a1a4a
+    PackedTileSheet, //$000a1a4e
+    PackedTileSheet, //$000a1a52
     SpriteFrameType, //$000a1a56
     SpriteFrameType, //$000a1a5a
     SpriteFrameType, //$000a1a5e
