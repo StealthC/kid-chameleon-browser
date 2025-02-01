@@ -8,10 +8,10 @@ import ReadRom from '@/components/ReadRom.vue'
   <Toast />
   <div class="flex flex-col h-screen w-screen overflow-hidden">
     <header>
-      <div class="wrapper">
-        <nav>
+      <div class="text-primary">
+        <nav class="flex justify-center space-x-4">
           <RouterLink to="/">Home</RouterLink>
-          <RouterLink to="/about">About</RouterLink>
+          <RouterLink to="/resources">Resources</RouterLink>
         </nav>
       </div>
     </header>
