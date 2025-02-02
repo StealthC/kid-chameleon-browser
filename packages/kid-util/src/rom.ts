@@ -1,4 +1,4 @@
-import { PackedTileSheet, PlayerSpriteFrameResource, SpriteFrameResource, type TileSheetResource } from "./kid-resources";
+import { loadResource, type LinkedSpriteFrameResource, type SheetResource, type SpriteFrameResource, type UnlinkedSpriteFrameResource } from "./kid-resources";
 import { hashSha256, readPtr, unpackKidFormat, type KidUnpackResults } from "./kid-utils";
 import { KnownRoms, type KnowRomDetails } from "./tables/known-roms";
 import { AssetPtrTableTypes, PackedTileSheet as PackedTileSheetType, SpriteFrameType, SpriteFrameWithDataType as PlayerSpriteFrameType } from "./tables/asset-ptr-table"
@@ -32,8 +32,8 @@ export type RomFileDetails = {
 }
 
 export type RomResources = {
-    spriteFrames: (SpriteFrameResource | PlayerSpriteFrameResource)[];
-    tileSheets: (TileSheetResource)[];
+    spriteFrames: (SpriteFrameResource)[];
+    tileSheets: (SheetResource)[];
 }
 
 export class Rom {
@@ -87,16 +87,28 @@ export class Rom {
             const ptr = this._assetPtrTable[i]!;
             const type = AssetPtrTableTypes[i];
             if (type === PackedTileSheetType) {
-                const packedSheet = new PackedTileSheet(this, ptr)
-                packedSheet.tableIndex = i;
+                const packedSheet: SheetResource = {
+                    type: "sheet",
+                    baseAddress: ptr,
+                    packed: {pack: "kid"},
+                    tableIndex: i,
+                }
                 this.resources.tileSheets.push(packedSheet);
             } else if (type === SpriteFrameType) {
-                const spriteFrame = new SpriteFrameResource(this, ptr);
-                spriteFrame.tableIndex = i;
+                const spriteFrame: UnlinkedSpriteFrameResource = {
+                    type: "sprite-frame",
+                    subType: "unlinked",
+                    baseAddress: ptr,
+                    tableIndex: i,
+                }
                 this.resources.spriteFrames.push(spriteFrame);
             } else if (type === PlayerSpriteFrameType) {
-                const playerSpriteFrame = new PlayerSpriteFrameResource(this, ptr);
-                playerSpriteFrame.tableIndex = i;
+                const playerSpriteFrame: LinkedSpriteFrameResource = {
+                    type: "sprite-frame",
+                    subType: "linked",
+                    baseAddress: ptr,
+                    tableIndex: i,
+                }
                 this.resources.spriteFrames.push(playerSpriteFrame);
             } else if (type) {
                 console.error(`Unknown AssetPtrTable type ${type.toString()} at index ${i.toString(10)}`);
@@ -105,34 +117,54 @@ export class Rom {
         this._resourcesLoaded = true;
         try {
             this._readFrameCollisionTable();
-            const newSheets: Record<string, PackedTileSheet> = {};
+            const newSheets: Record<string, SheetResource> = {};
             this._findUntabledPackedTileSheetsDirect1().map((result) => {
                 if (!newSheets[result.ptr.toString(16)]) {
-                    const packedSheet = new PackedTileSheet(this, result.ptr) 
+                    const packedSheet: SheetResource = {
+                        type: "sheet",
+                        baseAddress: result.ptr,
+                        packed: {pack: "kid"},
+                    }
                     newSheets[result.ptr.toString(16)] = packedSheet;
                 }
             });
             this._findUntabledPackedTileSheetsDirect2().map((result) => {
                 if (!newSheets[result.ptr.toString(16)]) {
-                    const packedSheet = new PackedTileSheet(this, result.ptr) 
+                    const packedSheet: SheetResource = {
+                        type: "sheet",
+                        baseAddress: result.ptr,
+                        packed: {pack: "kid"},
+                    }
                     newSheets[result.ptr.toString(16)] = packedSheet;
                 }
             });
             this._findUntabledPackedTileSheetsRelative().map((result) => {
                 if (!newSheets[result.ptr.toString(16)]) {
-                    const packedSheet = new PackedTileSheet(this, result.ptr) 
+                    const packedSheet: SheetResource = {
+                        type: "sheet",
+                        baseAddress: result.ptr,
+                        packed: {pack: "kid"},
+                    }
                     newSheets[result.ptr.toString(16)] = packedSheet;
                 }
             });
             this._findUntabledPackedTileSheetsWithPaletteSwap1().map((result) => {
                 if (!newSheets[result.ptr.toString(16)]) {
-                    const packedSheet = new PackedTileSheet(this, result.ptr) 
+                    const packedSheet: SheetResource = {
+                        type: "sheet",
+                        baseAddress: result.ptr,
+                        packed: {pack: "kid"},
+                    }
                     newSheets[result.ptr.toString(16)] = packedSheet;
                 }
             });
             this._findUntabledPackedTileSheetsWithPaletteSwap2().map((result) => {
                 if (!newSheets[result.ptr.toString(16)]) {
-                    const packedSheet = new PackedTileSheet(this, result.ptr) 
+                    const packedSheet: SheetResource = {
+                        type: "sheet",
+                        baseAddress: result.ptr,
+                        packed: {pack: "kid"},
+                    }
                     newSheets[result.ptr.toString(16)] = packedSheet;
                 }
             });
@@ -141,6 +173,12 @@ export class Rom {
             }
         } catch (e) {
             console.error(e);
+        }
+        for (const spriteFrame of this.resources.spriteFrames) {
+            loadResource(this, spriteFrame);
+        }
+        for (const tileSheet of this.resources.tileSheets) {
+            loadResource(this, tileSheet);
         }
         return this.resources;
     }

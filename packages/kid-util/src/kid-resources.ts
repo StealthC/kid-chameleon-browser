@@ -1,4 +1,4 @@
-import {calculatePlayerSpriteDataSize, unpackKidFormat} from "./kid-utils"
+import { calculatePlayerSpriteDataSize, unpackKidFormat } from "./kid-utils"
 import type { Rom } from "./rom";
 
 export type PackedFormat = "kid" | "enigma"
@@ -15,102 +15,146 @@ export type UnpackedData = {
     data?: Uint8Array;
 }
 
-export function unpackData(data: DataView, packed: PackedData): UnpackedData {
-    if (packed.format === "kid") {
-        const address = packed.address;
-        const dataView = new DataView(data.buffer, address);
-        const unpackDetails = unpackKidFormat(dataView);
-        packed.packedSize = unpackDetails.totalInputSize;
-        return {
-            packed,
-            unpackedSize: unpackDetails.output.length,
-            data: unpackDetails.output
-        };
-    } else {
-        throw new Error(`Unsupported packed format: ${packed.format}`);
-    }
+export type EnigmaPacked = {
+    pack: "enigma"
+    dataStart: number;
+    tile: number;
+}
+export type KidPacked = {
+    pack: "kid"
 }
 
-export type Resource = {
+export type BaseResource = {
+    type: string;
+    subType?: string;
+    loaded?: boolean;
+    packed?: EnigmaPacked | KidPacked;
     baseAddress: number;
     tableIndex?: number;
-    size?: number;
-}
+    inputSize?: number;
+    tags?: string[];
+    name?: string;
+    description?: string;
+    linkedResources?: string[];
+};
 
-export type DataResource = {
-    getData(): Uint8Array;
-} & Resource;
+export type DataResource = BaseResource & {
+    data?: Uint8Array;
+};
 
-export type SpriteFrameData = {
-    tileId: number
-    xOffset: number
-    yOffset: number
-    width: number
-    height: number
-}
-export class SpriteFrameResource implements Resource {
-    tableIndex?: number;
-    data: SpriteFrameData;
-    constructor(private rom: Rom, public baseAddress: number) {
-        const tileId = rom.data.getUint16(baseAddress, false);
-        const xOffset = rom.data.getInt8(baseAddress + 2);
-        const yOffset = rom.data.getInt8(baseAddress + 3);
-        const width = rom.data.getUint16(baseAddress + 4, false);
-        const height = rom.data.getUint16(baseAddress + 6, false);
-        this.data = {tileId, xOffset, yOffset, width, height};
-    }
-}
+export type SheetResource = DataResource & {
+    type: "sheet";
+    tileIndex?: number;
+};
 
-export type PlayerSpriteFrameData = {
-    xOffset: number
-    yOffset: number
-    width: number
-    height: number
-    data: Uint8Array
-}
-export class PlayerSpriteFrameResource implements DataResource {
-    tableIndex?: number;
-    data: PlayerSpriteFrameData;
-    constructor(private rom: Rom, public baseAddress: number) {
-        const xOffset = rom.data.getInt8(baseAddress);
-        const yOffset = rom.data.getInt8(baseAddress + 1);
-        const width = rom.data.getUint16(baseAddress + 2, false);
-        const height = rom.data.getUint16(baseAddress + 4, false);
-        const start = baseAddress + 6;
-        const size = calculatePlayerSpriteDataSize(width, height);
-        const data = rom.bytes.subarray(start, start + size)
-        this.data = {xOffset, yOffset, width, height, data};
-    }
-    getData(): Uint8Array {
-        return new Uint8Array();
-    }
-}
+export type UnlinkedSpriteFrameResource = BaseResource & {
+    type: "sprite-frame";
+    subType: "unlinked";
+    tileId?: number;
+    width?: number;
+    height?: number;
+    xOffset?: number;
+    yOffset?: number;
+};
 
-export class RawTileSheet implements DataResource {
-    tableIndex?: number;
-    data: Uint8Array;
-    constructor(private rom: Rom, public baseAddress: number, public size: number) {
-        this.data = rom.bytes.subarray(baseAddress, baseAddress + size);
-    }
-    getData(): Uint8Array {
-        return this.data;
-    }
-}
+export type LinkedSpriteFrameResource = DataResource & {
+    type: "sprite-frame";
+    subType: "linked";
+    tileId?: number;
+    width?: number;
+    height?: number;
+    xOffset?: number;
+    yOffset?: number;
+};
 
-export class PackedTileSheet implements DataResource {
-    tableIndex?: number;
-    packed: PackedData;
-    unpacked: UnpackedData;
-    constructor(private rom: Rom, public baseAddress: number, format: PackedFormat = "kid") {
-        this.packed = {format, address: baseAddress};
-        this.unpacked = unpackData(this.rom.data, this.packed);
+export type SpriteFrameResource = UnlinkedSpriteFrameResource | LinkedSpriteFrameResource;
+
+export type LoadedResource<T extends BaseResource> = T & {
+    loaded: true;
+    inputSize: number;
+}
+    & (T extends DataResource ? { data: Uint8Array } : object)
+    & (T extends SpriteFrameResource ? {
+        tileId: number;
+        width: number;
+        height: number;
+        xOffset: number;
+        yOffset: number
+    } : object);
+
+
+export function loadSheetResource(rom: Rom, resource: SheetResource): LoadedResource<SheetResource> {
+    if (resource.loaded) {
+        return resource as LoadedResource<SheetResource>;
     }
-    getData(): Uint8Array {
-        if (!this.unpacked.data) {
-            throw new Error("Data not unpacked");
+    const { baseAddress, packed } = resource;
+    if (packed) {
+        if (packed.pack === "kid") {
+            const data = rom.bytes.subarray(baseAddress);
+            const unpacked = unpackKidFormat(data);
+            resource.data = unpacked.output;
+            resource.inputSize = unpacked.totalInputSize;
+            resource.loaded = true;
         }
-        return this.unpacked.data;
+    } else {
+        if (!resource.inputSize) {
+            throw new Error("Resource input size needs to be defined when the resource is not packed");
+        }
+        resource.data = rom.bytes.subarray(baseAddress, baseAddress + resource.inputSize);
+        resource.loaded = true;
+    }
+    return resource as LoadedResource<SheetResource>;
+}
+
+export function loadSpriteFrameResource(rom: Rom, resource: SpriteFrameResource): LoadedResource<SpriteFrameResource> {
+    if (resource.loaded) {
+        return resource as LoadedResource<SpriteFrameResource>;
+    }
+    const { baseAddress, packed } = resource;
+    if (packed) {
+        throw new Error("Packed sprite frames not supported");
+    } else {
+        let readPos = baseAddress;
+        let tileId = 0;
+        if (resource.subType === "unlinked") {
+            tileId = rom.data.getUint16(readPos, false);
+            readPos += 2;
+        }
+        const xOffset = rom.data.getInt8(readPos);
+        const yOffset = rom.data.getInt8(readPos + 1);
+        const width = rom.data.getUint16(readPos + 2, false);
+        const height = rom.data.getUint16(readPos + 4, false);
+        resource.tileId = tileId;
+        resource.width = width;
+        resource.height = height;
+        resource.xOffset = xOffset;
+        resource.yOffset = yOffset;
+        if (resource.subType === "linked") {
+            const start = baseAddress + 6;
+            const dataSize = calculatePlayerSpriteDataSize(width, height);
+            const totalSize = 6 + dataSize;
+            const data = rom.bytes.subarray(start, start + dataSize)
+            resource.inputSize = totalSize;
+            resource.data = data;
+            resource.loaded = true;
+            return resource as LoadedResource<LinkedSpriteFrameResource>;
+        }
+        resource.inputSize = 8;
+        resource.loaded = true;
+        return resource as LoadedResource<UnlinkedSpriteFrameResource>;
     }
 }
 
-export type TileSheetResource = RawTileSheet | PackedTileSheet;
+export function loadResource<T extends BaseResource>(rom: Rom, resource: T): LoadedResource<T> {
+    if (resource.loaded) {
+        return resource as LoadedResource<T>;
+    }
+    switch (resource.type) {
+        case "sheet":
+            return loadSheetResource(rom, resource as SheetResource) as LoadedResource<T>;
+        case "sprite-frame":
+            return loadSpriteFrameResource(rom, resource as SpriteFrameResource) as LoadedResource<T>;
+        default:
+            throw new Error(`Unsupported resource type: ${resource.type}`);
+    }
+}
