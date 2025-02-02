@@ -289,34 +289,6 @@ export function getCellImageBytes(id: number, bytes: Uint8Array, pallete: Palett
     }
     return cell
 }
-/**
- * Search for am hex pattern matching "00 11 22 ?? 44 55 66" where "??" is a wildcard
- * @param data 
- * @param pattern 
- * @returns 
- */
-export function findPattern(data: Uint8Array, pattern: string, startOffset = 0): number {
-    type PatternItem = number | null
-    const compiledPattern: PatternItem[] = pattern.split(' ').map((c) => {
-        if (c === '??') {
-            return null
-        }
-        return parseInt(c, 16)
-    })
-    for (let i = startOffset; i < data.length - compiledPattern.length; i++) {
-        let found = true
-        for (let j = 0; j < compiledPattern.length; j++) {
-            if (compiledPattern[j] !== null && compiledPattern[j] !== data[i+j]) {
-                found = false
-                break
-            }
-        }
-        if (found) {
-            return i
-        }
-    }
-    throw new Error(`Pattern not found in data`)
-}
 /** Calculate the total bytes attached in a Player Sprite Frame */
 export function calculatePlayerSpriteDataSize(width: number, height: number): number {
     return Math.ceil(width / 8.0) * Math.ceil(height / 8.0) * 32
