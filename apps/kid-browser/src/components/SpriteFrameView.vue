@@ -11,24 +11,24 @@
       v-if="bytes"
       :bytes="bytes"
       :tile-id="tileId"
-      :width="spriteFrame.data.width"
-      :height="spriteFrame.data.height"
+      :width="spriteFrame.width"
+      :height="spriteFrame.height"
     />
     <Panel header="Details" class="font-mono text-xs">
       <ul>
         <li>Resource Index: 0x{{ (spriteFrame.tableIndex ?? 0).toString(16) }}</li>
         <li>Tile ID: 0x{{ tileId.toString(16) }}</li>
-        <li>Width: {{ spriteFrame.data.width }}</li>
-        <li>Height: {{ spriteFrame.data.height }}</li>
-        <li>X Offset: {{ spriteFrame.data.xOffset }}</li>
-        <li>Y Offset: {{ spriteFrame.data.yOffset }}</li>
+        <li>Width: {{ spriteFrame.width }}</li>
+        <li>Height: {{ spriteFrame.height }}</li>
+        <li>X Offset: {{ spriteFrame.xOffset }}</li>
+        <li>Y Offset: {{ spriteFrame.yOffset }}</li>
       </ul>
     </Panel>
   </Panel>
 </template>
 
 <script setup lang="ts">
-import { PlayerSpriteFrameResource, SpriteFrameResource } from '@repo/kid-util'
+import type { SpriteFrameResource, LoadedResource } from '@repo/kid-util'
 import { computed, ref, toRefs } from 'vue'
 import Panel from 'primevue/panel'
 import Select from 'primevue/select'
@@ -37,7 +37,7 @@ import useRomStore from '@/stores/rom'
 import { storeToRefs } from 'pinia'
 
 interface Props {
-  spriteFrame: SpriteFrameResource | PlayerSpriteFrameResource
+  spriteFrame: LoadedResource<SpriteFrameResource>
 }
 
 const props = defineProps<Props>()
@@ -46,24 +46,19 @@ const sheet = ref(null)
 const { romResources } = storeToRefs(useRomStore())
 const sheets = computed(() => {
   if (romResources.value) {
-    return romResources.value.tileSheets.map((sheet) => ({
+    return romResources.value.tileSheets.filter((resource) => resource.loaded).map((sheet) => ({
       name: sheet.baseAddress.toString(16),
-      value: sheet.getData(),
+      value: sheet.data,
     }))
   }
   return []
 })
 const resourceName = computed(() => `0x${spriteFrame.value.baseAddress.toString(16)}`)
-const needSheet = computed(() => spriteFrame.value instanceof SpriteFrameResource)
-const tileId = computed(() => {
-  if (spriteFrame.value instanceof SpriteFrameResource) {
-    return spriteFrame.value.data.tileId
-  }
-  return 0
-})
+const needSheet = computed(() => !spriteFrame.value.data)
+const tileId = computed(() => spriteFrame.value.tileId)
 const bytes = computed(() => {
-  if (spriteFrame.value instanceof PlayerSpriteFrameResource) {
-    return spriteFrame.value.data.data
+  if (spriteFrame.value.data) {
+    return spriteFrame.value.data
   }
   if (sheet.value) {
     return sheet.value

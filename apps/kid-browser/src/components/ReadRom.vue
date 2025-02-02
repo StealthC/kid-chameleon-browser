@@ -33,7 +33,7 @@
       </div>
       <ReadFile @load="onFileRead" />
     </div>
-    <template #footer v-show="true">
+    <template #footer>
       <div class="text-muted-color text-center text-xs">
         <p>ROMs are not stored remotely.</p>
         <p>They are only loaded in your browser.</p>
@@ -50,7 +50,6 @@ import { storeToRefs } from 'pinia'
 import { useToast } from 'primevue/usetoast'
 import { ref } from 'vue'
 import { Panel } from 'primevue'
-import type { RomFileDetails } from '@repo/kid-util'
 
 const minimized = ref(false)
 const { rom, romDetails } = storeToRefs(useRomStore())

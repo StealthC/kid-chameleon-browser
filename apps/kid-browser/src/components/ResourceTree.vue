@@ -9,25 +9,21 @@
 
 <script setup lang="ts">
 import useRomStore from '@/stores/rom'
-import {
-  PackedTileSheet,
-  PlayerSpriteFrameResource,
-  type Resource,
-} from '@repo/kid-util'
+import type {BaseResource, LoadedResource } from '@repo/kid-util'
 import { storeToRefs } from 'pinia'
 import Tree, { type TreeSelectionKeys } from 'primevue/tree'
 import type { TreeNode } from 'primevue/treenode'
 import { computed, ref } from 'vue'
 const emit = defineEmits<{
-  selected: [resource: Resource]
+  selected: [resource: LoadedResource<BaseResource>]
 }>()
 const { romResources } = storeToRefs(useRomStore())
 const selectedKey = ref<TreeSelectionKeys | undefined>(undefined)
 const spriteFrames = computed(() => {
   if (!romResources.value) return []
-  return romResources.value.spriteFrames.map((spriteFrame) => ({
+  return romResources.value.spriteFrames.filter((resource) => resource.loaded).map((spriteFrame) => ({
     key: `0x${spriteFrame.baseAddress.toString(16)}`,
-    label: `0x${spriteFrame.baseAddress.toString(16)}${spriteFrame instanceof PlayerSpriteFrameResource ? ' (With Data)' : ''}`,
+    label: `0x${spriteFrame.baseAddress.toString(16)} (${spriteFrame.subType})`,
     selectable: true,
     data: spriteFrame,
   }))
@@ -35,9 +31,9 @@ const spriteFrames = computed(() => {
 
 const tileSheets = computed(() => {
   if (!romResources.value) return []
-  return romResources.value.tileSheets.map((tileSheet) => ({
+  return romResources.value.tileSheets.filter((resource) => resource.loaded).map((tileSheet) => ({
     key: `0x${tileSheet.baseAddress.toString(16)}`,
-    label: `0x${tileSheet.baseAddress.toString(16)} (${tileSheet instanceof PackedTileSheet ? 'Packed' : 'Raw'})`,
+    label: `0x${tileSheet.baseAddress.toString(16)} (${tileSheet.packed ? 'Packed' : 'Raw'})`,
     selectable: true,
     data: tileSheet,
   }))

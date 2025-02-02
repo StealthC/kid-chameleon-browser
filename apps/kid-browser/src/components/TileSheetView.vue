@@ -17,7 +17,7 @@
 
 <script setup lang="ts">
 import { computed, ref, toRefs, useTemplateRef, watchEffect } from 'vue'
-import { bytesToPixels, getCellImageBytes, type TileSheetResource } from '@repo/kid-util'
+import { bytesToPixels, getCellImageBytes, type LoadedResource, type SheetResource } from '@repo/kid-util'
 import Panel from 'primevue/panel'
 import InputNumber from 'primevue/inputnumber'
 
@@ -62,7 +62,7 @@ const draw = () => {
 }
 
 interface Props {
-  tileSheet: TileSheetResource
+  tileSheet: LoadedResource<SheetResource>
   columns?: number
 }
 
@@ -72,7 +72,7 @@ const { tileSheet } = toRefs(props)
 
 const columns = ref(props.columns ?? 16)
 const pixels = computed(() => {
-  return bytesToPixels(tileSheet.value.getData())
+  return bytesToPixels(tileSheet.value.data!)
 })
 const cellsTotal = computed(() => pixels.value.length / (8 * 8))
 const rows = computed(() => Math.ceil(cellsTotal.value / columns.value))
