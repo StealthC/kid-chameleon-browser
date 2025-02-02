@@ -1,5 +1,6 @@
 <template>
   <canvas
+    v-if="computedValues"
     ref="canvas"
     :width="computedValues.columns * 8 * zoom"
     :height="computedValues.rows * 8 * zoom"
@@ -26,7 +27,7 @@ const canvas = useTemplateRef('canvas')
 const zoom = ref(2)
 
 const computedValues = computed(() => {
-  if (!bytes.value) {
+  if (!bytes.value || !width.value || !height.value) {
     return null
   }
   const columns = Math.ceil(width.value / 8.0)
@@ -34,7 +35,7 @@ const computedValues = computed(() => {
   const size = columns * rows * 8 * 4
   const start = tileId.value * 8 * 4
   const end = start + size
-  if (bytes.value.length < end) {
+  if (bytes.value.length < start || bytes.value.length < end) {
     return null
   }
   const sliceBytes = bytes.value.subarray(start, end)
@@ -51,7 +52,7 @@ watchEffect(
   { flush: 'post' },
 )
 
-const draw = async () => {
+const draw = () => {
   if (!canvas.value || !computedValues.value) {
     return
   }
@@ -62,7 +63,7 @@ const draw = async () => {
   ctx.resetTransform()
   ctx.imageSmoothingEnabled = false
   ctx.scale(zoom.value, zoom.value)
-  let cellIndex = tileId.value
+  let cellIndex = 0
   const quadWidth = Math.ceil(computedValues.value.columns / 4.0)
   const quadHeight = Math.ceil(computedValues.value.rows / 4.0)
   for (let qy = 0; qy < quadHeight; qy++) {
