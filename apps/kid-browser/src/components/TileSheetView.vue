@@ -16,8 +16,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, toRefs, useTemplateRef, watch, watchEffect, type Ref } from 'vue'
-import { bytesToPixels, getCellImageBytes, type Resource, type TileSheetResource } from '@repo/kid-util'
+import { computed, ref, toRefs, useTemplateRef, watchEffect } from 'vue'
+import { bytesToPixels, getCellImageBytes, type TileSheetResource } from '@repo/kid-util'
 import Panel from 'primevue/panel'
 import InputNumber from 'primevue/inputnumber'
 
@@ -27,18 +27,11 @@ const zoom = ref(2)
 
 const drawCell = (ctx: CanvasRenderingContext2D, id: number = 0, x: number = 0, y: number = 0) => {
   const cellImage = new ImageData(getCellImageBytes(id, pixels.value), 8, 8)
-
-  // Criar um canvas temporário
-  const tempCanvas = document.createElement("canvas");
-  tempCanvas.width = 8;
-  tempCanvas.height = 8;
+  const tempCanvas = new OffscreenCanvas(8, 8);
   const tempCtx = tempCanvas.getContext("2d");
 
   if (tempCtx) {
-    // Desenha os pixels no canvas temporário
     tempCtx.putImageData(cellImage, 0, 0);
-
-    // Agora desenhamos a célula no canvas principal com escala
     ctx.drawImage(tempCanvas, x * 8, y * 8, 8, 8);
   }
 }
