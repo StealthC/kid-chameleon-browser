@@ -402,12 +402,12 @@ export const AssetPtrTableTypes = [
     "Color(7)", //$000a1032
     "Color(7)", //$000a1036
     "Color(7)", //$000a103a
-    SpriteFrameType, //$000a103e
-    SpriteFrameType, //$000a1042
-    SpriteFrameType, //$000a1046
-    SpriteFrameType, //$000a104a
-    SpriteFrameType, //$000a104e
-    SpriteFrameType, //$000a1052
+    "Color(7)", //$000a103e
+    "Color(7)", //$000a1042
+    "Color(7)", //$000a1046
+    "Color(7)", //$000a104a
+    "Color(7)", //$000a104e
+    "Color(7)", //$000a1052
     SpriteFrameType, //$000a1056
     SpriteFrameType, //$000a105a
     SpriteFrameType, //$000a105e
