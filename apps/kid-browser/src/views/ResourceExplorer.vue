@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import ResourceTree from '@/components/ResourceTree.vue'
-import {
-  type Resource,
+import type {
+  LoadedResource,
+  BaseResource,
 } from '@repo/kid-util'
 import { ref } from 'vue'
 import ResourceView from '@/components/ResourceView.vue'
 
-const selectedResource = ref<Resource | null>(null)
+const selectedResource = ref<LoadedResource<BaseResource> | null>(null)
 
-const loadResource = (resource: Resource) => {
-  selectedResource.value = resource as Resource
+const loadResource = (resource: LoadedResource<BaseResource>) => {
+  selectedResource.value = resource
 }
 </script>
 <template>
