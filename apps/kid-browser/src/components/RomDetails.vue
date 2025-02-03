@@ -1,5 +1,5 @@
 <template>
-  <div class="font-mono text-xs">
+  <div class="font-mono text-xs overflow-auto">
     <div v-if="romDetails" class="flex flex-col gap-2">
       <Panel v-for="category in Object.keys(details)" :key="category" :header="category">
         <ul>
@@ -9,7 +9,7 @@
             class="grid grid-cols-[max-content_1fr] gap-x-2"
           >
             <span class="font-bold w-40 block">{{ key }}:</span>
-            <span>{{ value }}</span>
+            <span class="overflow-hidden text-ellipsis">{{ value }}</span>
           </li>
         </ul>
       </Panel>

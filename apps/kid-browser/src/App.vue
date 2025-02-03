@@ -16,13 +16,17 @@ import ReadRom from '@/components/ReadRom.vue'
         </nav>
       </div>
     </header>
-    <div class="flex-grow overflow-hidden">
+    <div class="flex-1 overflow-hidden">
       <RouterView />
     </div>
-    <footer class="max-w-xl w-full mx-auto">
-      <ReadRom />
-    </footer>
+    <div class="h-24">
+    </div>
   </div>
+  <footer class="absolute bottom-0 w-screen bg-gradient-to-t from-cyan-900 to-transparent">
+    <div class="max-w-xl mx-auto">
+      <ReadRom />
+    </div>
+  </footer>
 </template>
 
 <style scoped></style>

@@ -25,24 +25,23 @@
           </p>
         </div>
       </div>
-      <div v-else class="text-center w-full h-16 flex items-center justify-center">
+      <div v-else class="text-center w-9/12 mx-auto flex items-center justify-center">
         <p class="font-bold">Load ROM</p>
       </div>
     </template>
     <div>
-      <div class="pb-4 text-center">
+      <div class="text-center w-9/12 mx-auto flex items-center justify-center text-xs md:text-sm pb-1">
         <div v-if="!rom">
           <p>First, select a Kid Chameleon ROM to start.</p>
-          <p class="text-muted-color text-sm">ROM Hacks are partially supported.</p>
+          <p class="text-muted-color">ROM Hacks are partially supported.</p>
         </div>
       </div>
       <ReadFile @load="onFileRead" />
     </div>
     <template #footer>
-      <div class="text-muted-color text-center text-xs">
-        <p>ROMs are not stored remotely.</p>
-        <p>They are only loaded in your browser.</p>
-        <p>All copyrights belong to their respective owners.</p>
+      <div class="text-center w-9/12 mx-auto flex flex-col items-center justify-evenly gap-2 text-muted-color text-xs">
+        <div class="flex-1">The ROM is loaded only in your browser.</div>
+        <div class="flex-1">All copyrights belong to their respective owners.</div>
       </div>
     </template>
   </Panel>
