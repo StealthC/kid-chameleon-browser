@@ -8,7 +8,7 @@
             :key="key"
             class="grid grid-cols-[max-content_1fr] gap-x-2"
           >
-            <span class="font-bold w-36 block">{{ key }}:</span>
+            <span class="font-bold w-40 block">{{ key }}:</span>
             <span>{{ value }}</span>
           </li>
         </ul>
@@ -63,7 +63,7 @@ const details = computed(() => {
       Memo: romDetails.value.header.memo.trim(),
       Region: romDetails.value.header.region.trim(),
     },
-    'Known Addresses': romKnownAddressesValues,
+    'Discovered Known Addresses': romKnownAddressesValues,
   } as DetailsData
 })
 </script>
