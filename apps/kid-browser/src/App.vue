@@ -18,7 +18,7 @@ import ReadRom from '@/components/ReadRom.vue'
     <div class="flex-grow overflow-hidden">
       <RouterView />
     </div>
-    <footer class="w-full">
+    <footer class="max-w-xl w-full mx-auto">
       <ReadRom />
     </footer>
   </div>

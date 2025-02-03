@@ -1,20 +1,27 @@
 <template>
-  <Panel :toggleable="!!rom" @toggle="onToggle" :collapsed="minimized" >
+  <Panel @toggle="onToggle" :collapsed="minimized" class="md-cart">
     <template #header>
-      <div v-if="romDetails" class="text-center w-full">
-        <p
-          v-if="romDetails.known"
-          class="font-bold"
-          :class="{
-            'text-green-500': !romDetails.known.hack,
-            'text-amber-500': romDetails.known.hack,
-          }"
-        >
-          {{ romDetails.known.name }}
-        </p>
-        <p v-else class="text-red-500 font-bold">Unknown</p>
+      <div
+        v-if="romDetails"
+        @click="onToggle"
+        class="text-center w-9/12 mx-auto h-16 flex items-center justify-center cursor-pointer"
+      >
+        <div class="truncate flex flex-col">
+          <p
+            v-if="romDetails.known"
+            class="font-bold text-xl"
+            :class="{
+              'text-green-500': !romDetails.known.hack,
+              'text-amber-500': romDetails.known.hack,
+            }"
+          >
+            {{ romDetails.known.name }}
+          </p>
+          <p v-else class="text-red-500 font-bold">Unknown</p>
+          <p class="text-right text-muted-color font-mono overflow-hidden text-ellipsis whitespace-nowrap pt-1 ">{{ romDetails.sha256 }}</p>
+        </div>
       </div>
-      <div v-else class="text-center w-full">
+      <div v-else class="text-center w-full h-16 flex items-center justify-center">
         <p class="font-bold">Load ROM</p>
       </div>
     </template>
@@ -22,7 +29,7 @@
       <div class="pb-4">
         <div v-if="!rom">
           <p class="text-center">First, select a Kid Chameleon ROM to start.</p>
-          <p class="text-muted-color text-sm text-center">ROM Hacks are currently not supported.</p>
+          <p class="text-muted-color text-sm">ROM Hacks are partially supported.</p>
         </div>
       </div>
       <ReadFile @load="onFileRead" />
@@ -70,4 +77,11 @@ const onFileRead = (bytes: ArrayBuffer) => {
 }
 </script>
 
-<style scoped></style>
+<style scoped>
+.md-cart {
+  background-color: transparent;
+  border: none;
+  background-image: url('@/assets/md-cart.png');
+  background-size: cover;
+}
+</style>
