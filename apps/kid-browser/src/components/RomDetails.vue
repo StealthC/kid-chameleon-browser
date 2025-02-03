@@ -1,9 +1,8 @@
 <template>
-  <Panel class="font-mono text-xs" header="Details">
-    <ul v-if="romDetails">
-      <li v-for="category in Object.keys(details)" :key="category">
-        <ul class="pb-4">
-          <li class="pb-2 font-bold">{{ category }}</li>
+  <div class="font-mono text-xs">
+    <div v-if="romDetails" class="flex flex-col gap-2">
+      <Panel v-for="category in Object.keys(details)" :key="category" :header="category">
+        <ul>
           <li
             v-for="[key, value] in Object.entries(details[category])"
             :key="key"
@@ -13,12 +12,12 @@
             <span>{{ value }}</span>
           </li>
         </ul>
-      </li>
-    </ul>
+      </Panel>
+    </div>
     <div v-else>
       <p>No ROM loaded</p>
     </div>
-  </Panel>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -28,7 +27,7 @@ import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { addressFormat, getByteSize } from '@/utils'
 
-const { romDetails } = storeToRefs(useRomStore())
+const { romDetails, romKnownAddresses } = storeToRefs(useRomStore())
 type DetailsData = Record<string, Record<string, string>>
 
 const details = computed(() => {
@@ -43,6 +42,12 @@ const details = computed(() => {
         ? '🟢'
         : `🔴(Calculated: ${addressFormat(calculatedChecksum)})`
   }
+  const romKnownAddressesValues = romKnownAddresses.value
+    ? Object.fromEntries(
+        Object.entries(romKnownAddresses.value).map(([key, value]) => [key, addressFormat(value)]),
+      )
+    : {}
+
   return {
     'File Details': {
       'File Size': `${getByteSize(romDetails.value.size)}`,
@@ -58,6 +63,7 @@ const details = computed(() => {
       Memo: romDetails.value.header.memo.trim(),
       Region: romDetails.value.header.region.trim(),
     },
+    'Known Addresses': romKnownAddressesValues,
   } as DetailsData
 })
 </script>

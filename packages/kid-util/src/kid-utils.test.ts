@@ -1,6 +1,7 @@
 //@ts-check
-import {beforeAll, describe, expect, test} from '@jest/globals';
-import {unpackKidFormat, calculatePlayerSpriteDataSize} from './kid-utils'
+import {describe, expect, test} from '@jest/globals';
+import {calculatePlayerSpriteDataSize} from './kid-utils'
+import { unpackKidFormat } from './unpack-kid';
 
 describe('Data Utils Testing', () => {
   test('check kid unpack', () => {

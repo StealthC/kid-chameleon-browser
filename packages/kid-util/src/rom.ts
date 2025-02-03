@@ -5,6 +5,7 @@ import { AssetPtrTableTypes, PackedTileSheet as PackedTileSheetType, SpriteFrame
 import { PatternFinder } from "./pattern-search";
 import { sha256, mdCrc } from "./hash";
 import { unpackKidFormat, type KidUnpackResults } from "./unpack-kid";
+import { findFrameCollisionFrameTable, tryFindingAllKnownAddresses, type KnownAddresses } from "./rom-discovery";
 
 
 export type FrameCollision = {
@@ -58,6 +59,7 @@ export type RomResources = {
 
 export class Rom {
     data: DataView;
+    knownAddresses: KnownAddresses = {};
     private _frameCollisionTable: (FrameCollision)[] = [];
     private _assetPtrTable: number[] = [];
     private _details: RomFileDetails | null = null;
@@ -145,6 +147,7 @@ export class Rom {
     loadResources() {
         if (this._resourcesLoaded)
             return this.resources;
+        tryFindingAllKnownAddresses(this);
         this.readAssetPtrTable();
         for (let i = 0; i < this._assetPtrTable.length; i++) {
             const ptr = this._assetPtrTable[i]!;
@@ -256,16 +259,10 @@ export class Rom {
         return this.resources;
     }
 
-    private _getFrameCollisionFrameTable(): number {
-        const pattern = "e2 40 49 f9 ?? ?? ?? ?? d8 f4 00 00"
-        const ptr = this.readPtr(this.findPattern(pattern) + 4);
-        return ptr;
-    }
-
     private _readFrameCollisionTable(): (FrameCollision)[] {
         if (this._frameCollisionTable.length > 0)
             return this._frameCollisionTable;
-        const ptr = this._getFrameCollisionFrameTable();
+        const ptr = findFrameCollisionFrameTable(this);
         // There is to be a limit because the original table have invalid references
         const addressLimit = ptr + 0x1390
         let firstData = Infinity;
@@ -483,11 +480,5 @@ export class Rom {
             return { pos, palRel, palPtr, tile, ptr }
         })
         return results;
-    }
-
-    private _findFunctions(): Record<string, number> {
-        const functions: Record<string, number> = {};
-        functions.UnpackGFX = this.findPattern("61 d0 70 ff 26 40 28 4a");
-        return functions;
     }
 }
