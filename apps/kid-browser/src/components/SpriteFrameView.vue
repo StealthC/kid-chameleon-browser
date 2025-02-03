@@ -48,10 +48,12 @@ const sheet = ref(null)
 const { romResources } = storeToRefs(useRomStore())
 const sheets = computed(() => {
   if (romResources.value) {
-    return romResources.value.tileSheets.filter((resource) => resource.loaded).map((sheet) => ({
-      name: sheet.baseAddress.toString(16),
-      value: sheet.data,
-    }))
+    return romResources.value.tileSheets
+      .filter((resource) => resource.loaded)
+      .map((sheet) => ({
+        name: sheet.baseAddress.toString(16),
+        value: sheet.data,
+      }))
   }
   return []
 })

@@ -38,7 +38,10 @@ const details = computed(() => {
   const calculatedChecksum = romDetails.value.header.calculatedChecksum
   let checksum = addressFormat(romDetails.value.header.checksum)
   if (calculatedChecksum) {
-    checksum += calculatedChecksum === romDetails.value.header.checksum ? '🟢' : `🔴(Calculated: ${addressFormat(calculatedChecksum)})`
+    checksum +=
+      calculatedChecksum === romDetails.value.header.checksum
+        ? '🟢'
+        : `🔴(Calculated: ${addressFormat(calculatedChecksum)})`
   }
   return {
     'File Details': {
@@ -46,14 +49,14 @@ const details = computed(() => {
       SHA256: romDetails.value.sha256,
     },
     'ROM Header': {
-      'Console': romDetails.value.header.consoleName.trim(),
-      'Release': romDetails.value.header.releaseDate.trim(),
+      Console: romDetails.value.header.consoleName.trim(),
+      Release: romDetails.value.header.releaseDate.trim(),
       'Domestic Name': romDetails.value.header.domesticName.trim(),
       'International Name': romDetails.value.header.internationalName.trim(),
-      'Version': romDetails.value.header.version.trim(),
-      'Checksum': checksum,
-      'Memo': romDetails.value.header.memo.trim(),
-      'Region': romDetails.value.header.region.trim(),
+      Version: romDetails.value.header.version.trim(),
+      Checksum: checksum,
+      Memo: romDetails.value.header.memo.trim(),
+      Region: romDetails.value.header.region.trim(),
     },
   } as DetailsData
 })

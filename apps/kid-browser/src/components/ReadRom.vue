@@ -18,7 +18,11 @@
             {{ romDetails.known.name }}
           </p>
           <p v-else class="text-red-500 font-bold">Unknown</p>
-          <p class="text-right text-muted-color font-mono overflow-hidden text-ellipsis whitespace-nowrap pt-1 ">{{ romDetails.sha256 }}</p>
+          <p
+            class="text-right text-muted-color font-mono overflow-hidden text-ellipsis whitespace-nowrap pt-1"
+          >
+            {{ romDetails.sha256 }}
+          </p>
         </div>
       </div>
       <div v-else class="text-center w-full h-16 flex items-center justify-center">
@@ -26,9 +30,9 @@
       </div>
     </template>
     <div>
-      <div class="pb-4">
+      <div class="pb-4 text-center">
         <div v-if="!rom">
-          <p class="text-center">First, select a Kid Chameleon ROM to start.</p>
+          <p>First, select a Kid Chameleon ROM to start.</p>
           <p class="text-muted-color text-sm">ROM Hacks are partially supported.</p>
         </div>
       </div>

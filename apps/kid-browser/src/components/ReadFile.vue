@@ -1,13 +1,21 @@
 <template>
   <div>
     <label class="rom-reader">
-      <FileUpload mode="basic" @select="loadFile" customUpload auto severity="secondary" choose-label="Select ROM File" class="p-button-outlined" />
+      <FileUpload
+        mode="basic"
+        @select="loadFile"
+        customUpload
+        auto
+        severity="secondary"
+        choose-label="Select ROM File"
+        class="p-button-outlined"
+      />
     </label>
   </div>
 </template>
 
 <script setup lang="ts">
-import FileUpload, { type FileUploadSelectEvent } from 'primevue/fileupload';
+import FileUpload, { type FileUploadSelectEvent } from 'primevue/fileupload'
 
 const emit = defineEmits<{
   load: [bytes: ArrayBuffer]

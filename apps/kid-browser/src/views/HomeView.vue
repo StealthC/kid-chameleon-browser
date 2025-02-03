@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import RomDetails from '@/components/RomDetails.vue';
-
+import RomDetails from '@/components/RomDetails.vue'
 </script>
 
 <template>

@@ -13,7 +13,7 @@ const router = createRouter({
       path: '/resources',
       name: 'resources',
       component: () => import('../views/ResourceExplorer.vue'),
-    }
+    },
   ],
 })
 
