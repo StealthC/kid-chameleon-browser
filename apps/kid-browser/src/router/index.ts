@@ -14,6 +14,11 @@ const router = createRouter({
       name: 'resources',
       component: () => import('../views/ResourceExplorer.vue'),
     },
+    {
+      path: '/credits',
+      name: 'credits',
+      component: () => import('../views/CreditsView.vue'),
+    },
   ],
 })
 

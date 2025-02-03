@@ -12,6 +12,7 @@ import ReadRom from '@/components/ReadRom.vue'
         <nav class="flex justify-center space-x-4">
           <RouterLink to="/">Home</RouterLink>
           <RouterLink to="/resources">Resources</RouterLink>
+          <RouterLink to="/credits">Credits</RouterLink>
         </nav>
       </div>
     </header>
