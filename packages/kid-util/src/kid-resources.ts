@@ -1,5 +1,7 @@
-import { calculatePlayerSpriteDataSize, unpackKidFormat } from "./kid-utils"
+import { crc32 } from "./hash";
+import { calculatePlayerSpriteDataSize } from "./kid-utils"
 import type { Rom } from "./rom";
+import { unpackKidFormat } from "./unpack-kid";
 
 export type PackedFormat = "kid" | "enigma"
 
@@ -28,6 +30,7 @@ export type BaseResource = {
     type: string;
     subType?: string;
     loaded?: boolean;
+    crc32?: number;
     packed?: EnigmaPacked | KidPacked;
     baseAddress: number;
     tableIndex?: number;
@@ -71,6 +74,7 @@ export type SpriteFrameResource = UnlinkedSpriteFrameResource | LinkedSpriteFram
 
 export type LoadedResource<T extends BaseResource> = T & {
     loaded: true;
+    crc32: number;
     inputSize: number;
 }
     & (T extends DataResource ? { data: Uint8Array } : object)
@@ -83,6 +87,16 @@ export type LoadedResource<T extends BaseResource> = T & {
     } : object);
 
 
+function _finalizeLoading<T extends BaseResource>(rom: Rom, resource: T): LoadedResource<T> {
+    if (!resource.inputSize) {
+        throw new Error("Resource input size needs to be defined");
+    }
+    const bytes = rom.bytes.subarray(resource.baseAddress, resource.baseAddress + resource.inputSize);
+    resource.crc32 = crc32(bytes);
+    resource.loaded = true;
+    return resource as LoadedResource<T>;
+}
+
 export function loadSheetResource(rom: Rom, resource: SheetResource): LoadedResource<SheetResource> {
     if (resource.loaded) {
         return resource as LoadedResource<SheetResource>;
@@ -94,7 +108,7 @@ export function loadSheetResource(rom: Rom, resource: SheetResource): LoadedReso
             const unpacked = unpackKidFormat(data);
             resource.data = unpacked.output;
             resource.inputSize = unpacked.totalInputSize;
-            resource.loaded = true;
+            return _finalizeLoading(rom, resource);
         }
     } else {
         if (!resource.inputSize) {
@@ -103,7 +117,7 @@ export function loadSheetResource(rom: Rom, resource: SheetResource): LoadedReso
         resource.data = rom.bytes.subarray(baseAddress, baseAddress + resource.inputSize);
         resource.loaded = true;
     }
-    return resource as LoadedResource<SheetResource>;
+    return _finalizeLoading(rom, resource);
 }
 
 export function loadSpriteFrameResource(rom: Rom, resource: SpriteFrameResource): LoadedResource<SpriteFrameResource> {
@@ -137,11 +151,11 @@ export function loadSpriteFrameResource(rom: Rom, resource: SpriteFrameResource)
             resource.inputSize = totalSize;
             resource.data = data;
             resource.loaded = true;
-            return resource as LoadedResource<LinkedSpriteFrameResource>;
+            return _finalizeLoading(rom, resource);
         }
         resource.inputSize = 8;
         resource.loaded = true;
-        return resource as LoadedResource<UnlinkedSpriteFrameResource>;
+        return _finalizeLoading(rom, resource);
     }
 }
 

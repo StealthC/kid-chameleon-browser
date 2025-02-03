@@ -1,8 +1,10 @@
 import { loadResource, type LinkedSpriteFrameResource, type SheetResource, type SpriteFrameResource, type UnlinkedSpriteFrameResource } from "./kid-resources";
-import { hashSha256, readPtr, unpackKidFormat, type KidUnpackResults } from "./kid-utils";
+import { readPtr } from "./kid-utils";
 import { KnownRoms, type KnowRomDetails } from "./tables/known-roms";
 import { AssetPtrTableTypes, PackedTileSheet as PackedTileSheetType, SpriteFrameType, SpriteFrameWithDataType as PlayerSpriteFrameType } from "./tables/asset-ptr-table"
 import { PatternFinder } from "./pattern-search";
+import { sha256, mdCrc } from "./hash";
+import { unpackKidFormat, type KidUnpackResults } from "./unpack-kid";
 
 
 export type FrameCollision = {
@@ -25,9 +27,27 @@ export const DefaultRomConfig: RomConfig = {
     AssetPtrTableBase: 0xa09fe
 }
 
+export type MdCartHeader = {
+    consoleName: string;
+    releaseDate: string;
+    domesticName: string
+    internationalName: string;
+    version: string;
+    checksum: number;
+    calculatedChecksum?: number;
+    ioSupport: string;
+    romStart: number;
+    romEnd: number;
+    ramStart: number;
+    ramEnd: number;
+    memo: string;
+    region: string;
+}
+
 export type RomFileDetails = {
     size: number;
     sha256: string;
+    header: MdCartHeader;
     known?: KnowRomDetails;
 }
 
@@ -53,12 +73,55 @@ export class Rom {
         if (this._details)
             return this._details
         const size = this.bytes.length;
-        const sha256 = await hashSha256(this.bytes);
-        const known = KnownRoms[sha256]
+        const hash = await sha256(this.bytes);
+        const header = this.readMdCartHeader();
+        const known = KnownRoms[hash]
         return {
             size,
-            sha256,
+            sha256: hash,
+            header,
             known
+        }
+    }
+
+    private readStringChars(ptr: number, length: number): string {
+        return String.fromCharCode(...this.bytes.subarray(ptr, ptr + length));
+    }
+
+    readMdCartHeader(calculateChecksum = true): MdCartHeader {
+        const headerStart = 0x100
+        const consoleName = this.readStringChars(headerStart + 0x00, 0x10);
+        const releaseDate = this.readStringChars(headerStart + 0x10, 0x10);
+        const domesticName = this.readStringChars(headerStart + 0x20, 0x30);
+        const internationalName = this.readStringChars(headerStart + 0x50, 0x30);
+        const version = this.readStringChars(headerStart + 0x80, 0xe);
+        const checksum = this.data.getUint16(headerStart + 0x8e, false);
+        const ioSupport = this.readStringChars(headerStart + 0x90 , 0x10);
+        const romStart = this.data.getUint32(headerStart + 0xa0, false);
+        const romEnd = this.data.getUint32(headerStart + 0xa4, false);
+        const ramStart = this.data.getUint32(headerStart + 0xa8, false);
+        const ramEnd = this.data.getUint32(headerStart + 0xac, false);
+        const memo = this.readStringChars(headerStart + 0xc0, 0x30);
+        const region = this.readStringChars(headerStart + 0xf0, 0x10);
+        let calculatedChecksum: number | undefined;
+        if (calculateChecksum) {
+            calculatedChecksum = mdCrc(this.bytes);
+        }
+        return {
+            consoleName,
+            releaseDate,
+            domesticName,
+            internationalName,
+            version,
+            checksum,
+            calculatedChecksum,
+            ioSupport,
+            romStart,
+            romEnd,
+            ramStart,
+            ramEnd,
+            memo,
+            region
         }
     }
 
@@ -138,7 +201,17 @@ export class Rom {
                     newSheets[result.ptr.toString(16)] = packedSheet;
                 }
             });
-            this._findUntabledPackedTileSheetsRelative().map((result) => {
+            this._findUntabledPackedTileSheetsRelative1().map((result) => {
+                if (!newSheets[result.ptr.toString(16)]) {
+                    const packedSheet: SheetResource = {
+                        type: "sheet",
+                        baseAddress: result.ptr,
+                        packed: {pack: "kid"},
+                    }
+                    newSheets[result.ptr.toString(16)] = packedSheet;
+                }
+            });
+            this._findUntabledPackedTileSheetsRelative2().map((result) => {
                 if (!newSheets[result.ptr.toString(16)]) {
                     const packedSheet: SheetResource = {
                         type: "sheet",
@@ -307,7 +380,7 @@ export class Rom {
         return results;
     }
 
-    private _findUntabledPackedTileSheetsRelative() {
+    private _findUntabledPackedTileSheetsRelative1() {
         /**
          * 
          * 
@@ -320,6 +393,30 @@ export class Rom {
          * 
         */
         const pattern = "30 3c ?? ?? 41 fa ?? ?? 4e b9 ?? ?? ?? ??"; // Calls to UnpackGfx 
+        const patternFinder = new PatternFinder(pattern, this.bytes);
+        const matchs = patternFinder.findAll();
+        const results = matchs.map((pos) => {
+            const tile = this.data.getUint16(pos + 2, false);
+            const rel = this.data.getInt16(pos + 6, false);
+            const ptr = pos + 6 + rel;
+            console.log(`POS ${pos.toString(16)} (${rel.toString(16)}): TileSheet ${tile.toString(16)} at ${ptr.toString(16)}`);
+            return { pos, rel, tile, ptr }
+        })
+        return results;
+    }
+
+    private _findUntabledPackedTileSheetsRelative2() {
+        /**
+         * 
+         * 00012de0 30  3c  17       move.w              #0x1780 ,D0w
+         *          80
+         * 00012de4 41  fa  01       lea                 (0x14a ,PC )=> PackedGFXSegaLogo ,A0
+         *          4a
+         * 00012de8 61  00  15       bsr.w               UnpackGfx
+         *          10
+         * 
+        */
+        const pattern = "30 3c ?? ?? 41 fa ?? ?? 61 00 ?? ?? ?? ??"; // Calls to UnpackGfx 
         const patternFinder = new PatternFinder(pattern, this.bytes);
         const matchs = patternFinder.findAll();
         const results = matchs.map((pos) => {

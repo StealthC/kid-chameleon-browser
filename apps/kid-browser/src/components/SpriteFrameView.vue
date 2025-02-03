@@ -16,8 +16,9 @@
     />
     <Panel header="Details" class="font-mono text-xs">
       <ul>
-        <li>Resource Index: 0x{{ (spriteFrame.tableIndex ?? 0).toString(16) }}</li>
-        <li>Tile ID: 0x{{ tileId.toString(16) }}</li>
+        <li>CRC32: {{ addressFormat(spriteFrame.crc32) }}</li>
+        <li>Resource Index: {{ addressFormat(spriteFrame.tableIndex ?? 0) }}</li>
+        <li>Tile ID: {{ addressFormat(tileId) }}</li>
         <li>Width: {{ spriteFrame.width }}</li>
         <li>Height: {{ spriteFrame.height }}</li>
         <li>X Offset: {{ spriteFrame.xOffset }}</li>
@@ -35,6 +36,7 @@ import Select from 'primevue/select'
 import SpriteRenderer from './SpriteRenderer.vue'
 import useRomStore from '@/stores/rom'
 import { storeToRefs } from 'pinia'
+import { addressFormat } from '@/utils'
 
 interface Props {
   spriteFrame: LoadedResource<SpriteFrameResource>

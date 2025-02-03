@@ -13,16 +13,18 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@repo/kid-util": "workspace:*",
+    "byte-size": "^9.0.1",
     "pinia": "^2.3.1",
     "primevue": "^4.2.5",
     "tailwindcss-primeui": "^0.4.0",
     "vue": "^3.5.13",
-    "vue-router": "^4.5.0",
-    "@repo/kid-util": "workspace:*"
+    "vue-router": "^4.5.0"
   },
   "devDependencies": {
     "@codecompose/typescript-config": "^1.2.0",
     "@tsconfig/node22": "^22.0.0",
+    "@types/byte-size": "^8.1.2",
     "@types/node": "^22.10.7",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue/eslint-config-prettier": "^10.1.0",

@@ -24,12 +24,6 @@
           <p class="text-center">First, select a Kid Chameleon ROM to start.</p>
           <p class="text-muted-color text-sm text-center">ROM Hacks are currently not supported.</p>
         </div>
-        <div v-else>
-          <div v-if="romDetails">
-            <p class="text-xs">Size: {{ romDetails.size }}</p>
-            <p class="text-xs">Hash SHA256: {{ romDetails.sha256 }}</p>
-          </div>
-        </div>
       </div>
       <ReadFile @load="onFileRead" />
     </div>
