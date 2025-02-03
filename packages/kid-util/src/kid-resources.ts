@@ -27,7 +27,7 @@ export type KidPacked = {
 }
 
 export type BaseResource = {
-    type: string;
+    type?: string;
     subType?: string;
     loaded?: boolean;
     crc32?: number;
@@ -38,7 +38,7 @@ export type BaseResource = {
     tags?: string[];
     name?: string;
     description?: string;
-    linkedResources?: string[];
+    related: Set<string>;
 };
 
 export type DataResource = BaseResource & {
@@ -163,6 +163,9 @@ export function loadResource<T extends BaseResource>(rom: Rom, resource: T): Loa
     if (resource.loaded) {
         return resource as LoadedResource<T>;
     }
+    if (!resource.type) {
+        throw new Error("Resource type needs to be defined to be loaded");
+    }
     switch (resource.type) {
         case "sheet":
             return loadSheetResource(rom, resource as SheetResource) as LoadedResource<T>;
@@ -170,5 +173,45 @@ export function loadResource<T extends BaseResource>(rom: Rom, resource: T): Loa
             return loadSpriteFrameResource(rom, resource as SpriteFrameResource) as LoadedResource<T>;
         default:
             throw new Error(`Unsupported resource type: ${resource.type}`);
+    }
+}
+
+export function addResource(rom: Rom, resource: BaseResource) {
+    const resourceKey = resource.baseAddress.toString(16);
+    const existingResource = rom.resourcesByAddress[resourceKey];
+    if (existingResource) {
+        if (resource.type !== existingResource.type) {
+            if (resource.type && existingResource.type) {
+                throw new Error(`Resource type mismatch at address ${resource.baseAddress.toString(16)}`);
+            }
+        }
+        // Merge the related resources
+        const related = new Set([...existingResource.related, ...resource.related]);
+        
+        // Merge the new resource into the existing one
+        const mergedResource = { ...existingResource, ...resource, related };
+        rom.resourcesByAddress[resourceKey] = mergedResource;
+    } else {
+        rom.resourcesByAddress[resourceKey] = resource;
+    }
+    checkRelated(rom, resource);
+}
+
+export function createResource(baseAddress: number, type?: string, subType?: string, related: string[] = []): BaseResource {
+    return { baseAddress, type, subType, related: new Set(related) };
+}
+
+export function checkRelated(rom: Rom, resource: BaseResource) {
+    for (const related of resource.related) {
+        const relatedResource = rom.resourcesByAddress[related];
+        if (!relatedResource) {
+            // Create the related resource
+            rom.resourcesByAddress[related] = { baseAddress: parseInt(related, 16), related: new Set([resource.baseAddress.toString(16)]) };
+        } else {
+            if (!relatedResource.related.has(resource.baseAddress.toString(16))) {
+                // Add the resource to the related set
+                relatedResource.related.add(resource.baseAddress.toString(16));
+            }
+        }
     }
 }

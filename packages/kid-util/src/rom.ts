@@ -1,4 +1,4 @@
-import { loadResource, type LinkedSpriteFrameResource, type SheetResource, type SpriteFrameResource, type UnlinkedSpriteFrameResource } from "./kid-resources";
+import { addResource, checkRelated, createResource, loadResource, type BaseResource, type LinkedSpriteFrameResource, type LoadedResource, type SheetResource, type SpriteFrameResource, type UnlinkedSpriteFrameResource } from "./kid-resources";
 import { readPtr } from "./kid-utils";
 import { KnownRoms, type KnowRomDetails } from "./tables/known-roms";
 import { AssetPtrTableTypes, PackedTileSheet as PackedTileSheetType, SpriteFrameType, SpriteFrameWithDataType as PlayerSpriteFrameType } from "./tables/asset-ptr-table"
@@ -59,6 +59,7 @@ export type RomResources = {
 
 export class Rom {
     data: DataView;
+    resourcesByAddress: Record<string, BaseResource> = {};
     knownAddresses: KnownAddresses = {};
     private _frameCollisionTable: (FrameCollision)[] = [];
     private _assetPtrTable: number[] = [];
@@ -153,29 +154,18 @@ export class Rom {
             const ptr = this._assetPtrTable[i]!;
             const type = AssetPtrTableTypes[i];
             if (type === PackedTileSheetType) {
-                const packedSheet: SheetResource = {
-                    type: "sheet",
-                    baseAddress: ptr,
-                    packed: {pack: "kid"},
-                    tableIndex: i,
-                }
-                this.resources.tileSheets.push(packedSheet);
+                const resource = this.createResource(ptr, "sheet");
+                resource.packed = {pack: "kid"};
+                resource.tableIndex = i;
+                this.addResource(resource);
             } else if (type === SpriteFrameType) {
-                const spriteFrame: UnlinkedSpriteFrameResource = {
-                    type: "sprite-frame",
-                    subType: "unlinked",
-                    baseAddress: ptr,
-                    tableIndex: i,
-                }
-                this.resources.spriteFrames.push(spriteFrame);
+                const resource = this.createResource(ptr, "sprite-frame", "unlinked");
+                resource.tableIndex = i;
+                this.addResource(resource);
             } else if (type === PlayerSpriteFrameType) {
-                const playerSpriteFrame: LinkedSpriteFrameResource = {
-                    type: "sprite-frame",
-                    subType: "linked",
-                    baseAddress: ptr,
-                    tableIndex: i,
-                }
-                this.resources.spriteFrames.push(playerSpriteFrame);
+                const resource = this.createResource(ptr, "sprite-frame", "linked");
+                resource.tableIndex = i;
+                this.addResource(resource);
             } else if (type) {
                 console.error(`Unknown AssetPtrTable type ${type.toString()} at index ${i.toString(10)}`);
             }
@@ -183,78 +173,48 @@ export class Rom {
         this._resourcesLoaded = true;
         try {
             this._readFrameCollisionTable();
-            const newSheets: Record<string, SheetResource> = {};
             this._findUntabledPackedTileSheetsDirect1().map((result) => {
-                if (!newSheets[result.ptr.toString(16)]) {
-                    const packedSheet: SheetResource = {
-                        type: "sheet",
-                        baseAddress: result.ptr,
-                        packed: {pack: "kid"},
-                    }
-                    newSheets[result.ptr.toString(16)] = packedSheet;
-                }
+                const resource = this.createResource(result.ptr, "sheet");
+                resource.packed = {pack: "kid"};
+                this.addResource(resource);
             });
             this._findUntabledPackedTileSheetsDirect2().map((result) => {
-                if (!newSheets[result.ptr.toString(16)]) {
-                    const packedSheet: SheetResource = {
-                        type: "sheet",
-                        baseAddress: result.ptr,
-                        packed: {pack: "kid"},
-                    }
-                    newSheets[result.ptr.toString(16)] = packedSheet;
-                }
+                const resource = this.createResource(result.ptr, "sheet");
+                resource.packed = {pack: "kid"};
+                this.addResource(resource);
             });
             this._findUntabledPackedTileSheetsRelative1().map((result) => {
-                if (!newSheets[result.ptr.toString(16)]) {
-                    const packedSheet: SheetResource = {
-                        type: "sheet",
-                        baseAddress: result.ptr,
-                        packed: {pack: "kid"},
-                    }
-                    newSheets[result.ptr.toString(16)] = packedSheet;
-                }
+                const resource = this.createResource(result.ptr, "sheet");
+                resource.packed = {pack: "kid"};
+                this.addResource(resource);
             });
             this._findUntabledPackedTileSheetsRelative2().map((result) => {
-                if (!newSheets[result.ptr.toString(16)]) {
-                    const packedSheet: SheetResource = {
-                        type: "sheet",
-                        baseAddress: result.ptr,
-                        packed: {pack: "kid"},
-                    }
-                    newSheets[result.ptr.toString(16)] = packedSheet;
-                }
+                const resource = this.createResource(result.ptr, "sheet");
+                resource.packed = {pack: "kid"};
+                this.addResource(resource);
             });
             this._findUntabledPackedTileSheetsWithPaletteSwap1().map((result) => {
-                if (!newSheets[result.ptr.toString(16)]) {
-                    const packedSheet: SheetResource = {
-                        type: "sheet",
-                        baseAddress: result.ptr,
-                        packed: {pack: "kid"},
-                    }
-                    newSheets[result.ptr.toString(16)] = packedSheet;
-                }
+                const resource = this.createResource(result.ptr, "sheet");
+                resource.packed = {pack: "kid"};
+                this.addResource(resource);
             });
             this._findUntabledPackedTileSheetsWithPaletteSwap2().map((result) => {
-                if (!newSheets[result.ptr.toString(16)]) {
-                    const packedSheet: SheetResource = {
-                        type: "sheet",
-                        baseAddress: result.ptr,
-                        packed: {pack: "kid"},
-                    }
-                    newSheets[result.ptr.toString(16)] = packedSheet;
-                }
+                const resource = this.createResource(result.ptr, "sheet");
+                resource.packed = {pack: "kid"};
+                this.addResource(resource);
             });
-            for (const key in newSheets) {
-                this.resources.tileSheets.push(newSheets[key]!);
-            }
         } catch (e) {
             console.error(e);
         }
-        for (const spriteFrame of this.resources.spriteFrames) {
-            loadResource(this, spriteFrame);
-        }
-        for (const tileSheet of this.resources.tileSheets) {
-            loadResource(this, tileSheet);
+        for (const resource of Object.values(this.resourcesByAddress)) {
+            if (resource.type) {
+                this.loadResource(resource);
+            }
+            if (resource.type === "sheet") {
+                this.resources.tileSheets.push(resource as SheetResource);
+            } else if (resource.type === "sprite-frame") {
+                this.resources.spriteFrames.push(resource as SpriteFrameResource);
+            }
         }
         return this.resources;
     }
@@ -311,6 +271,23 @@ export class Rom {
         }
         return this._frameCollisionTable;
     }
+
+    createResource(baseAddress: number, type?: string, subType?: string, related: string[] = []): BaseResource {
+        return createResource(baseAddress, type, subType, related);
+    }
+
+    addResource(resource: BaseResource) {
+        addResource(this, resource);
+    }
+
+    checkRelated(resource: BaseResource) {
+        checkRelated(this, resource);
+    }
+
+    loadResource<T extends BaseResource>(resource: T): LoadedResource<T> {
+        return loadResource(this, resource);
+    }
+
     /** Read all the pointers of the Asset Point Table
      * The AssetPtrTable is a table of pointers to various asset types like 
      * color palletes, 
@@ -348,7 +325,6 @@ export class Rom {
         const results = matchs.map((pos) => {
             const tile = this.data.getUint16(pos + 2, false);
             const ptr = this.readPtr(pos + 6);
-            console.log(`POS ${pos.toString(16)}: TileSheet ${tile.toString(16)} at ${ptr.toString(16)}`);
             return { pos, tile, ptr }
         })
         return results;
@@ -371,7 +347,6 @@ export class Rom {
         const results = matchs.map((pos) => {
             const tile = this.data.getUint16(pos + 2, false);
             const ptr = this.readPtr(pos + 6);
-            console.log(`POS ${pos.toString(16)}: TileSheet ${tile.toString(16)} at ${ptr.toString(16)}`);
             return { pos, tile, ptr }
         })
         return results;
@@ -396,7 +371,6 @@ export class Rom {
             const tile = this.data.getUint16(pos + 2, false);
             const rel = this.data.getInt16(pos + 6, false);
             const ptr = pos + 6 + rel;
-            console.log(`POS ${pos.toString(16)} (${rel.toString(16)}): TileSheet ${tile.toString(16)} at ${ptr.toString(16)}`);
             return { pos, rel, tile, ptr }
         })
         return results;
@@ -420,7 +394,6 @@ export class Rom {
             const tile = this.data.getUint16(pos + 2, false);
             const rel = this.data.getInt16(pos + 6, false);
             const ptr = pos + 6 + rel;
-            console.log(`POS ${pos.toString(16)} (${rel.toString(16)}): TileSheet ${tile.toString(16)} at ${ptr.toString(16)}`);
             return { pos, rel, tile, ptr }
         })
         return results;
@@ -447,7 +420,6 @@ export class Rom {
             const ptr = this.readPtr(this.data.getInt16(pos + 6, false));
             const palRel = this.data.getInt16(pos + 10, false);
             const palPtr = pos + 10 + palRel;
-            console.log(`POS ${pos.toString(16)} (${palRel.toString(16)} = ${palPtr.toString(16)}): TileSheet ${tile.toString(16)} at ${ptr.toString(16)}`);
             return { pos, palRel, palPtr, tile, ptr }
         })
         return results;
@@ -476,7 +448,6 @@ export class Rom {
             const ptr = pos + 6 + rel;
             const palRel = this.data.getInt16(pos + 10, false);
             const palPtr = pos + 10 + palRel;
-            console.log(`POS ${pos.toString(16)} (${palRel.toString(16)} = ${palPtr.toString(16)}): TileSheet ${tile.toString(16)} at ${ptr.toString(16)}`);
             return { pos, palRel, palPtr, tile, ptr }
         })
         return results;
