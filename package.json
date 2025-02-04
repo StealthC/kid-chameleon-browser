@@ -17,7 +17,7 @@
     "format": "turbo format",
     "dev": "turbo dev",
     "test": "turbo run --parallel test",
-    "prepare": "husky install"
+    "prepare": "husky"
   },
   "packageManager": "pnpm@9.11.0",
   "devDependencies": {
