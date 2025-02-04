@@ -11,11 +11,11 @@ const loadResource = (resource: LoadedResource<BaseResource>) => {
 }
 </script>
 <template>
-  <main class="flex flex-row h-full w-full">
-    <div class="overflow-y-auto w-80">
+  <main class="flex h-full w-full flex-row">
+    <div class="w-80 overflow-y-auto">
       <ResourceTree @selected="loadResource" />
     </div>
-    <div class="flex-grow h-full overflow-auto">
+    <div class="h-full flex-grow overflow-auto">
       <ResourceView v-if="selectedResource != null" :resource="selectedResource" />
     </div>
   </main>

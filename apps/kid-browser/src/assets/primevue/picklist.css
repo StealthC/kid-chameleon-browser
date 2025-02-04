@@ -10,7 +10,7 @@
 }
 
 .p-picklist-list-container {
-  @apply flex-grow flex-shrink basis-1/2;
+  @apply flex-shrink flex-grow basis-1/2;
 }
 
 .p-picklist .p-listbox {

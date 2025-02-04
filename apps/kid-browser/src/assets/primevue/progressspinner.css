@@ -1,10 +1,9 @@
 .p-progressspinner {
-  @apply relative my-0 mx-auto w-[100px] h-[100px] inline-block
-        before:block before:pt-[100%];
+  @apply relative mx-auto my-0 inline-block h-[100px] w-[100px] before:block before:pt-[100%];
 }
 
 .p-progressspinner-spin {
-  @apply h-full origin-center w-full absolute top-0 bottom-0 start-0 end-0 m-auto;
+  @apply absolute bottom-0 end-0 start-0 top-0 m-auto h-full w-full origin-center;
 }
 
 .p-progressspinner-spin {

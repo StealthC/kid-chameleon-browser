@@ -9,16 +9,15 @@
 }
 
 .p-speeddial-button.p-speeddial-rotate {
-  @apply [transition:transform_250ms_cubic-bezier(0.4,0,0.2,1)_0ms,background_200ms,color_200ms,border-color_200ms] will-change-transform;
+  @apply will-change-transform [transition:transform_250ms_cubic-bezier(0.4,0,0.2,1)_0ms,background_200ms,color_200ms,border-color_200ms];
 }
 
 .p-speeddial-list {
-  @apply m-0 p-0 list-none flex items-center justify-center pointer-events-none outline-none z-20 gap-2
-        transition-[top] ease-linear duration-200;
+  @apply pointer-events-none z-20 m-0 flex list-none items-center justify-center gap-2 p-0 outline-none transition-[top] duration-200 ease-linear;
 }
 
 .p-speeddial-item {
-  @apply scale-0 opacity-0 [transition:transform_200ms_cubic-bezier(0.4,0,0.2,1)_0ms,opacity_0.8s] will-change-transform;
+  @apply scale-0 opacity-0 will-change-transform [transition:transform_200ms_cubic-bezier(0.4,0,0.2,1)_0ms,opacity_0.8s];
 }
 
 .p-speeddial-circle .p-speeddial-item,
@@ -28,7 +27,7 @@
 }
 
 .p-speeddial-mask {
-  @apply absolute start-0 top-0 w-full h-full opacity-0 bg-white/40 dark:bg-white/60 rounded-md transition-opacity duration-150;
+  @apply absolute start-0 top-0 h-full w-full rounded-md bg-white/40 opacity-0 transition-opacity duration-150 dark:bg-white/60;
 }
 
 .p-speeddial-mask-visible {

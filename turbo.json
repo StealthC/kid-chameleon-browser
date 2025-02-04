@@ -2,6 +2,9 @@
   "$schema": "https://turbo.build/schema.json",
   "ui": "stream",
   "tasks": {
+    "test": {
+      "inputs": ["apps/*/src/**", "packages/*/src/**"]
+    },
     "lint": {
       "inputs": ["apps/*/src/**", "packages/*/src/**"]
     },

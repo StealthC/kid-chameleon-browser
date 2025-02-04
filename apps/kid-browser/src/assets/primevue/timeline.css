@@ -1,5 +1,5 @@
 .p-timeline {
-  @apply flex flex-col flex-grow;
+  @apply flex flex-grow flex-col;
 }
 
 .p-timeline-left .p-timeline-event-opposite {
@@ -52,7 +52,7 @@
 
 .p-timeline-vertical .p-timeline-event-opposite,
 .p-timeline-vertical .p-timeline-event-content {
-  @apply py-0 px-4 leading-none;
+  @apply px-4 py-0 leading-none;
 }
 
 .p-timeline-vertical .p-timeline-event-connector {
@@ -60,7 +60,7 @@
 }
 
 .p-timeline-event {
-  @apply flex relative min-h-20 last:min-h-0;
+  @apply relative flex min-h-20 last:min-h-0;
 }
 
 .p-timeline-event-opposite {
@@ -72,15 +72,11 @@
 }
 
 .p-timeline-event-separator {
-  @apply flex-none flex flex-col items-center;
+  @apply flex flex-none flex-col items-center;
 }
 
 .p-timeline-event-marker {
-  @apply inline-flex items-center justify-center relative self-baseline
-        border-2 rounded-full border-surface-200 dark:border-surface-700 w-[1.125rem] h-[1.125rem]
-        bg-surface-0 dark:bg-surface-900
-        before:rounded-full before:w-[0.375rem] before:h-[0.375rem] before:bg-primary
-        after:absolute after:w-full after:h-full after:rounded-full after:shadow-[0px_0.5px_0px_0px_rgba(0,0,0,0.06),0px_1px_1px_0px_rgba(0,0,0,0.12)];
+  @apply relative inline-flex h-[1.125rem] w-[1.125rem] items-center justify-center self-baseline rounded-full border-2 border-surface-200 bg-surface-0 before:h-[0.375rem] before:w-[0.375rem] before:rounded-full before:bg-primary after:absolute after:h-full after:w-full after:rounded-full after:shadow-[0px_0.5px_0px_0px_rgba(0,0,0,0.06),0px_1px_1px_0px_rgba(0,0,0,0.12)] dark:border-surface-700 dark:bg-surface-900;
 }
 
 .p-timeline-event-connector {
@@ -92,7 +88,7 @@
 }
 
 .p-timeline-horizontal .p-timeline-event {
-  @apply flex-col flex-1;
+  @apply flex-1 flex-col;
 }
 
 .p-timeline-horizontal .p-timeline-event:last-child {
@@ -104,12 +100,12 @@
 }
 
 .p-timeline-horizontal .p-timeline-event-connector {
-  @apply w-full h-[2px];
+  @apply h-[2px] w-full;
 }
 
 .p-timeline-horizontal .p-timeline-event-opposite,
 .p-timeline-horizontal .p-timeline-event-content {
-  @apply py-4 px-0;
+  @apply px-0 py-4;
 }
 
 .p-timeline-horizontal.p-timeline-alternate .p-timeline-event:nth-child(even) {

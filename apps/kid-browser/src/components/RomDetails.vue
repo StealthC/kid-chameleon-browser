@@ -8,7 +8,7 @@
             :key="key"
             class="grid grid-cols-[max-content_1fr] gap-x-2"
           >
-            <span class="font-bold w-40 block">{{ key }}:</span>
+            <span class="block w-40 font-bold">{{ key }}:</span>
             <span class="overflow-hidden text-ellipsis">{{ value }}</span>
           </li>
         </ul>

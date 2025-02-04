@@ -1,7 +1,7 @@
 <template>
   <ToggleSwitch v-model="dark">
     <template #handle="{ checked }">
-      <i :class="['!text-xs pi', { 'pi-check': checked, 'pi-times': !checked }]" />
+      <i :class="['pi !text-xs', { 'pi-check': checked, 'pi-times': !checked }]" />
     </template>
   </ToggleSwitch>
 </template>

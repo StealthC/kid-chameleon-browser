@@ -5,5 +5,5 @@
 }
 
 .p-inputotp-input {
-  @apply text-center w-10;
+  @apply w-10 text-center;
 }

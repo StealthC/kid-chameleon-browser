@@ -4,12 +4,12 @@
       <div
         v-if="romDetails"
         @click="onToggle"
-        class="text-center w-9/12 mx-auto h-16 flex items-center justify-center cursor-pointer select-none"
+        class="mx-auto flex h-16 w-9/12 cursor-pointer select-none items-center justify-center text-center"
       >
-        <div class="truncate flex flex-col">
+        <div class="flex flex-col truncate">
           <p
             v-if="romDetails.known"
-            class="font-bold text-xl"
+            class="text-xl font-bold"
             :class="{
               'text-green-500': !romDetails.known.hack,
               'text-amber-500': romDetails.known.hack,
@@ -17,9 +17,9 @@
           >
             {{ romDetails.known.name }}
           </p>
-          <p v-else class="text-red-500 font-bold">Unknown</p>
+          <p v-else class="font-bold text-red-500">Unknown</p>
           <p
-            class="text-right text-muted-color font-mono overflow-hidden text-ellipsis whitespace-nowrap pt-1"
+            class="overflow-hidden text-ellipsis whitespace-nowrap pt-1 text-right font-mono text-muted-color"
           >
             {{ romDetails.sha256 }}
           </p>
@@ -28,15 +28,15 @@
       <div
         v-else
         @click="onToggle"
-        class="text-center w-9/12 mx-auto h-16 flex flex-col items-center justify-center cursor-pointer select-none text-white"
+        class="mx-auto flex h-16 w-9/12 cursor-pointer select-none flex-col items-center justify-center text-center text-white"
       >
         <p class="font-bold">Load ROM</p>
-        <div class="text-gray-400 text-xs">Click Here</div>
+        <div class="text-xs text-gray-400">Click Here</div>
       </div>
     </template>
     <div>
       <div
-        class="text-center w-9/12 mx-auto flex items-center justify-center text-xs md:text-sm pb-1 text-white"
+        class="mx-auto flex w-9/12 items-center justify-center pb-1 text-center text-xs text-white md:text-sm"
       >
         <div v-if="!rom">
           <p>First, select a Kid Chameleon ROM to start.</p>
@@ -47,7 +47,7 @@
     </div>
     <template #footer>
       <div
-        class="text-center w-9/12 mx-auto flex flex-col items-center justify-evenly gap-2 text-gray-400 text-xs"
+        class="mx-auto flex w-9/12 flex-col items-center justify-evenly gap-2 text-center text-xs text-gray-400"
       >
         <div class="flex-1">The ROM is loaded only in your browser.</div>
         <div class="flex-1">All copyrights belong to their respective owners.</div>

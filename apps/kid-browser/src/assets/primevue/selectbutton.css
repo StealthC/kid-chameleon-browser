@@ -13,7 +13,7 @@
 }
 
 .p-selectbutton .p-togglebutton:first-child {
-  @apply border-s rounded-s-md;
+  @apply rounded-s-md border-s;
 }
 
 .p-selectbutton .p-togglebutton:last-child {

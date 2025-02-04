@@ -1,7 +1,7 @@
 <template>
   <div class="h-full overflow-auto">
-    <div class="max-w-3xl mx-auto flex flex-col gap-4">
-      <Panel class="prose dark:prose-invert max-w-none">
+    <div class="mx-auto flex max-w-3xl flex-col gap-4">
+      <Panel class="prose max-w-none dark:prose-invert">
         <h2 class="m-0 pb-4">About this tool</h2>
         <p>This is a WIP project, so many features are not yet available and may never be.</p>
         <p>
@@ -24,13 +24,13 @@
 
         <p>Author: StealthC</p>
       </Panel>
-      <Panel class="prose dark:prose-invert mx-auto max-w-none">
+      <Panel class="prose mx-auto max-w-none dark:prose-invert">
         <h2 class="m-0 pb-4">Credits and References</h2>
         <p>
           This project can't never be done without the help of the following resources and all the
           great people behind them:
         </p>
-        <ul class="flex flex-col py-4 gap-1">
+        <ul class="flex flex-col gap-1 py-4">
           <li>
             <a
               class="no-underline hover:underline"

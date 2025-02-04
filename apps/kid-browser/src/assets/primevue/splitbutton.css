@@ -2,11 +2,11 @@
 @import './tieredmenu';
 
 .p-splitbutton {
-  @apply inline-flex relative rounded-md;
+  @apply relative inline-flex rounded-md;
 }
 
 .p-splitbutton-button {
-  @apply rounded-e-none border-r-0 enabled:hover:border-r-0 enabled:active:border-r-0 focus-visible:z-10;
+  @apply rounded-e-none border-r-0 focus-visible:z-10 enabled:hover:border-r-0 enabled:active:border-r-0;
 }
 
 .p-splitbutton-dropdown {

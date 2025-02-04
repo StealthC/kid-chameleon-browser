@@ -3,9 +3,7 @@
 }
 
 .p-panelmenu-panel {
-  @apply bg-surface-0 dark:bg-surface-900 rounded-md p-1
-        border border-surface-200 dark:border-surface-700
-        text-surface-700 dark:text-surface-0;
+  @apply rounded-md border border-surface-200 bg-surface-0 p-1 text-surface-700 dark:border-surface-700 dark:bg-surface-900 dark:text-surface-0;
 }
 
 .p-panelmenu-header {
@@ -13,11 +11,11 @@
 }
 
 .p-panelmenu-header-content {
-  @apply rounded-md transition-colors duration-200 text-surface-700 dark:text-surface-0;
+  @apply rounded-md text-surface-700 transition-colors duration-200 dark:text-surface-0;
 }
 
 .p-panelmenu-header-link {
-  @apply flex items-center gap-2 px-3 py-2 select-none cursor-pointer relative no-underline text-inherit;
+  @apply relative flex cursor-pointer select-none items-center gap-2 px-3 py-2 text-inherit no-underline;
 }
 
 .p-panelmenu-header-icon,
@@ -30,7 +28,7 @@
 }
 
 .p-panelmenu-header:not(.p-disabled):focus-visible .p-panelmenu-header-content {
-  @apply bg-surface-100 dark:bg-surface-800 text-surface-800 dark:text-surface-0;
+  @apply bg-surface-100 text-surface-800 dark:bg-surface-800 dark:text-surface-0;
 }
 
 .p-panelmenu-header:not(.p-disabled):focus-visible
@@ -50,7 +48,7 @@
 }
 
 .p-panelmenu-header:not(.p-disabled) .p-panelmenu-header-content:hover {
-  @apply bg-surface-100 dark:bg-surface-800 text-surface-800 dark:text-surface-0;
+  @apply bg-surface-100 text-surface-800 dark:bg-surface-800 dark:text-surface-0;
 }
 
 .p-panelmenu-header:not(.p-disabled) .p-panelmenu-header-content:hover .p-panelmenu-header-icon {
@@ -62,19 +60,19 @@
 }
 
 .p-panelmenu-submenu {
-  @apply m-0 py-0 ps-4 outline-none list-none;
+  @apply m-0 list-none py-0 ps-4 outline-none;
 }
 
 .p-panelmenu-item-link {
-  @apply flex items-center gap-2 px-3 py-2 select-none cursor-pointer no-underline text-inherit relative overflow-hidden;
+  @apply relative flex cursor-pointer select-none items-center gap-2 overflow-hidden px-3 py-2 text-inherit no-underline;
 }
 
 .p-panelmenu-item-content {
-  @apply rounded-md transition-colors duration-200 text-surface-700 dark:text-surface-0;
+  @apply rounded-md text-surface-700 transition-colors duration-200 dark:text-surface-0;
 }
 
 .p-panelmenu-item.p-focus > .p-panelmenu-item-content {
-  @apply bg-surface-100 dark:bg-surface-800 text-surface-800 dark:text-surface-0;
+  @apply bg-surface-100 text-surface-800 dark:bg-surface-800 dark:text-surface-0;
 }
 
 .p-panelmenu-item.p-focus > .p-panelmenu-item-content .p-panelmenu-item-icon {
@@ -86,7 +84,7 @@
 }
 
 .p-panelmenu-item:not(.p-disabled) > .p-panelmenu-item-content:hover {
-  @apply bg-surface-100 dark:bg-surface-800 text-surface-800 dark:text-surface-0;
+  @apply bg-surface-100 text-surface-800 dark:bg-surface-800 dark:text-surface-0;
 }
 
 .p-panelmenu-item:not(.p-disabled) > .p-panelmenu-item-content:hover .p-panelmenu-item-icon {

@@ -5,7 +5,7 @@
 }
 
 .p-treetable-table {
-  @apply border-spacing-0 w-full;
+  @apply w-full border-spacing-0;
 }
 
 .p-treetable-scrollable > .p-treetable-table-container {
@@ -41,11 +41,11 @@
 }
 
 .p-treetable-flex-scrollable {
-  @apply flex flex-col h-full;
+  @apply flex h-full flex-col;
 }
 
 .p-treetable-flex-scrollable > .p-treetable-table-container {
-  @apply flex flex-col flex-1 h-full;
+  @apply flex h-full flex-1 flex-col;
 }
 
 .p-treetable-scrollable-table > .p-treetable-tbody > .p-treetable-row-group-header {
@@ -62,7 +62,7 @@
   > .p-treetable-thead
   > tr
   > th.p-treetable-resizable-column:not(.p-treetable-frozen-column) {
-  @apply bg-clip-padding relative;
+  @apply relative bg-clip-padding;
 }
 
 .p-treetable-resizable-table-fit
@@ -74,7 +74,7 @@
 }
 
 .p-treetable-column-resizer {
-  @apply block absolute top-0 end-0 m-0 w-2 h-full p-0 cursor-col-resize border border-transparent;
+  @apply absolute end-0 top-0 m-0 block h-full w-2 cursor-col-resize border border-transparent p-0;
 }
 
 .p-treetable-column-header-content {
@@ -82,11 +82,11 @@
 }
 
 .p-treetable-column-resize-indicator {
-  @apply w-px absolute z-10 hidden bg-primary;
+  @apply absolute z-10 hidden w-px bg-primary;
 }
 
 .p-treetable-mask {
-  @apply absolute flex items-center justify-center z-20;
+  @apply absolute z-20 flex items-center justify-center;
 }
 
 .p-treetable-paginator-top {
@@ -98,22 +98,15 @@
 }
 
 .p-treetable-header {
-  @apply py-3 px-4 border-b border-surface-200 dark:border-surface-700
-        bg-surface-0 dark:bg-surface-900
-        text-surface-700 dark:text-surface-0;
+  @apply border-b border-surface-200 bg-surface-0 px-4 py-3 text-surface-700 dark:border-surface-700 dark:bg-surface-900 dark:text-surface-0;
 }
 
 .p-treetable-footer {
-  @apply py-3 px-4 border-b border-surface-200 dark:border-surface-700
-        bg-surface-0 dark:bg-surface-900
-        text-surface-700 dark:text-surface-0;
+  @apply border-b border-surface-200 bg-surface-0 px-4 py-3 text-surface-700 dark:border-surface-700 dark:bg-surface-900 dark:text-surface-0;
 }
 
 .p-treetable-header-cell {
-  @apply py-3 px-4 font-normal text-start transition-colors duration-200
-        border-b border-surface-200 dark:border-surface-700
-        bg-surface-0 dark:bg-surface-900
-        text-surface-700 dark:text-surface-0;
+  @apply border-b border-surface-200 bg-surface-0 px-4 py-3 text-start font-normal text-surface-700 transition-colors duration-200 dark:border-surface-700 dark:bg-surface-900 dark:text-surface-0;
 }
 
 .p-treetable-column-title {
@@ -121,11 +114,11 @@
 }
 
 .p-treetable-tbody > tr {
-  @apply bg-surface-0 dark:bg-surface-900 text-surface-700 dark:text-surface-0 transition-colors duration-200;
+  @apply bg-surface-0 text-surface-700 transition-colors duration-200 dark:bg-surface-900 dark:text-surface-0;
 }
 
 .p-treetable-tbody > tr > td {
-  @apply text-start py-3 px-4 border-b border-surface-200 dark:border-surface-800;
+  @apply border-b border-surface-200 px-4 py-3 text-start dark:border-surface-800;
 }
 
 .p-treetable-hoverable .p-treetable-tbody > tr:not(.p-treetable-row-selected):hover {
@@ -150,9 +143,7 @@
 }
 
 .p-treetable-tfoot > tr > td {
-  @apply text-start py-3 px-4 border-b border-surface-200 dark:border-surface-800
-        bg-surface-0 dark:bg-surface-900
-        text-surface-700 dark:text-surface-0;
+  @apply border-b border-surface-200 bg-surface-0 px-4 py-3 text-start text-surface-700 dark:border-surface-800 dark:bg-surface-900 dark:text-surface-0;
 }
 
 .p-treetable-column-footer {
@@ -170,7 +161,7 @@
 }
 
 .p-treetable-sort-icon {
-  @apply text-surface-500 dark:text-surface-400 transition-colors duration-200;
+  @apply text-surface-500 transition-colors duration-200 dark:text-surface-400;
 }
 
 .p-treetable-sortable-column:not(.p-treetable-column-sorted):hover {
@@ -194,31 +185,31 @@
 }
 
 .p-treetable-loading-icon {
-  @apply text-[2rem] w-8 h-8;
+  @apply h-8 w-8 text-[2rem];
 }
 
 .p-treetable-gridlines .p-treetable-header {
-  @apply border-t border-x;
+  @apply border-x border-t;
 }
 
 .p-treetable-gridlines .p-treetable-footer {
-  @apply border-b border-x;
+  @apply border-x border-b;
 }
 
 .p-treetable-gridlines .p-treetable-paginator-top {
-  @apply border-t border-x;
+  @apply border-x border-t;
 }
 
 .p-treetable-gridlines .p-treetable-paginator-bottom {
-  @apply border-b border-x;
+  @apply border-x border-b;
 }
 
 .p-treetable-gridlines .p-treetable-thead > tr > th {
-  @apply border-t border-x last:border;
+  @apply border-x border-t last:border;
 }
 
 .p-treetable-gridlines .p-treetable-tbody > tr > td {
-  @apply border-t border-s last:border-r;
+  @apply border-s border-t last:border-r;
 }
 
 .p-treetable-gridlines .p-treetable-tbody > tr:last-child > td {
@@ -248,43 +239,43 @@
 }
 
 .p-treetable.p-treetable-sm .p-treetable-header {
-  @apply py-1 px-2;
+  @apply px-2 py-1;
 }
 
 .p-treetable.p-treetable-sm .p-treetable-thead > tr > th {
-  @apply py-1 px-2;
+  @apply px-2 py-1;
 }
 
 .p-treetable.p-treetable-sm .p-treetable-tbody > tr > td {
-  @apply py-1 px-2;
+  @apply px-2 py-1;
 }
 
 .p-treetable.p-treetable-sm .p-treetable-tfoot > tr > td {
-  @apply py-1 px-2;
+  @apply px-2 py-1;
 }
 
 .p-treetable.p-treetable-sm .p-treetable-footer {
-  @apply py-1 px-2;
+  @apply px-2 py-1;
 }
 
 .p-treetable.p-treetable-lg .p-treetable-header {
-  @apply py-4 px-5;
+  @apply px-5 py-4;
 }
 
 .p-treetable.p-treetable-lg .p-treetable-thead > tr > th {
-  @apply py-4 px-5;
+  @apply px-5 py-4;
 }
 
 .p-treetable.p-treetable-lg .p-treetable-tbody > tr > td {
-  @apply py-4 px-5;
+  @apply px-5 py-4;
 }
 
 .p-treetable.p-treetable-lg .p-treetable-tfoot > tr > td {
-  @apply py-4 px-5;
+  @apply px-5 py-4;
 }
 
 .p-treetable.p-treetable-lg .p-treetable-footer {
-  @apply py-4 px-5;
+  @apply px-5 py-4;
 }
 
 .p-treetable-body-cell-content {
@@ -296,15 +287,11 @@
 }
 
 .p-treetable-node-toggle-button {
-  @apply inline-flex items-center justify-center overflow-hidden relative select-none
-        transition-colors duration-200 w-7 h-7 rounded-full border-none bg-transparent cursor-pointer
-        enabled:hover:bg-surface-100 dark:enabled:hover:bg-surface-900
-        text-surface-500 dark:text-surface-400 enabled:hover:text-surface-700 dark:enabled:hover:text-surface-0
-        focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-primary;
+  @apply relative inline-flex h-7 w-7 cursor-pointer select-none items-center justify-center overflow-hidden rounded-full border-none bg-transparent text-surface-500 transition-colors duration-200 focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-primary enabled:hover:bg-surface-100 enabled:hover:text-surface-700 dark:text-surface-400 dark:enabled:hover:bg-surface-900 dark:enabled:hover:text-surface-0;
 }
 
 .p-treetable-tbody > tr.p-treetable-row-selected .p-treetable-node-toggle-button:hover {
-  @apply bg-surface-0 dark:bg-surface-900 text-primary;
+  @apply bg-surface-0 text-primary dark:bg-surface-900;
 }
 
 .p-treetable-node-toggle-icon:dir(rtl) {

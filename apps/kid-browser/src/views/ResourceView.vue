@@ -1,8 +1,8 @@
 <template>
   <div class="h-full overflow-auto">
-    <div class="max-w-5xl mx-auto flex flex-col gap-4">
+    <div class="mx-auto flex max-w-5xl flex-col gap-4">
       {{ address }}
-      <div class="grid lg:grid-cols-2 gap-2">
+      <div class="grid gap-2 lg:grid-cols-2">
         <HexView
           v-if="inputData"
           title="input Data"

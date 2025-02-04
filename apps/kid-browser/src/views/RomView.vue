@@ -4,7 +4,7 @@ import RomDetails from '@/components/RomDetails.vue'
 
 <template>
   <div class="h-full overflow-auto">
-    <div class="max-w-3xl mx-auto">
+    <div class="mx-auto max-w-3xl">
       <RomDetails />
     </div>
   </div>

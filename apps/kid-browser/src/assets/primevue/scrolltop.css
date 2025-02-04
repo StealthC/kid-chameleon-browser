@@ -5,7 +5,7 @@
 }
 
 .p-scrolltop-sticky.p-button {
-  @apply sticky flex ms-auto;
+  @apply sticky ms-auto flex;
 }
 
 .p-scrolltop-enter-from {

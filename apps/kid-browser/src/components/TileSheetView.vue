@@ -1,6 +1,6 @@
 <template>
   <Panel header="Tile Sheet">
-    <div class="flex flex-row w-full h-full">
+    <div class="flex h-full w-full flex-row">
       <div class="flex flex-col items-center">
         <label for="columns">Columns:</label>
         <InputNumber
@@ -21,7 +21,7 @@
           :max="4"
         ></InputNumber>
       </div>
-      <div class="flex flex-grow justify-center items-center">
+      <div class="flex flex-grow items-center justify-center">
         <canvas ref="canvas" :width="columns * 8 * zoom" :height="rows * 8 * zoom" />
       </div>
     </div>
