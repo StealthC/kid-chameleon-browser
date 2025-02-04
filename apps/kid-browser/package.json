@@ -14,7 +14,10 @@
   },
   "dependencies": {
     "@repo/kid-util": "workspace:*",
+    "@tanstack/vue-query": "^5.66.0",
+    "@vueuse/core": "^12.5.0",
     "byte-size": "^9.0.1",
+    "localforage": "^1.10.0",
     "pinia": "^2.3.1",
     "primevue": "^4.2.5",
     "tailwindcss-primeui": "^0.4.0",
@@ -23,6 +26,7 @@
   },
   "devDependencies": {
     "@codecompose/typescript-config": "^1.2.0",
+    "@tailwindcss/typography": "^0.5.16",
     "@tsconfig/node22": "^22.0.0",
     "@types/byte-size": "^8.1.2",
     "@types/node": "^22.10.7",

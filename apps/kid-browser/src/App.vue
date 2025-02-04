@@ -7,22 +7,36 @@ import ReadRom from '@/components/ReadRom.vue'
 <template>
   <Toast />
   <div class="flex flex-col h-screen w-screen overflow-hidden">
-    <header class="h-8 flex items-center justify-center">
+    <header class="flex items-center justify-center p-2">
       <div class="text-primary">
         <nav class="flex justify-center space-x-4">
-          <RouterLink to="/">Home</RouterLink>
-          <RouterLink to="/resources">Resources</RouterLink>
-          <RouterLink to="/credits">Credits</RouterLink>
+          <RouterLink
+            active-class="bg-primary text-black"
+            class="border border-primary p-2 px-4 rounded-lg hover:bg-primary-900"
+            to="/"
+            >Home</RouterLink
+          >
+          <RouterLink
+            active-class="bg-primary text-black"
+            class="border border-primary p-2 px-4 rounded-lg hover:bg-primary-900"
+            to="/rom"
+            >ROM Info</RouterLink
+          >
+          <RouterLink
+            active-class="bg-primary text-black"
+            class="border border-primary p-2 px-4 rounded-lg hover:bg-primary-900"
+            to="/resources"
+            >Resources</RouterLink
+          >
         </nav>
       </div>
     </header>
     <div class="flex-1 overflow-hidden">
       <RouterView />
     </div>
-    <div class="h-24">
-    </div>
+    <div class="h-24 bg-gradient-to-t from-cyan-900 to-transparent"></div>
   </div>
-  <footer class="absolute bottom-0 w-screen bg-gradient-to-t from-cyan-900 to-transparent">
+  <footer class="absolute bottom-0 w-screen">
     <div class="max-w-xl mx-auto">
       <ReadRom />
     </div>

@@ -215,3 +215,7 @@ export function checkRelated(rom: Rom, resource: BaseResource) {
         }
     }
 }
+
+export function getResource(rom: Rom, address: number): BaseResource | undefined {
+    return rom.resourcesByAddress[address.toString(16)];
+}

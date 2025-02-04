@@ -1,4 +1,4 @@
-import { addResource, checkRelated, createResource, loadResource, type BaseResource, type LinkedSpriteFrameResource, type LoadedResource, type SheetResource, type SpriteFrameResource, type UnlinkedSpriteFrameResource } from "./kid-resources";
+import { addResource, checkRelated, createResource, getResource, loadResource, type BaseResource, type LinkedSpriteFrameResource, type LoadedResource, type SheetResource, type SpriteFrameResource, type UnlinkedSpriteFrameResource } from "./kid-resources";
 import { readPtr } from "./kid-utils";
 import { KnownRoms, type KnowRomDetails } from "./tables/known-roms";
 import { AssetPtrTableTypes, PackedTileSheet as PackedTileSheetType, SpriteFrameType, SpriteFrameWithDataType as PlayerSpriteFrameType } from "./tables/asset-ptr-table"
@@ -286,6 +286,22 @@ export class Rom {
 
     loadResource<T extends BaseResource>(resource: T): LoadedResource<T> {
         return loadResource(this, resource);
+    }
+
+    getResource(address: number): BaseResource | null {
+        return getResource(this, address) ?? null;
+    }
+
+    getLoadedResource<T extends BaseResource>(address: number): LoadedResource<T>|T|null {
+        const resource = this.getResource(address);
+        if (resource) {
+            try {
+                return this.loadResource(resource) as LoadedResource<T>;
+            } catch (_) {
+                return resource as T
+            }
+        }
+        return null
     }
 
     /** Read all the pointers of the Asset Point Table

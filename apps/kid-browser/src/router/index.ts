@@ -1,5 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
+import AboutView from '@/views/AboutView.vue'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -7,7 +7,12 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: HomeView,
+      component: AboutView,
+    },
+    {
+      path: '/rom',
+      name: 'rom',
+      component: () => import('../views/RomView.vue'),
     },
     {
       path: '/resources',
@@ -15,9 +20,9 @@ const router = createRouter({
       component: () => import('../views/ResourceExplorer.vue'),
     },
     {
-      path: '/credits',
-      name: 'credits',
-      component: () => import('../views/CreditsView.vue'),
+      path: '/resources/:address',
+      name: 'resourceByAddress',
+      component: () => import('../views/ResourceView.vue'),
     },
   ],
 })

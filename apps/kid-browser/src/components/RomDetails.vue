@@ -1,6 +1,6 @@
 <template>
-  <div class="font-mono text-xs overflow-auto">
-    <div v-if="romDetails" class="flex flex-col gap-2">
+  <div class="font-mono text-xs">
+    <div v-if="romDetails" class="flex flex-col gap-4">
       <Panel v-for="category in Object.keys(details)" :key="category" :header="category">
         <ul>
           <li
