@@ -13,7 +13,7 @@
   "scripts": {
     "build": "turbo build",
     "build-packages": "turbo build --filter='./packages/*'",
-    "lint": "turbo lint",
+    "lint": "turbo lint --log-prefix=none --log-order=stream",
     "format": "turbo format",
     "dev": "turbo dev",
     "test": "turbo run --parallel test",
