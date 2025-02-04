@@ -2,6 +2,12 @@
   "$schema": "https://turbo.build/schema.json",
   "ui": "stream",
   "tasks": {
+    "lint": {
+      "inputs": ["apps/*/src/**", "packages/*/src/**"]
+    },
+    "format": {
+      "inputs": ["apps/*/src/**", "packages/*/src/**"]
+    },
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**"],

@@ -1,4 +1,4 @@
-import { addResource, checkRelated, createResource, getResource, loadResource, type BaseResource, type LinkedSpriteFrameResource, type LoadedResource, type SheetResource, type SpriteFrameResource, type UnlinkedSpriteFrameResource } from "./kid-resources";
+import { addResource, checkRelated, createResource, getResource, loadResource, type BaseResource, type LoadedResource, type SheetResource, type SpriteFrameResource } from "./kid-resources";
 import { readPtr } from "./kid-utils";
 import { KnownRoms, type KnowRomDetails } from "./tables/known-roms";
 import { AssetPtrTableTypes, PackedTileSheet as PackedTileSheetType, SpriteFrameType, SpriteFrameWithDataType as PlayerSpriteFrameType } from "./tables/asset-ptr-table"
@@ -325,7 +325,7 @@ export class Rom {
     }
 
     private _findUntabledPackedTileSheetsDirect1() {
-        /**
+        /*
          *         
          * 0001d188 30  3c  7b       move.w              #0x7ba0 ,D0w
          *          a0
@@ -347,7 +347,7 @@ export class Rom {
     }
 
     private _findUntabledPackedTileSheetsDirect2() {
-        /**
+        /*
          *         
          * 0001b58a 30  3c  9a       move.w              #-0x65a0 ,D0w
          *          60
@@ -369,7 +369,7 @@ export class Rom {
     }
 
     private _findUntabledPackedTileSheetsRelative1() {
-        /**
+        /*
          * 
          * 
          * 0001d15e 30  3c  27       move.w              #0x27c0 ,D0w
@@ -393,7 +393,7 @@ export class Rom {
     }
 
     private _findUntabledPackedTileSheetsRelative2() {
-        /**
+        /*
          * 
          * 00012de0 30  3c  17       move.w              #0x1780 ,D0w
          *          80
@@ -416,7 +416,7 @@ export class Rom {
     }
 
     private _findUntabledPackedTileSheetsWithPaletteSwap1() {
-        /**
+        /*
          * 
          * 0001d0ec 30  3c  17       move.w              #0x1780 ,D0w
          *          80
@@ -442,7 +442,7 @@ export class Rom {
     }
 
     private _findUntabledPackedTileSheetsWithPaletteSwap2() {
-        /**
+        /*
          * 
          * 0001b128 30  3c  fa       move.w              #-0x5a0 ,D0w
          *          60

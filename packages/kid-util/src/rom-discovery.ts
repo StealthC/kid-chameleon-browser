@@ -51,7 +51,7 @@ export function findMultipleLevelAddresses(rom: Rom) {
             levelWordTableBase: rom.knownAddresses.levelWordTableBase
         }
     }
-    /**
+    /*
      *  00011a36  20  79  00       movea.l             (-> LevelIndexesTable ).l,A0                      = 0004043e
      *            04  03  3e
      *   00011a3c 10  30  00       move.b              (0x0 ,A0 ,D0w *0x1 )=> -> LevelWord00 ,D0b            = 4Ah

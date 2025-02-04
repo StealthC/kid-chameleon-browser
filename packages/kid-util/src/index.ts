@@ -1,11 +1,12 @@
 /**
  * Sum two numbers
- * @param a number
- * @param b number
- * @returns number
+ *
+ * @param a Number
+ * @param b Number
+ * @returns Number
  */
 export function sum(a: number, b: number): number {
-    return a + b;
+  return a + b
 }
 export * from './rom'
 export * from './kid-utils'

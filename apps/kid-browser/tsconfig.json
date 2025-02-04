@@ -1,12 +1,5 @@
 {
   "files": [],
-  "compilerOptions": {
-    "lib": ["ESNext", "DOM"],
-    "noEmit": true,
-    "paths": {
-      "@/*": ["./src/*"]
-    },
-  },
   "references": [
     {
       "path": "./tsconfig.node.json"
