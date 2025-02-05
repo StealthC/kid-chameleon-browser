@@ -43,16 +43,16 @@ type DetailsData = Record<string, Record<string, string>>
 const romKnownAddressesValues = computed(() => {
   const knownAdresses = romKnownAddresses.value ?? {}
   const mappedAddresses = ImportantAddresses.map((key) => {
-    const knownValue = knownAdresses[key] ? addressFormat(knownAdresses[key]) : "??"
+    const knownValue = knownAdresses[key] ? addressFormat(knownAdresses[key]) : '??'
     const description = KnownAddressesDescriptions[key] ?? {
-      description: "Not Implemented yet",
-      addressInJUE: "Unknown",
+      description: 'Not Implemented yet',
+      addressInJUE: 'Unknown',
       name: key,
-      type: "Unknown",
+      type: 'Unknown',
     }
     return [description.name, knownValue, description.type.toUpperCase(), description.description]
   })
-  return [["Name", "Address", "Type", "Description"], ...mappedAddresses]
+  return [['Name', 'Address', 'Type', 'Description'], ...mappedAddresses]
 })
 
 const details = computed(() => {
@@ -68,13 +68,6 @@ const details = computed(() => {
         : `🔴(Calculated: ${addressFormat(calculatedChecksum)})`
   }
 
-
-  const romKnownAddressesValues = romKnownAddresses.value
-    ? Object.fromEntries(
-        Object.entries(romKnownAddresses.value).map(([key, value]) => [key, addressFormat(value)]),
-      )
-    : {}
-
   return {
     'File Details': {
       'File Size': `${getByteSize(romDetails.value.size)}`,
@@ -89,7 +82,7 @@ const details = computed(() => {
       Checksum: checksum,
       Memo: romDetails.value.header.memo.trim(),
       Region: romDetails.value.header.region.trim(),
-    }
+    },
   } as DetailsData
 })
 </script>

@@ -34,7 +34,7 @@ import ReadRom from '@/components/ReadRom.vue'
     <div class="flex-1 overflow-hidden">
       <RouterView />
     </div>
-    <div class="h-24 bg-gradient-to-t from-cyan-900 to-transparent pointer-events-none"></div>
+    <div class="pointer-events-none h-24 bg-gradient-to-t from-cyan-900 to-transparent"></div>
   </div>
   <footer class="absolute bottom-0 w-screen">
     <div class="mx-auto max-w-xl">
