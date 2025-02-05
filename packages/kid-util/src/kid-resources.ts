@@ -1,5 +1,5 @@
 import { crc32 } from './hash'
-//import { calculatePlayerSpriteDataSize } from './kid-utils'
+import { calculatePlayerSpriteDataSize } from './kid-utils'
 import type { Rom } from './rom'
 import { unpackKidFormat } from './unpack-kid'
 
@@ -19,6 +19,8 @@ export const ResourceTypes = [
 export const ResourceTypeLoaderMap: ResourceLoaderMap = {
   'level-header': loadLevelHeaderRomResource,
   sheet: loadSheetRomResource,
+  'unlinked-sprite-frame': loadUnlinkedSpriteFrameResource,
+  'linked-sprite-frame': loadLinkedSpriteFrameResource,
 }
 
 export type AllRomResources =
@@ -167,6 +169,10 @@ export type SpriteFrameRomResourceUnloaded = UnlinkedSpriteFrameRomResourceUnloa
 
 export type SpriteFrameRomResourceLoaded = LinkedSpriteFrameRomResourceLoaded | UnlinkedSpriteFrameRomResourceLoaded
 
+export const isLinkedSpriteFrame = (spriteFrame: SpriteFrameRomResource): spriteFrame is LinkedSpriteFrameRomResource => {
+  return spriteFrame.type === 'linked-sprite-frame'
+}
+
 export function loadLevelHeaderRomResource(
   rom: Rom,
   resource: LevelHeaderRomResourceUnloaded,
@@ -211,7 +217,7 @@ export function loadLevelHeaderRomResource(
     blocksDataPtr,
     backgroundDataPtr,
     levelObjectsHeaderPtr,
-  } as LevelHeaderRomResourceLoaded
+  }
 }
 
 export function loadSheetRomResource(
@@ -245,50 +251,63 @@ export function loadSheetRomResource(
     hash,
     inputSize: rInputSize,
     data,
-  } as SheetRomResourceLoaded
+  }
 }
 
-// export function loadSpriteFrameResource(
-//   rom: Rom,
-//   resource: SpriteFrameResource,
-// ): LoadedResource<SpriteFrameResource> {
-//   if (resource.loaded) {
-//     return resource as LoadedResource<SpriteFrameResource>
-//   }
-//   const { baseAddress, packed } = resource
-//   if (packed) {
-//     throw new Error('Packed sprite frames not supported')
-//   } else {
-//     let readPos = baseAddress
-//     let tileId = 0
-//     if (resource.subType === 'unlinked') {
-//       tileId = rom.data.getUint16(readPos, false)
-//       readPos += 2
-//     }
-//     const xOffset = rom.data.getInt8(readPos)
-//     const yOffset = rom.data.getInt8(readPos + 1)
-//     const width = rom.data.getUint16(readPos + 2, false)
-//     const height = rom.data.getUint16(readPos + 4, false)
-//     resource.tileId = tileId
-//     resource.width = width
-//     resource.height = height
-//     resource.xOffset = xOffset
-//     resource.yOffset = yOffset
-//     if (resource.subType === 'linked') {
-//       const start = baseAddress + 6
-//       const dataSize = calculatePlayerSpriteDataSize(width, height)
-//       const totalSize = 6 + dataSize
-//       const data = rom.bytes.subarray(start, start + dataSize)
-//       resource.inputSize = totalSize
-//       resource.data = data
-//       resource.loaded = true
-//       return _finalizeLoading(rom, resource)
-//     }
-//     resource.inputSize = 8
-//     resource.loaded = true
-//     return _finalizeLoading(rom, resource)
-//   }
-// }
+export function loadUnlinkedSpriteFrameResource(
+  rom: Rom,
+  resource : UnlinkedSpriteFrameRomResourceUnloaded,
+): UnlinkedSpriteFrameRomResourceLoaded {
+  const { baseAddress } = resource
+  const tileId = rom.data.getUint16(baseAddress, false)
+  const xOffset = rom.data.getInt8(baseAddress + 2)
+  const yOffset = rom.data.getInt8(baseAddress + 3)
+  const width = rom.data.getUint16(baseAddress + 4, false)
+  const height = rom.data.getUint16(baseAddress + 6, false)
+  const inputSize = 8
+  const bytes = rom.bytes.subarray(baseAddress, baseAddress + inputSize)
+  const hash = crc32(bytes)
+  return {
+    ...resource,
+    loaded: true,
+    hash,
+    inputSize,
+    tileId,
+    width,
+    height,
+    xOffset,
+    yOffset,
+  }
+}
+
+export function loadLinkedSpriteFrameResource(
+  rom: Rom,
+  resource: LinkedSpriteFrameRomResourceUnloaded,
+): LinkedSpriteFrameRomResourceLoaded {
+  const { baseAddress } = resource
+  const xOffset = rom.data.getInt8(baseAddress)
+  const yOffset = rom.data.getInt8(baseAddress + 1)
+  const width = rom.data.getUint16(baseAddress + 2, false)
+  const height = rom.data.getUint16(baseAddress + 4, false)
+  const start = baseAddress + 6
+  const dataSize = calculatePlayerSpriteDataSize(width, height)
+  const data = rom.bytes.subarray(start, start + dataSize)
+  const inputSize = 6 + dataSize
+  const bytes = rom.bytes.subarray(baseAddress, baseAddress + inputSize)
+  const hash = crc32(bytes)
+  return {
+    ...resource,
+    loaded: true,
+    hash,
+    inputSize,
+    width,
+    height,
+    xOffset,
+    yOffset,
+    data,
+  }
+}
+
 
 export function loadResource(rom: Rom, resource: AllRomResources): LoadedRomResource {
   if (resource.loaded) {

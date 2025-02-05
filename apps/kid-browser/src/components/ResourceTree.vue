@@ -9,7 +9,7 @@
 
 <script setup lang="ts">
 import useRomStore from '@/stores/rom'
-import type { LoadedRomResource } from '@repo/kid-util'
+import { isLinkedSpriteFrame, type LoadedRomResource } from '@repo/kid-util'
 import { storeToRefs } from 'pinia'
 import Tree, { type TreeSelectionKeys } from 'primevue/tree'
 import type { TreeNode } from 'primevue/treenode'
@@ -17,6 +17,9 @@ import { computed, ref } from 'vue'
 const emit = defineEmits<{
   selected: [resource: LoadedRomResource]
 }>()
+
+
+
 const { romResources } = storeToRefs(useRomStore())
 const selectedKey = ref<TreeSelectionKeys | undefined>(undefined)
 const spriteFrames = computed(() => {
@@ -25,7 +28,7 @@ const spriteFrames = computed(() => {
     .filter((resource) => resource.loaded)
     .map((spriteFrame) => ({
       key: `0x${spriteFrame.baseAddress.toString(16)}`,
-      label: `0x${spriteFrame.baseAddress.toString(16)}`,
+      label: `0x${spriteFrame.baseAddress.toString(16)} ${isLinkedSpriteFrame(spriteFrame) ? '(Linked)' : ''}`,
       selectable: true,
       data: spriteFrame,
     }))

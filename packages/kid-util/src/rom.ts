@@ -207,8 +207,8 @@ export class Rom {
         if (resource.type === 'sheet') {
 
           this.resources.tileSheets.push(this.loadResource(resource as AllRomResources) as SheetRomResource)
-        } else if (resource.type === 'unlinked-sprite-frame') {
-          this.resources.spriteFrames.push(resource as SpriteFrameRomResource)
+        } else if (resource.type.includes('sprite-frame')) {
+          this.resources.spriteFrames.push(this.loadResource(resource as AllRomResources) as SpriteFrameRomResource)
         }
       } catch (_e) {
         console.error(_e)

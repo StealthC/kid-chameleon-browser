@@ -264,21 +264,22 @@ function findAllAssetsFromAssetTable(rom: Rom) {
   const endAddress = assetTable + 0x49d * 4
   for (let ptr = assetTable; ptr < endAddress; ptr += 4) {
     const type = AssetPtrTableTypes[index]
+    const resourcePtr = rom.readPtr(ptr)
     if (type === PackedTileSheet) {
-      const resource = rom.createResource(ptr, 'sheet') as SheetRomResourceUnloaded
+      const resource = rom.createResource(resourcePtr, 'sheet') as SheetRomResourceUnloaded
       resource.tableIndex = index
       resource.packed = { format: 'kid' }
       rom.addResource(resource)
     } else if (type === SpriteFrameType) {
       const resource = rom.createResource(
-        ptr,
+        resourcePtr,
         'unlinked-sprite-frame',
       ) as UnlinkedSpriteFrameRomResourceUnloaded
       resource.tableIndex = index
       rom.addResource(resource)
     } else if (type === SpriteFrameWithDataType) {
       const resource = rom.createResource(
-        ptr,
+        resourcePtr,
         'linked-sprite-frame',
       ) as LinkedSpriteFrameRomResourceUnloaded
       resource.tableIndex = index

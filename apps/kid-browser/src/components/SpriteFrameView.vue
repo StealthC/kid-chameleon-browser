@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import type { SpriteFrameRomResourceLoaded } from '@repo/kid-util'
+import { isLinkedSpriteFrame, type LinkedSpriteFrameRomResourceLoaded, type SpriteFrameRomResourceLoaded, type UnlinkedSpriteFrameRomResourceLoaded } from '@repo/kid-util'
 import { computed, ref, toRefs } from 'vue'
 import Panel from 'primevue/panel'
 import Select from 'primevue/select'
@@ -41,6 +41,7 @@ import { addressFormat } from '@/utils'
 interface Props {
   spriteFrame: SpriteFrameRomResourceLoaded
 }
+
 
 const props = defineProps<Props>()
 const { spriteFrame } = toRefs(props)
@@ -58,10 +59,10 @@ const sheets = computed(() => {
   return []
 })
 const resourceName = computed(() => `0x${spriteFrame.value.baseAddress.toString(16)}`)
-const needSheet = computed(() => !spriteFrame.value.data)
-const tileId = computed(() => spriteFrame.value.tileId)
+const needSheet = computed(() => !isLinkedSpriteFrame(spriteFrame.value))
+const tileId = computed(() => !isLinkedSpriteFrame(spriteFrame.value) ? spriteFrame.value.tileId : 0)
 const bytes = computed(() => {
-  if (spriteFrame.value.data) {
+  if (isLinkedSpriteFrame(spriteFrame.value)) {
     return spriteFrame.value.data
   }
   if (sheet.value) {
