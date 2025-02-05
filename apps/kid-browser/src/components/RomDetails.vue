@@ -13,6 +13,15 @@
           </li>
         </ul>
       </Panel>
+      <Panel header="Discovered Addresses">
+        <table class="w-full">
+          <tr v-for="row in romKnownAddressesValues" :key="row[0]">
+            <td v-for="cell in row" :key="cell" class="border border-gray-600 p-1">
+              {{ cell }}
+            </td>
+          </tr>
+        </table>
+      </Panel>
     </div>
     <div v-else>
       <p>No ROM loaded</p>
@@ -26,9 +35,25 @@ import useRomStore from '@/stores/rom'
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { addressFormat, getByteSize } from '@/utils'
+import { ImportantAddresses, KnownAddressesDescriptions } from '@repo/kid-util'
 
 const { romDetails, romKnownAddresses } = storeToRefs(useRomStore())
 type DetailsData = Record<string, Record<string, string>>
+
+const romKnownAddressesValues = computed(() => {
+  const knownAdresses = romKnownAddresses.value ?? {}
+  const mappedAddresses = ImportantAddresses.map((key) => {
+    const knownValue = knownAdresses[key] ? addressFormat(knownAdresses[key]) : "??"
+    const description = KnownAddressesDescriptions[key] ?? {
+      description: "Not Implemented yet",
+      addressInJUE: "Unknown",
+      name: key,
+      type: "Unknown",
+    }
+    return [description.name, knownValue, description.type.toUpperCase(), description.description]
+  })
+  return [["Name", "Address", "Type", "Description"], ...mappedAddresses]
+})
 
 const details = computed(() => {
   if (!romDetails.value) {
@@ -42,6 +67,8 @@ const details = computed(() => {
         ? '🟢'
         : `🔴(Calculated: ${addressFormat(calculatedChecksum)})`
   }
+
+
   const romKnownAddressesValues = romKnownAddresses.value
     ? Object.fromEntries(
         Object.entries(romKnownAddresses.value).map(([key, value]) => [key, addressFormat(value)]),
@@ -62,8 +89,7 @@ const details = computed(() => {
       Checksum: checksum,
       Memo: romDetails.value.header.memo.trim(),
       Region: romDetails.value.header.region.trim(),
-    },
-    'Discovered Known Addresses': romKnownAddressesValues,
+    }
   } as DetailsData
 })
 </script>
