@@ -203,13 +203,15 @@ export class Rom {
     }
     for (const resource of Object.values(this.resourcesByAddress)) {
       try {
-        this.loadResource(resource as AllRomResources)
+
         if (resource.type === 'sheet') {
-          this.resources.tileSheets.push(resource as SheetRomResource)
+
+          this.resources.tileSheets.push(this.loadResource(resource as AllRomResources) as SheetRomResource)
         } else if (resource.type === 'unlinked-sprite-frame') {
           this.resources.spriteFrames.push(resource as SpriteFrameRomResource)
         }
       } catch (_e) {
+        console.error(_e)
         //ignores
       }
     }

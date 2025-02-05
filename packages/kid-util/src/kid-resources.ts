@@ -301,7 +301,9 @@ export function loadResource(rom: Rom, resource: AllRomResources): LoadedRomReso
   if (!loader) {
     throw new Error(`No loader found for resource type ${(resource as BaseRomResource).type}`)
   }
-  return loader(rom, resource as never)
+  const loaded = loader(rom, resource as never)
+  rom.addResource(loaded)
+  return loaded
 }
 
 export function addResource(rom: Rom, resource: BaseRomResource) {
