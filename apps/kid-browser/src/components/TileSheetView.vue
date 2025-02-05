@@ -33,8 +33,7 @@ import { computed, ref, toRefs, useTemplateRef, watchEffect } from 'vue'
 import {
   bytesToPixels,
   getCellImageBytes,
-  type LoadedResource,
-  type SheetResource,
+  type SheetRomResourceLoaded,
 } from '@repo/kid-util'
 import Panel from 'primevue/panel'
 import InputNumber from 'primevue/inputnumber'
@@ -80,7 +79,7 @@ const draw = () => {
 }
 
 interface Props {
-  tileSheet: LoadedResource<SheetResource>
+  tileSheet: SheetRomResourceLoaded
   columns?: number
 }
 

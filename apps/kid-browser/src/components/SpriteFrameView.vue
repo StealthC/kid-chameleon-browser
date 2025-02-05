@@ -16,7 +16,7 @@
     />
     <Panel header="Details" class="font-mono text-xs">
       <ul>
-        <li>CRC32: {{ addressFormat(spriteFrame.crc32) }}</li>
+        <li>CRC32: {{ addressFormat(spriteFrame.hash) }}</li>
         <li>Resource Index: {{ addressFormat(spriteFrame.tableIndex ?? 0) }}</li>
         <li>Tile ID: {{ addressFormat(tileId) }}</li>
         <li>Width: {{ spriteFrame.width }}</li>
@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import type { SpriteFrameResource, LoadedResource } from '@repo/kid-util'
+import type { SpriteFrameRomResourceLoaded } from '@repo/kid-util'
 import { computed, ref, toRefs } from 'vue'
 import Panel from 'primevue/panel'
 import Select from 'primevue/select'
@@ -39,7 +39,7 @@ import { storeToRefs } from 'pinia'
 import { addressFormat } from '@/utils'
 
 interface Props {
-  spriteFrame: LoadedResource<SpriteFrameResource>
+  spriteFrame: SpriteFrameRomResourceLoaded
 }
 
 const props = defineProps<Props>()

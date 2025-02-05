@@ -1,5 +1,16 @@
-import type { SheetResource } from './kid-resources'
+import type {
+  LevelHeaderRomResourceUnloaded,
+  LinkedSpriteFrameRomResourceUnloaded,
+  SheetRomResourceUnloaded,
+  UnlinkedSpriteFrameRomResourceUnloaded,
+} from './kid-resources'
 import { Rom } from './rom'
+import {
+  AssetPtrTableTypes,
+  PackedTileSheet,
+  SpriteFrameType,
+  SpriteFrameWithDataType,
+} from './tables/asset-ptr-table'
 
 export const ImportantAddresses = [
   'assetTable',
@@ -142,7 +153,207 @@ export const KnownAddressesDescriptions: Partial<Record<keyof KnownAddresses, Ad
     },
   }
 
-export function findFrameCollisionFrameTable(rom: Rom): number {
+export function tryFindingAllKnownAddresses(rom: Rom) {
+  const functions = [
+    findAssetTable,
+    findFrameCollisionFrameTable,
+    findMultipleLevelAddresses,
+    findUnpackGFXFunction,
+    findPlatformAddresses,
+    findlevelMiscPtrTable,
+    populateLevelMiscTable,
+  ]
+
+  for (const fn of functions) {
+    try {
+      fn(rom)
+    } catch (_e) {
+      console.error(`Error finding known address with function: ${fn.name}`)
+    }
+  }
+}
+
+export function tryFindingResouces(rom: Rom) {
+  const functions = [findAllAssetsFromAssetTable, findAllLevelHeaders]
+  for (const fn of functions) {
+    try {
+      fn(rom)
+    } catch (_e) {
+      console.error(`Error running resource discovery function: ${fn.name}`)
+    }
+  }
+}
+
+function populateLevelMiscTable(rom: Rom) {
+  const LevelMiscTable: ((typeof ImportantAddresses)[number] | ((address: number) => void))[] = [
+    'themeBlocksPtrTable',
+    'themeBackgroundPtrTable',
+    'themeTileMappingsPtrTable',
+    'commonBlocksMappingsWordTable',
+    'themePaletteWordTable',
+    'themeBackgroundPaletteWordTable',
+    'themeTileCollisionPtrTable',
+    (address) => {
+      // Common Blocks Packed Sheet
+      const resource = rom.createResource(address, 'sheet') as SheetRomResourceUnloaded
+      resource.packed = { format: 'kid' }
+      resource.name = 'Common Blocks Graphics'
+      resource.description = 'Graphics for Common Blocks used in levels'
+      rom.addResource(resource)
+    },
+    'themeBackgroundPlanePtrTable',
+    (address) => {
+      // HUD Numbers Packed Sheet
+      const resource = rom.createResource(address, 'sheet') as SheetRomResourceUnloaded
+      resource.packed = { format: 'kid' }
+      resource.name = 'HUD Numbers Graphics'
+      rom.addResource(resource)
+    },
+    'backgroundScrollingPtrTable',
+    // Some Raw Sheets (with another reference)
+  ]
+
+  const table = findlevelMiscPtrTable(rom)
+  if (!table) {
+    return
+  }
+  for (let i = 0; i < LevelMiscTable.length; i++) {
+    const ptr = rom.readPtr(table + i * 4)
+    const item = LevelMiscTable[i]
+    if (typeof item === 'function') {
+      item(ptr)
+    } else {
+      rom.knownAddresses[item as (typeof ImportantAddresses)[number]] = ptr
+    }
+  }
+}
+
+function findAllLevelHeaders(rom: Rom) {
+  const { levelWordTable, levelWordTableBase, levelIndexesTable } = findMultipleLevelAddresses(rom)
+  if (!levelWordTable || !levelWordTableBase || !levelIndexesTable) {
+    return
+  }
+  let index = 0
+  let minHeader: number = Infinity
+  do {
+    const wordOffset = rom.data.getUint8(levelIndexesTable + index)
+    if (wordOffset === 0xff) {
+      break
+    }
+    const headerOffset = rom.data.getUint16(levelWordTable + wordOffset * 2, false)
+    const headerAdresss = headerOffset + levelWordTableBase
+    const resource = rom.createResource(
+      headerAdresss,
+      'level-header',
+    ) as LevelHeaderRomResourceUnloaded
+    resource.levelIndex = index
+    resource.wordIndex = wordOffset
+    rom.addResource(resource)
+    minHeader = Math.min(minHeader, headerAdresss)
+    index++
+  } while (index < minHeader)
+  console.log('Found all level headers, total:', index)
+}
+
+function findAllAssetsFromAssetTable(rom: Rom) {
+  const assetTable = findAssetTable(rom)
+  if (!assetTable) {
+    return
+  }
+  let index = 0
+  const endAddress = assetTable + 0x49d * 4
+  for (let ptr = assetTable; ptr < endAddress; ptr += 4) {
+    const type = AssetPtrTableTypes[index]
+    if (type === PackedTileSheet) {
+      const resource = rom.createResource(ptr, 'sheet') as SheetRomResourceUnloaded
+      resource.tableIndex = index
+      resource.packed = { format: 'kid' }
+      rom.addResource(resource)
+    } else if (type === SpriteFrameType) {
+      const resource = rom.createResource(
+        ptr,
+        'unlinked-sprite-frame',
+      ) as UnlinkedSpriteFrameRomResourceUnloaded
+      resource.tableIndex = index
+      rom.addResource(resource)
+    } else if (type === SpriteFrameWithDataType) {
+      const resource = rom.createResource(
+        ptr,
+        'linked-sprite-frame',
+      ) as LinkedSpriteFrameRomResourceUnloaded
+      resource.tableIndex = index
+      rom.addResource(resource)
+    }
+    index++
+  }
+}
+
+function findPlatformAddresses(rom: Rom): number[] {
+  if (rom.knownAddresses.platformWordTable && rom.knownAddresses.platformWordTableBase) {
+    return [rom.knownAddresses.platformWordTable, rom.knownAddresses.platformWordTableBase]
+  }
+
+  /*
+                               *************************************************************
+                             *                           FUNCTION
+                             *************************************************************
+                             undefined  LoadLevelPlatformLayout (void )
+             undefined         D0b:1          <RETURN>
+                             LoadLevelPlatformLayout                         XREF[1]:     LoadPlatformGFX:00002344 (c)
+        00002366 3e  38  fc       move.w              (CurrentPlayerVars.LevelIdx ).w,D7w
+                 44
+        0000236a 28  79  00       movea.l             (-> LevelIndexesTable ).l,A4                      = 0004043e
+                 04  03  3e
+        00002370 1e  34  70       move.b              (0x0 ,A4 ,D7w *0x1 )=> -> LevelWord00 ,D7b            = 4Ah
+                 00
+        00002374 48  87           ext.w               D7w
+        00002376 49  fa  20       lea                 (0x202e ,PC )=> LevelPlatformWordTable ,A4         = 18ECh
+                 2e
+        0000237a de  47           add.w               D7w ,D7w
+        0000237c 3e  34  70       move.w              (0x0 ,A4 ,D7w *0x1 )=> LevelPlatformWordTable ,D7w   = 18ECh
+                 00
+        00002380 48  c7           ext.l               D7
+        00002382 06  87  00       addi.l              #LevelPlatformDataBase ,D7
+                 00  2b  b6
+        00002388 21  c7  fa       move.l              D7 ,(LevelPlatformBase ).w                        = 000044a2
+                 88
+        0000238c 4e  75           rts
+
+  */
+  const pattern = '49 fa ?? ?? de 47 3e 34 70 00 48 c7 06 87 ?? ?? ?? ?? 21 c7 fa 88 4e 75'
+  const ptr = rom.findPattern(pattern)
+  const offset = rom.data.getUint16(ptr + 2, false)
+  const platformWordTable = ptr + 2 + offset
+  const platformWordTableBase = rom.readPtr(ptr + 14)
+  rom.knownAddresses.platformWordTable = platformWordTable
+  rom.knownAddresses.platformWordTableBase = platformWordTableBase
+  return [platformWordTable, platformWordTableBase]
+}
+
+function findlevelMiscPtrTable(rom: Rom) {
+  if (rom.knownAddresses.levelMiscPtrTable) {
+    return rom.knownAddresses.levelMiscPtrTable
+  }
+  /*
+        00011d56 20  07           move.l              ThemeX4 ,D0
+        00011d58 e2  88           lsr.l               #0x1 ,D0
+        00011d5a 30  31  00       move.w              (0x0 ,A1 ,D0w *0x1 )=> ThemePaletteTable ,D0w        = 3Ch
+                 00
+        00011d5e 06  80  00       addi.l              #LevelGFXStuffTable ,D0                          = 0007b104
+                 07  b0  18
+        00011d64 22  40           movea.l             D0 ,A1
+        00011d66 22  51           movea.l             (A1 ),A1 => -> ThemeBlocksGFXTable                  = 0007b104
+        00011d68 34  38  fc       move.w              (CurrentPlayerVars.LevelIdx ).w,D2w
+                 44
+   */
+
+  const pattern = '20 07 e2 88 30 31 00 00 06 80 ?? ?? ?? ?? 22 40 22 51 34 38 fc 44'
+  const ptr = rom.findPattern(pattern)
+  rom.knownAddresses.levelMiscPtrTable = rom.readPtr(ptr + 10)
+  return rom.knownAddresses.levelMiscPtrTable
+}
+
+function findFrameCollisionFrameTable(rom: Rom): number {
   if (rom.knownAddresses.collisionWordTable) {
     return rom.knownAddresses.collisionWordTable
   }
@@ -153,7 +364,7 @@ export function findFrameCollisionFrameTable(rom: Rom): number {
 }
 
 /** Find Asset Table (original JUE is $a09fe) */
-export function findAssetTable(rom: Rom): number {
+function findAssetTable(rom: Rom): number {
   if (rom.knownAddresses.assetTable) {
     return rom.knownAddresses.assetTable
   }
@@ -163,7 +374,7 @@ export function findAssetTable(rom: Rom): number {
   return ptr
 }
 
-export function findUnpackGFXFunction(rom: Rom): number {
+function findUnpackGFXFunction(rom: Rom): number {
   if (rom.knownAddresses.unpackGFXFunction) {
     return rom.knownAddresses.unpackGFXFunction
   }
@@ -173,7 +384,7 @@ export function findUnpackGFXFunction(rom: Rom): number {
   return ptr
 }
 
-export function findMultipleLevelAddresses(rom: Rom) {
+function findMultipleLevelAddresses(rom: Rom) {
   if (
     rom.knownAddresses.levelIndexesTable &&
     rom.knownAddresses.levelWordTable &&
@@ -211,138 +422,4 @@ export function findMultipleLevelAddresses(rom: Rom) {
   rom.knownAddresses.levelWordTable = levelWordTable
   rom.knownAddresses.levelWordTableBase = levelWordTableBase
   return { levelIndexesTable, levelWordTable, levelWordTableBase }
-}
-
-export function tryFindingAllKnownAddresses(rom: Rom): KnownAddresses {
-  const functions = [
-    findAssetTable,
-    findFrameCollisionFrameTable,
-    findMultipleLevelAddresses,
-    findUnpackGFXFunction,
-    findPlatformAddresses,
-    findlevelMiscPtrTable,
-    populateLevelMiscTable,
-  ]
-
-  for (const fn of functions) {
-    try {
-      fn(rom)
-    } catch (_e) {
-      console.error(`Error finding known address: ${fn.name}`)
-    }
-  }
-  return rom.knownAddresses
-}
-
-export function findPlatformAddresses(rom: Rom): number[] {
-  if (rom.knownAddresses.platformWordTable && rom.knownAddresses.platformWordTableBase) {
-    return [rom.knownAddresses.platformWordTable, rom.knownAddresses.platformWordTableBase]
-  }
-
-  /*
-                               *************************************************************
-                             *                           FUNCTION
-                             *************************************************************
-                             undefined  LoadLevelPlatformLayout (void )
-             undefined         D0b:1          <RETURN>
-                             LoadLevelPlatformLayout                         XREF[1]:     LoadPlatformGFX:00002344 (c)
-        00002366 3e  38  fc       move.w              (CurrentPlayerVars.LevelIdx ).w,D7w
-                 44
-        0000236a 28  79  00       movea.l             (-> LevelIndexesTable ).l,A4                      = 0004043e
-                 04  03  3e
-        00002370 1e  34  70       move.b              (0x0 ,A4 ,D7w *0x1 )=> -> LevelWord00 ,D7b            = 4Ah
-                 00
-        00002374 48  87           ext.w               D7w
-        00002376 49  fa  20       lea                 (0x202e ,PC )=> LevelPlatformWordTable ,A4         = 18ECh
-                 2e
-        0000237a de  47           add.w               D7w ,D7w
-        0000237c 3e  34  70       move.w              (0x0 ,A4 ,D7w *0x1 )=> LevelPlatformWordTable ,D7w   = 18ECh
-                 00
-        00002380 48  c7           ext.l               D7
-        00002382 06  87  00       addi.l              #LevelPlatformDataBase ,D7
-                 00  2b  b6
-        00002388 21  c7  fa       move.l              D7 ,(LevelPlatformBase ).w                        = 000044a2
-                 88
-        0000238c 4e  75           rts
-
-  */
-  const pattern = '49 fa ?? ?? de 47 3e 34 70 00 48 c7 06 87 ?? ?? ?? ?? 21 c7 fa 88 4e 75'
-  const ptr = rom.findPattern(pattern)
-  const offset = rom.data.getUint16(ptr + 2, false)
-  console.log(offset.toString(16))
-  const platformWordTable = ptr + 2 + offset
-  const platformWordTableBase = rom.readPtr(ptr + 14)
-  rom.knownAddresses.platformWordTable = platformWordTable
-  rom.knownAddresses.platformWordTableBase = platformWordTableBase
-  return [platformWordTable, platformWordTableBase]
-}
-
-export function findlevelMiscPtrTable(rom: Rom) {
-  if (rom.knownAddresses.levelMiscPtrTable) {
-    return rom.knownAddresses.levelMiscPtrTable
-  }
-  /*
-        00011d56 20  07           move.l              ThemeX4 ,D0
-        00011d58 e2  88           lsr.l               #0x1 ,D0
-        00011d5a 30  31  00       move.w              (0x0 ,A1 ,D0w *0x1 )=> ThemePaletteTable ,D0w        = 3Ch
-                 00
-        00011d5e 06  80  00       addi.l              #LevelGFXStuffTable ,D0                          = 0007b104
-                 07  b0  18
-        00011d64 22  40           movea.l             D0 ,A1
-        00011d66 22  51           movea.l             (A1 ),A1 => -> ThemeBlocksGFXTable                  = 0007b104
-        00011d68 34  38  fc       move.w              (CurrentPlayerVars.LevelIdx ).w,D2w
-                 44
-   */
-
-  const pattern = '20 07 e2 88 30 31 00 00 06 80 ?? ?? ?? ?? 22 40 22 51 34 38 fc 44'
-  const ptr = rom.findPattern(pattern)
-  rom.knownAddresses.levelMiscPtrTable = rom.readPtr(ptr + 10)
-  return rom.knownAddresses.levelMiscPtrTable
-}
-
-
-
-export function populateLevelMiscTable(rom: Rom) {
-
-  const LevelMiscTable: (((typeof ImportantAddresses)[number])|((address: number) => void))[] = [
-    'themeBlocksPtrTable',
-    'themeBackgroundPtrTable',
-    'themeTileMappingsPtrTable',
-    'commonBlocksMappingsWordTable',
-    'themePaletteWordTable',
-    'themeBackgroundPaletteWordTable',
-    'themeTileCollisionPtrTable',
-    (address) => {
-      // Common Blocks Packed Sheet
-      const resource = rom.createResource(address, 'sheet') as SheetResource
-      resource.packed = {pack: 'kid'}
-      resource.name = 'Common Blocks Graphics'
-      resource.description = 'Graphics for Common Blocks used in levels'
-      rom.addResource(resource)
-    },
-    'themeBackgroundPlanePtrTable',
-    (address) => {
-      // HUD Numbers Packed Sheet
-      const resource = rom.createResource(address, 'sheet') as SheetResource
-      resource.name = 'HUD Numbers Graphics'
-      resource.packed = {pack: 'kid'}
-      rom.addResource(resource)
-    },
-    'backgroundScrollingPtrTable',
-    // Some Raw Sheets (with another reference)
-  ]
-
-  const table = findlevelMiscPtrTable(rom)
-  if (!table) {
-    return
-  }
-  for (let i = 0; i < LevelMiscTable.length; i++) {
-    const ptr = rom.readPtr(table + i * 4)
-    const item = LevelMiscTable[i]
-    if (typeof item === 'function') {
-      item(ptr)
-    } else {
-      rom.knownAddresses[item as (typeof ImportantAddresses)[number]] = ptr
-    }
-  }
 }

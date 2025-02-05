@@ -78,7 +78,7 @@ describe('Pattern Matching', () => {
     })
 
     it('should match complex patterns with subgroups', () => {
-      const data = new Uint8Array([0x00, 0x11, 0x22, 0x44, 0x55, 0x00, 0x11,0x33, 0x44, 0x55])
+      const data = new Uint8Array([0x00, 0x11, 0x22, 0x44, 0x55, 0x00, 0x11, 0x33, 0x44, 0x55])
       const finder = new PatternFinder('00 [11 [22||33] 44] 55', data)
       expect(finder.findNext()).toBe(0)
       expect(finder.findNext()).toBe(5)

@@ -4,25 +4,22 @@ import {
   createResource,
   getResource,
   loadResource,
-  type BaseResource,
-  type LoadedResource,
-  type SheetResource,
-  type SpriteFrameResource,
+  ResourceTypes,
+  type AllRomResources,
+  type BaseRomResource,
+  type LoadedRomResource,
+  type SheetRomResource,
+  type SheetRomResourceUnloaded,
+  type SpriteFrameRomResource,
 } from './kid-resources'
 import { readPtr } from './kid-utils'
 import { KnownRoms, type KnowRomDetails } from './tables/known-roms'
-import {
-  AssetPtrTableTypes,
-  PackedTileSheet as PackedTileSheetType,
-  SpriteFrameType,
-  SpriteFrameWithDataType as PlayerSpriteFrameType,
-} from './tables/asset-ptr-table'
 import { PatternFinder } from './pattern-finder'
 import { sha256, mdCrc } from './hash'
 import { unpackKidFormat, type KidUnpackResults } from './unpack-kid'
 import {
-  findFrameCollisionFrameTable,
   tryFindingAllKnownAddresses,
+  tryFindingResouces,
   type KnownAddresses,
 } from './rom-discovery'
 
@@ -71,13 +68,13 @@ export type RomFileDetails = {
 }
 
 export type RomResources = {
-  spriteFrames: SpriteFrameResource[]
-  tileSheets: SheetResource[]
+  spriteFrames: SpriteFrameRomResource[]
+  tileSheets: SheetRomResource[]
 }
 
 export class Rom {
   data: DataView
-  resourcesByAddress: Record<string, BaseResource> = {}
+  resourcesByAddress: Record<string, BaseRomResource> = {}
   knownAddresses: KnownAddresses = {}
   private _frameCollisionTable: FrameCollision[] = []
   private _assetPtrTable: number[] = []
@@ -167,79 +164,65 @@ export class Rom {
   loadResources() {
     if (this._resourcesLoaded) return this.resources
     tryFindingAllKnownAddresses(this)
-    this.readAssetPtrTable()
-    for (let i = 0; i < this._assetPtrTable.length; i++) {
-      const ptr = this._assetPtrTable[i]!
-      const type = AssetPtrTableTypes[i]
-      if (type === PackedTileSheetType) {
-        const resource = this.createResource(ptr, 'sheet')
-        resource.packed = { pack: 'kid' }
-        resource.tableIndex = i
-        this.addResource(resource)
-      } else if (type === SpriteFrameType) {
-        const resource = this.createResource(ptr, 'sprite-frame', 'unlinked')
-        resource.tableIndex = i
-        this.addResource(resource)
-      } else if (type === PlayerSpriteFrameType) {
-        const resource = this.createResource(ptr, 'sprite-frame', 'linked')
-        resource.tableIndex = i
-        this.addResource(resource)
-      } else if (type) {
-        console.error(`Unknown AssetPtrTable type ${type.toString()} at index ${i.toString(10)}`)
-      }
-    }
-    this._resourcesLoaded = true
+    tryFindingResouces(this)
+
     try {
       this._readFrameCollisionTable()
       this._findUntabledPackedTileSheetsDirect1().map((result) => {
-        const resource = this.createResource(result.ptr, 'sheet')
-        resource.packed = { pack: 'kid' }
+        const resource = this.createResource(result.ptr, 'sheet') as SheetRomResourceUnloaded
+        resource.packed = { format: 'kid' }
         this.addResource(resource)
       })
       this._findUntabledPackedTileSheetsDirect2().map((result) => {
-        const resource = this.createResource(result.ptr, 'sheet')
-        resource.packed = { pack: 'kid' }
+        const resource = this.createResource(result.ptr, 'sheet') as SheetRomResourceUnloaded
+        resource.packed = { format: 'kid' }
         this.addResource(resource)
       })
       this._findUntabledPackedTileSheetsRelative1().map((result) => {
-        const resource = this.createResource(result.ptr, 'sheet')
-        resource.packed = { pack: 'kid' }
+        const resource = this.createResource(result.ptr, 'sheet') as SheetRomResourceUnloaded
+        resource.packed = { format: 'kid' }
         this.addResource(resource)
       })
       this._findUntabledPackedTileSheetsRelative2().map((result) => {
-        const resource = this.createResource(result.ptr, 'sheet')
-        resource.packed = { pack: 'kid' }
+        const resource = this.createResource(result.ptr, 'sheet') as SheetRomResourceUnloaded
+        resource.packed = { format: 'kid' }
         this.addResource(resource)
       })
       this._findUntabledPackedTileSheetsWithPaletteSwap1().map((result) => {
-        const resource = this.createResource(result.ptr, 'sheet')
-        resource.packed = { pack: 'kid' }
+        const resource = this.createResource(result.ptr, 'sheet') as SheetRomResourceUnloaded
+        resource.packed = { format: 'kid' }
         this.addResource(resource)
       })
       this._findUntabledPackedTileSheetsWithPaletteSwap2().map((result) => {
-        const resource = this.createResource(result.ptr, 'sheet')
-        resource.packed = { pack: 'kid' }
+        const resource = this.createResource(result.ptr, 'sheet') as SheetRomResourceUnloaded
+        resource.packed = { format: 'kid' }
         this.addResource(resource)
       })
     } catch (e) {
       console.error(e)
     }
     for (const resource of Object.values(this.resourcesByAddress)) {
-      if (resource.type) {
-        this.loadResource(resource)
-      }
-      if (resource.type === 'sheet') {
-        this.resources.tileSheets.push(resource as SheetResource)
-      } else if (resource.type === 'sprite-frame') {
-        this.resources.spriteFrames.push(resource as SpriteFrameResource)
+      try {
+        this.loadResource(resource as AllRomResources)
+        if (resource.type === 'sheet') {
+          this.resources.tileSheets.push(resource as SheetRomResource)
+        } else if (resource.type === 'unlinked-sprite-frame') {
+          this.resources.spriteFrames.push(resource as SpriteFrameRomResource)
+        }
+      } catch (_e) {
+        //ignores
       }
     }
+    this._resourcesLoaded = true
     return this.resources
   }
 
   private _readFrameCollisionTable(): FrameCollision[] {
     if (this._frameCollisionTable.length > 0) return this._frameCollisionTable
-    const ptr = findFrameCollisionFrameTable(this)
+    const ptr = this.knownAddresses.collisionWordTable
+    if (!ptr) {
+      throw new Error('Collision Word Table not found')
+    }
     // There is to be a limit because the original table have invalid references
     const addressLimit = ptr + 0x1390
     let firstData = Infinity
@@ -291,36 +274,35 @@ export class Rom {
 
   createResource(
     baseAddress: number,
-    type?: string,
-    subType?: string,
+    type?: (typeof ResourceTypes)[number],
     related: string[] = [],
-  ): BaseResource {
-    return createResource(baseAddress, type, subType, related)
+  ): BaseRomResource {
+    return createResource(baseAddress, type, related)
   }
 
-  addResource(resource: BaseResource) {
+  addResource(resource: BaseRomResource) {
     addResource(this, resource)
   }
 
-  checkRelated(resource: BaseResource) {
+  checkRelated(resource: BaseRomResource) {
     checkRelated(this, resource)
   }
 
-  loadResource<T extends BaseResource>(resource: T): LoadedResource<T> {
+  loadResource(resource: AllRomResources): LoadedRomResource {
     return loadResource(this, resource)
   }
 
-  getResource(address: number): BaseResource | null {
+  getResource(address: number): BaseRomResource | null {
     return getResource(this, address) ?? null
   }
 
-  getLoadedResource<T extends BaseResource>(address: number): LoadedResource<T> | T | null {
+  getLoadedResource(address: number): LoadedRomResource | null {
     const resource = this.getResource(address)
     if (resource) {
       try {
-        return this.loadResource(resource) as LoadedResource<T>
+        return this.loadResource(resource as AllRomResources)
       } catch (_) {
-        return resource as T
+        return resource as LoadedRomResource
       }
     }
     return null
