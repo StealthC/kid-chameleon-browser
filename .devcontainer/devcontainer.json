@@ -12,7 +12,10 @@
 				"bradlc.vscode-tailwindcss",
 				"Vue.volar",
 				"EditorConfig.EditorConfig"
-			]
+			],
+			"settings": {
+				"editor.defaultFormatter": "esbenp.prettier-vscode",
+			}
 		}
 	}
 

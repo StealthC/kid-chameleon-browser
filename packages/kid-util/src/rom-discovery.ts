@@ -1,4 +1,5 @@
-import type { Rom } from './rom'
+import type { SheetResource } from './kid-resources'
+import { Rom } from './rom'
 
 export const ImportantAddresses = [
   'assetTable',
@@ -16,9 +17,7 @@ export const ImportantAddresses = [
   'themePaletteWordTable',
   'themeBackgroundPaletteWordTable',
   'themeTileCollisionPtrTable',
-  'commonBlocksPackedSheet',
   'themeBackgroundPlanePtrTable',
-  'hudNumbersPackedSheet',
   'backgroundScrollingPtrTable',
   'unpackGFXFunction',
 ] as const
@@ -129,23 +128,11 @@ export const KnownAddressesDescriptions: Partial<Record<keyof KnownAddresses, Ad
       type: 'table',
       description: 'Table of pointers to theme tile collision data',
     },
-    commonBlocksPackedSheet: {
-      name: 'Common Blocks Packed Sheet',
-      addressInJUE: 0x992e4,
-      type: 'data',
-      description: 'Pointer to common blocks packed sheet',
-    },
     themeBackgroundPlanePtrTable: {
       name: 'Theme Background Plane Pointer Table',
       addressInJUE: 0x7b3e4,
       type: 'table',
       description: 'Table of pointers to theme background plane data',
-    },
-    hudNumbersPackedSheet: {
-      name: 'HUD Numbers Packed Sheet',
-      addressInJUE: 0x99f34,
-      type: 'data',
-      description: 'Pointer to HUD numbers packed sheet',
     },
     backgroundScrollingPtrTable: {
       name: 'Background Scrolling Pointer Table',
@@ -233,6 +220,7 @@ export function tryFindingAllKnownAddresses(rom: Rom): KnownAddresses {
     findMultipleLevelAddresses,
     findUnpackGFXFunction,
     findPlatformAddresses,
+    findlevelMiscPtrTable,
     populateLevelMiscTable,
   ]
 
@@ -253,11 +241,11 @@ export function findPlatformAddresses(rom: Rom): number[] {
 
   /*
                                *************************************************************
-                             *                           FUNCTION                         
+                             *                           FUNCTION
                              *************************************************************
                              undefined  LoadLevelPlatformLayout (void )
              undefined         D0b:1          <RETURN>
-                             LoadLevelPlatformLayout                         XREF[1]:     LoadPlatformGFX:00002344 (c)   
+                             LoadLevelPlatformLayout                         XREF[1]:     LoadPlatformGFX:00002344 (c)
         00002366 3e  38  fc       move.w              (CurrentPlayerVars.LevelIdx ).w,D7w
                  44
         0000236a 28  79  00       movea.l             (-> LevelIndexesTable ).l,A4                      = 0004043e
@@ -312,28 +300,49 @@ export function findlevelMiscPtrTable(rom: Rom) {
   return rom.knownAddresses.levelMiscPtrTable
 }
 
-const LevelMiscTable: (typeof ImportantAddresses)[number][] = [
-  'themeBlocksPtrTable',
-  'themeBackgroundPtrTable',
-  'themeTileMappingsPtrTable',
-  'commonBlocksMappingsWordTable',
-  'themePaletteWordTable',
-  'themeBackgroundPaletteWordTable',
-  'themeTileCollisionPtrTable',
-  'commonBlocksPackedSheet',
-  'themeBackgroundPlanePtrTable',
-  'hudNumbersPackedSheet',
-  'backgroundScrollingPtrTable',
-  // Some Raw Sheets (with another reference)
-]
+
 
 export function populateLevelMiscTable(rom: Rom) {
+
+  const LevelMiscTable: (((typeof ImportantAddresses)[number])|((address: number) => void))[] = [
+    'themeBlocksPtrTable',
+    'themeBackgroundPtrTable',
+    'themeTileMappingsPtrTable',
+    'commonBlocksMappingsWordTable',
+    'themePaletteWordTable',
+    'themeBackgroundPaletteWordTable',
+    'themeTileCollisionPtrTable',
+    (address) => {
+      // Common Blocks Packed Sheet
+      const resource = rom.createResource(address, 'sheet') as SheetResource
+      resource.packed = {pack: 'kid'}
+      resource.name = 'Common Blocks Graphics'
+      resource.description = 'Graphics for Common Blocks used in levels'
+      rom.addResource(resource)
+    },
+    'themeBackgroundPlanePtrTable',
+    (address) => {
+      // HUD Numbers Packed Sheet
+      const resource = rom.createResource(address, 'sheet') as SheetResource
+      resource.name = 'HUD Numbers Graphics'
+      resource.packed = {pack: 'kid'}
+      rom.addResource(resource)
+    },
+    'backgroundScrollingPtrTable',
+    // Some Raw Sheets (with another reference)
+  ]
+
   const table = findlevelMiscPtrTable(rom)
   if (!table) {
     return
   }
   for (let i = 0; i < LevelMiscTable.length; i++) {
     const ptr = rom.readPtr(table + i * 4)
-    rom.knownAddresses[LevelMiscTable[i] as (typeof ImportantAddresses)[number]] = ptr
+    const item = LevelMiscTable[i]
+    if (typeof item === 'function') {
+      item(ptr)
+    } else {
+      rom.knownAddresses[item as (typeof ImportantAddresses)[number]] = ptr
+    }
   }
 }

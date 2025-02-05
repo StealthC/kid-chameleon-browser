@@ -72,6 +72,26 @@ export type LinkedSpriteFrameResource = DataResource & {
 
 export type SpriteFrameResource = UnlinkedSpriteFrameResource | LinkedSpriteFrameResource
 
+export type LevelHeaderResource = BaseResource & {
+  type: 'level-header'
+  width?: number
+  height?: number
+  yOffset?: number
+  themeIndex?: number
+  murderWall?: boolean
+  murderWallFromRight?: boolean
+  backgroundIndex?: number
+  backgroundMisc?: number
+  playerX?: number
+  playerY?: number
+  flagX?: number
+  flagY?: number
+  tilesDataPtr?: number
+  blocksDataPtr?: number
+  backgroundDataPtr?: number
+  levelObjectsHeaderPtr?: number
+}
+
 export type LoadedResource<T extends BaseResource> = T & {
   loaded: true
   crc32: number
@@ -84,6 +104,26 @@ export type LoadedResource<T extends BaseResource> = T & {
         height: number
         xOffset: number
         yOffset: number
+      }
+    : object) &
+  (T extends LevelHeaderResource
+    ? {
+        width: number
+        height: number
+        yOffset: number
+        themeIndex: number
+        murderWall: boolean
+        murderWallFromRight: boolean
+        backgroundIndex: number
+        backgroundMisc: number
+        playerX: number
+        playerY: number
+        flagX: number
+        flagY: number
+        tilesDataPtr: number
+        blocksDataPtr: number
+        backgroundDataPtr: number
+        levelObjectsHeaderPtr: number
       }
     : object)
 
