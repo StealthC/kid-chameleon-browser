@@ -17,7 +17,7 @@ import {
   SpriteFrameType,
   SpriteFrameWithDataType as PlayerSpriteFrameType,
 } from './tables/asset-ptr-table'
-import { PatternFinder } from './pattern-search'
+import { PatternFinder } from './pattern-finder'
 import { sha256, mdCrc } from './hash'
 import { unpackKidFormat, type KidUnpackResults } from './unpack-kid'
 import {

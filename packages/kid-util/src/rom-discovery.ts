@@ -23,7 +23,7 @@ export const ImportantAddresses = [
   'unpackGFXFunction',
 ] as const
 
-export type KnownAddresses = Partial<Record<typeof ImportantAddresses[number], number>>
+export type KnownAddresses = Partial<Record<(typeof ImportantAddresses)[number], number>>
 export type AddressDescription = {
   name: string
   addressInJUE: number
@@ -31,128 +31,129 @@ export type AddressDescription = {
   description: string
 }
 
-export const KnownAddressesDescriptions: Partial<Record<keyof KnownAddresses, AddressDescription>> = {
-  assetTable: {
-    name: 'Asset Table',
-    addressInJUE: 0xa09fe,
-    type: 'table',
-    description: 'Table of pointers to sprite assets used ingame'
-  },
-  collisionWordTable: {
-    name: 'Collision Frame Table',
-    addressInJUE: 0x30bf4,
-    type: 'table',
-    description: 'Table of word offsets to collision frames for sprites in Asset Table',
-  },
-  unpackGFXFunction: {
-    name: 'Unpack GFX',
-    addressInJUE: 0x142fa,
-    type: 'function',
-    description: 'Function that unpack graphics',
-  },
-  levelIndexesTable: {
-    name: 'Level Indexes Table',
-    addressInJUE: 0x4043e,
-    type: 'table',
-    description: 'Table of byte offsets to Level Word Table\'s levels in order of gameplay',
-  },
-  levelWordTable: {
-    name: 'Level Word Table',
-    addressInJUE: 0x40342,
-    type: 'table',
-    description: 'Table of word offsets to level headers',
-  },
-  levelWordTableBase: {
-    name: 'Level Word Table Base',
-    addressInJUE: 0x4033a,
-    type: 'value',
-    description: 'Base address for Level Word Table offsets',
-  },
-  platformWordTable: {
-    name: 'Platforms Word Table',
-    addressInJUE: 0x43a6,
-    type: 'table',
-    description: 'Table of word offsets to platforms layouts',
-  },
-  platformWordTableBase: {
-    name: 'Platforms Word Table Base',
-    addressInJUE: 0x2bb6,
-    type: 'value',
-    description: 'Base address for Platforms Word Table offsets',
-  },
-  levelMiscPtrTable: {
-    name: 'Level Misc Pointer Table',
-    addressInJUE: 0x7b018,
-    type: 'table',
-    description: 'Table of pointers to level misc data (Mostly GFX related)',
-  },
-  themeBlocksPtrTable: {
-    name: 'Theme Blocks Pointer Table',
-    addressInJUE: 0x7b104,
-    type: 'table',
-    description: 'Table of pointers to theme blocks data',
-  },
-  themeBackgroundPtrTable: {
-    name: 'Theme Background Pointer Table',
-    addressInJUE: 0x7b130,
-    type: 'table',
-    description: 'Table of pointers to theme background data',
-  },
-  themeTileMappingsPtrTable: {
-    name: 'Theme Tile Mappings Pointer Table',
-    addressInJUE: 0x7b168,
-    type: 'table',
-    description: 'Table of pointers to theme tile mappings data',
-  },
-  commonBlocksMappingsWordTable: {
-    name: 'Common Blocks Mappings Word Table',
-    addressInJUE: 0x7b8dc,
-    type: 'table',
-    description: 'Table of word offsets to common blocks mappings data',
-  },
-  themePaletteWordTable: {
-    name: 'Theme Palette Word Table',
-    addressInJUE: 0x7b194,
-    type: 'table',
-    description: 'Table of word offsets to theme palette data',
-  },
-  themeBackgroundPaletteWordTable: {
-    name: 'Theme Background Palette Word Table',
-    addressInJUE: 0x7b1aa,
-    type: 'table',
-    description: 'Table of word offsets to theme background palette data',
-  },
-  themeTileCollisionPtrTable: {
-    name: 'Theme Tile Collision Pointer Table',
-    addressInJUE: 0x7b1c0,
-    type: 'table',
-    description: 'Table of pointers to theme tile collision data',
-  },
-  commonBlocksPackedSheet: {
-    name: 'Common Blocks Packed Sheet',
-    addressInJUE: 0x992e4,
-    type: 'data',
-    description: 'Pointer to common blocks packed sheet',
-  },
-  themeBackgroundPlanePtrTable: {
-    name: 'Theme Background Plane Pointer Table',
-    addressInJUE: 0x7b3e4,
-    type: 'table',
-    description: 'Table of pointers to theme background plane data',
-  },
-  hudNumbersPackedSheet: {
-    name: 'HUD Numbers Packed Sheet',
-    addressInJUE: 0x99f34,
-    type: 'data',
-    description: 'Pointer to HUD numbers packed sheet',
-  },
-  backgroundScrollingPtrTable: {
-    name: 'Background Scrolling Pointer Table',
-    addressInJUE: 0x7b1ec,
-    type: 'table',
-    description: 'Table of pointers to background scrolling data',
-  },
-}
+export const KnownAddressesDescriptions: Partial<Record<keyof KnownAddresses, AddressDescription>> =
+  {
+    assetTable: {
+      name: 'Asset Table',
+      addressInJUE: 0xa09fe,
+      type: 'table',
+      description: 'Table of pointers to sprite assets used ingame',
+    },
+    collisionWordTable: {
+      name: 'Collision Frame Table',
+      addressInJUE: 0x30bf4,
+      type: 'table',
+      description: 'Table of word offsets to collision frames for sprites in Asset Table',
+    },
+    unpackGFXFunction: {
+      name: 'Unpack GFX',
+      addressInJUE: 0x142fa,
+      type: 'function',
+      description: 'Function that unpack graphics',
+    },
+    levelIndexesTable: {
+      name: 'Level Indexes Table',
+      addressInJUE: 0x4043e,
+      type: 'table',
+      description: "Table of byte offsets to Level Word Table's levels in order of gameplay",
+    },
+    levelWordTable: {
+      name: 'Level Word Table',
+      addressInJUE: 0x40342,
+      type: 'table',
+      description: 'Table of word offsets to level headers',
+    },
+    levelWordTableBase: {
+      name: 'Level Word Table Base',
+      addressInJUE: 0x4033a,
+      type: 'value',
+      description: 'Base address for Level Word Table offsets',
+    },
+    platformWordTable: {
+      name: 'Platforms Word Table',
+      addressInJUE: 0x43a6,
+      type: 'table',
+      description: 'Table of word offsets to platforms layouts',
+    },
+    platformWordTableBase: {
+      name: 'Platforms Word Table Base',
+      addressInJUE: 0x2bb6,
+      type: 'value',
+      description: 'Base address for Platforms Word Table offsets',
+    },
+    levelMiscPtrTable: {
+      name: 'Level Misc Pointer Table',
+      addressInJUE: 0x7b018,
+      type: 'table',
+      description: 'Table of pointers to level misc data (Mostly GFX related)',
+    },
+    themeBlocksPtrTable: {
+      name: 'Theme Blocks Pointer Table',
+      addressInJUE: 0x7b104,
+      type: 'table',
+      description: 'Table of pointers to theme blocks data',
+    },
+    themeBackgroundPtrTable: {
+      name: 'Theme Background Pointer Table',
+      addressInJUE: 0x7b130,
+      type: 'table',
+      description: 'Table of pointers to theme background data',
+    },
+    themeTileMappingsPtrTable: {
+      name: 'Theme Tile Mappings Pointer Table',
+      addressInJUE: 0x7b168,
+      type: 'table',
+      description: 'Table of pointers to theme tile mappings data',
+    },
+    commonBlocksMappingsWordTable: {
+      name: 'Common Blocks Mappings Word Table',
+      addressInJUE: 0x7b8dc,
+      type: 'table',
+      description: 'Table of word offsets to common blocks mappings data',
+    },
+    themePaletteWordTable: {
+      name: 'Theme Palette Word Table',
+      addressInJUE: 0x7b194,
+      type: 'table',
+      description: 'Table of word offsets to theme palette data',
+    },
+    themeBackgroundPaletteWordTable: {
+      name: 'Theme Background Palette Word Table',
+      addressInJUE: 0x7b1aa,
+      type: 'table',
+      description: 'Table of word offsets to theme background palette data',
+    },
+    themeTileCollisionPtrTable: {
+      name: 'Theme Tile Collision Pointer Table',
+      addressInJUE: 0x7b1c0,
+      type: 'table',
+      description: 'Table of pointers to theme tile collision data',
+    },
+    commonBlocksPackedSheet: {
+      name: 'Common Blocks Packed Sheet',
+      addressInJUE: 0x992e4,
+      type: 'data',
+      description: 'Pointer to common blocks packed sheet',
+    },
+    themeBackgroundPlanePtrTable: {
+      name: 'Theme Background Plane Pointer Table',
+      addressInJUE: 0x7b3e4,
+      type: 'table',
+      description: 'Table of pointers to theme background plane data',
+    },
+    hudNumbersPackedSheet: {
+      name: 'HUD Numbers Packed Sheet',
+      addressInJUE: 0x99f34,
+      type: 'data',
+      description: 'Pointer to HUD numbers packed sheet',
+    },
+    backgroundScrollingPtrTable: {
+      name: 'Background Scrolling Pointer Table',
+      addressInJUE: 0x7b1ec,
+      type: 'table',
+      description: 'Table of pointers to background scrolling data',
+    },
+  }
 
 export function findFrameCollisionFrameTable(rom: Rom): number {
   if (rom.knownAddresses.collisionWordTable) {
@@ -281,7 +282,7 @@ export function findPlatformAddresses(rom: Rom): number[] {
   const ptr = rom.findPattern(pattern)
   const offset = rom.data.getUint16(ptr + 2, false)
   console.log(offset.toString(16))
-  const platformWordTable = ptr + 2 + offset;
+  const platformWordTable = ptr + 2 + offset
   const platformWordTableBase = rom.readPtr(ptr + 14)
   rom.knownAddresses.platformWordTable = platformWordTable
   rom.knownAddresses.platformWordTableBase = platformWordTableBase
@@ -311,7 +312,7 @@ export function findlevelMiscPtrTable(rom: Rom) {
   return rom.knownAddresses.levelMiscPtrTable
 }
 
-const LevelMiscTable: typeof ImportantAddresses[number][] = [
+const LevelMiscTable: (typeof ImportantAddresses)[number][] = [
   'themeBlocksPtrTable',
   'themeBackgroundPtrTable',
   'themeTileMappingsPtrTable',
@@ -333,6 +334,6 @@ export function populateLevelMiscTable(rom: Rom) {
   }
   for (let i = 0; i < LevelMiscTable.length; i++) {
     const ptr = rom.readPtr(table + i * 4)
-    rom.knownAddresses[LevelMiscTable[i] as typeof ImportantAddresses[number]] = ptr
+    rom.knownAddresses[LevelMiscTable[i] as (typeof ImportantAddresses)[number]] = ptr
   }
 }
