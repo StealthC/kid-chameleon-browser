@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { isLinkedSpriteFrameResource, type LinkedSpriteFrameRomResourceLoaded, type SpriteFrameRomResourceLoaded, type UnlinkedSpriteFrameRomResourceLoaded } from '@repo/kid-util'
+import { isLinkedSpriteFrameResource, type SpriteFrameRomResourceLoaded } from '@repo/kid-util'
 import { computed, ref, toRefs } from 'vue'
 import Panel from 'primevue/panel'
 import Select from 'primevue/select'

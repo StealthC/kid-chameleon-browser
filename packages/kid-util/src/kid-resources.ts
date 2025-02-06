@@ -234,7 +234,7 @@ export function loadLevelHeaderRomResource(
   const heightComposite = rom.data.getUint8(baseAddress + 1)
   const yOffset = heightComposite >> 6
   const height = heightComposite & 0x3f
-  // Caso você precise, extraia theme e background aqui
+  // TODO: Implement theme and background
   // const themeComposite = rom.data.getUint8(readPos + 2)
   // const backgroundComposite = rom.data.getUint8(readPos + 3)
   const playerX = rom.data.getUint16(baseAddress + 4, false)

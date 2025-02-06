@@ -1,15 +1,17 @@
 <template>
-  <canvas
+  <CanvasRenderer
     v-if="computedValues"
-    ref="canvas"
-    :width="computedValues.columns * 8 * zoom"
-    :height="computedValues.rows * 8 * zoom"
-  ></canvas>
+    :width="computedValues.columns * 8"
+    :height="computedValues.rows * 8"
+    :update-key="computedValues"
+    @update="draw"
+  ></CanvasRenderer>
 </template>
 
 <script setup lang="ts">
 import { bytesToPixels, getCellImageBytes } from '@repo/kid-util'
-import { computed, ref, toRefs, useTemplateRef, watchEffect } from 'vue'
+import { computed, ref, toRefs } from 'vue'
+import CanvasRenderer from './CanvasRenderer.vue'
 
 export type Props = {
   bytes?: Uint8Array
@@ -23,8 +25,6 @@ export type Props = {
 const props = defineProps<Props>()
 const { bytes, width, height } = toRefs(props)
 const tileId = computed(() => props.tileId ?? 0)
-const canvas = useTemplateRef('canvas')
-const zoom = ref(2)
 
 const computedValues = computed(() => {
   if (!bytes.value || !width.value || !height.value) {
@@ -43,26 +43,10 @@ const computedValues = computed(() => {
   return { columns, rows, pixels }
 })
 
-watchEffect(
-  () => {
-    if (bytes.value && computedValues.value && canvas.value) {
-      draw()
-    }
-  },
-  { flush: 'post' },
-)
-
-const draw = () => {
-  if (!canvas.value || !computedValues.value) {
+const draw = (ctx: CanvasRenderingContext2D) => {
+  if (!computedValues.value) {
     return
   }
-  const ctx = canvas.value.getContext('2d')
-  if (!ctx) {
-    return
-  }
-  ctx.resetTransform()
-  ctx.imageSmoothingEnabled = false
-  ctx.scale(zoom.value, zoom.value)
   let cellIndex = 0
   const quadWidth = Math.ceil(computedValues.value.columns / 4.0)
   const quadHeight = Math.ceil(computedValues.value.rows / 4.0)

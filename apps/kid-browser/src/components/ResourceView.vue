@@ -45,12 +45,12 @@ const componentValues = computed(() => {
     return null
   } else if (isSheetResource(loadedResource.value)) {
     return {
-      viewerComponent: defineAsyncComponent(() => import('@/components/TileSheetView.vue')),
+      viewerComponent: defineAsyncComponent(() => import('@/components/rom-resources/TileSheetView.vue')),
       props: { resource: loadedResource.value as SheetRomResourceLoaded },
     }
   } else if (isSpriteFrameResource(loadedResource.value)) {
     return {
-      viewerComponent: defineAsyncComponent(() => import('@/components/SpriteFrameView.vue')),
+      viewerComponent: defineAsyncComponent(() => import('@/components/rom-resources/SpriteFrameView.vue')),
       props: { resource: loadedResource.value as SpriteFrameRomResourceLoaded },
     }
   }

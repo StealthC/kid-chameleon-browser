@@ -11,7 +11,9 @@
 				"sdras.vue-vscode-snippets",
 				"bradlc.vscode-tailwindcss",
 				"Vue.volar",
-				"EditorConfig.EditorConfig"
+				"EditorConfig.EditorConfig",
+				"aaron-bond.better-comments",
+				"Gruntfuggly.todo-tree"
 			],
 			"settings": {
 				"editor.defaultFormatter": "esbenp.prettier-vscode",
