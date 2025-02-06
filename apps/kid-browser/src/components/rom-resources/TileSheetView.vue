@@ -27,7 +27,7 @@
 
 <script setup lang="ts">
 import { computed, ref, toRefs } from 'vue'
-import { bytesToPixels, getCellImageBytes, type SheetRomResourceLoaded } from '@repo/kid-util'
+import { getCellImageBytes, type SheetRomResourceLoaded } from '@repo/kid-util'
 import Panel from 'primevue/panel'
 import InputNumber from 'primevue/inputnumber'
 import CanvasRenderer from './CanvasRenderer.vue'
@@ -36,8 +36,8 @@ const drawCell = async (ctx: CanvasRenderingContext2D, id: number = 0, x: number
   if (!values.value) {
     return
   }
-  const { pixels } = values.value
-  const cellImage = await createImageBitmap(new ImageData(getCellImageBytes(id, pixels), 8, 8))
+  const { data } = values.value
+  const cellImage = await createImageBitmap(new ImageData(getCellImageBytes(id, data), 8, 8))
   ctx.drawImage(cellImage, x * 8, y * 8, 8, 8)
 }
 
@@ -70,12 +70,12 @@ const values = computed(() => {
   if (!resource.value) {
     return null
   }
-  const pixels = bytesToPixels(resource.value.data)
-  const cellsTotal = pixels.length / (8 * 8)
+  const data = resource.value.data
+  const cellsTotal = data.length / (8 * 4)
   const rows = Math.ceil(cellsTotal / columns.value)
 
   return {
-    pixels,
+    data,
     columns: columns.value,
     rows,
     cellsTotal,

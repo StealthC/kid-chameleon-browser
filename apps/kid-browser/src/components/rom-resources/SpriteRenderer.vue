@@ -9,7 +9,7 @@
 </template>
 
 <script setup lang="ts">
-import { bytesToPixels, getCellImageBytes } from '@repo/kid-util'
+import { getCellImageBytes } from '@repo/kid-util'
 import { computed, toRefs } from 'vue'
 import CanvasRenderer from './CanvasRenderer.vue'
 
@@ -39,8 +39,7 @@ const computedValues = computed(() => {
     return null
   }
   const sliceBytes = bytes.value.subarray(start, end)
-  const pixels = bytesToPixels(sliceBytes)
-  return { columns, rows, pixels }
+  return { columns, rows, sliceBytes }
 })
 
 const draw = async (ctx: CanvasRenderingContext2D) => {
@@ -65,7 +64,7 @@ const drawCell = async (ctx: CanvasRenderingContext2D, id: number = 0, x: number
   if (!computedValues.value) {
     return
   }
-  const cellImage = await createImageBitmap(new ImageData(getCellImageBytes(id, computedValues.value.pixels), 8, 8))
+  const cellImage = await createImageBitmap(new ImageData(getCellImageBytes(id, computedValues.value.sliceBytes), 8, 8))
   ctx.drawImage(cellImage, x * 8, y * 8, 8, 8)
 }
 </script>
