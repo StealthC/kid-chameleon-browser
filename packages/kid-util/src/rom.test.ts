@@ -1,6 +1,6 @@
 //@ts-check
 import { beforeAll, describe, expect, test } from '@jest/globals'
-import { Rom } from './rom'
+import { Rom } from './kid-rom'
 import { openFsFile } from './fs'
 
 let rom: Rom

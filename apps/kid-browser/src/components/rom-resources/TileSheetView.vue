@@ -32,22 +32,16 @@ import Panel from 'primevue/panel'
 import InputNumber from 'primevue/inputnumber'
 import CanvasRenderer from './CanvasRenderer.vue'
 
-const drawCell = (ctx: CanvasRenderingContext2D, id: number = 0, x: number = 0, y: number = 0) => {
+const drawCell = async (ctx: CanvasRenderingContext2D, id: number = 0, x: number = 0, y: number = 0) => {
   if (!values.value) {
     return
   }
   const { pixels } = values.value
-  const cellImage = new ImageData(getCellImageBytes(id, pixels), 8, 8)
-  const tempCanvas = new OffscreenCanvas(8, 8)
-  const tempCtx = tempCanvas.getContext('2d')
-
-  if (tempCtx) {
-    tempCtx.putImageData(cellImage, 0, 0)
-    ctx.drawImage(tempCanvas, x * 8, y * 8, 8, 8)
-  }
+  const cellImage = await createImageBitmap(new ImageData(getCellImageBytes(id, pixels), 8, 8))
+  ctx.drawImage(cellImage, x * 8, y * 8, 8, 8)
 }
 
-const draw = (ctx: CanvasRenderingContext2D) => {
+const draw = async (ctx: CanvasRenderingContext2D) => {
   if (!values.value) {
     return
   }
@@ -56,7 +50,7 @@ const draw = (ctx: CanvasRenderingContext2D) => {
     for (let y = 0; y < rows; y++) {
       const cellIndex = x + y * columns
       if (cellIndex < cellsTotal) {
-        drawCell(ctx, cellIndex, x, y)
+        await drawCell(ctx, cellIndex, x, y)
       }
     }
   }

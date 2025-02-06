@@ -43,7 +43,7 @@ const computedValues = computed(() => {
   return { columns, rows, pixels }
 })
 
-const draw = (ctx: CanvasRenderingContext2D) => {
+const draw = async (ctx: CanvasRenderingContext2D) => {
   if (!computedValues.value) {
     return
   }
@@ -54,24 +54,19 @@ const draw = (ctx: CanvasRenderingContext2D) => {
     for (let qx = 0; qx < quadWidth; qx++) {
       for (let x = qx * 4; x < Math.min(qx * 4 + 4, computedValues.value.columns); x++) {
         for (let y = qy * 4; y < Math.min(qy * 4 + 4, computedValues.value.rows); y++) {
-          drawCell(ctx, cellIndex++, x, y)
+          await drawCell(ctx, cellIndex++, x, y)
         }
       }
     }
   }
 }
 
-const drawCell = (ctx: CanvasRenderingContext2D, id: number = 0, x: number = 0, y: number = 0) => {
+const drawCell = async (ctx: CanvasRenderingContext2D, id: number = 0, x: number = 0, y: number = 0) => {
   if (!computedValues.value) {
     return
   }
-  const cellImage = new ImageData(getCellImageBytes(id, computedValues.value.pixels), 8, 8)
-  const tempCanvas = new OffscreenCanvas(8, 8)
-  const tempCtx = tempCanvas.getContext('2d')
-  if (tempCtx) {
-    tempCtx.putImageData(cellImage, 0, 0)
-    ctx.drawImage(tempCanvas, x * 8, y * 8, 8, 8)
-  }
+  const cellImage = await createImageBitmap(new ImageData(getCellImageBytes(id, computedValues.value.pixels), 8, 8))
+  ctx.drawImage(cellImage, x * 8, y * 8, 8, 8)
 }
 </script>
 
