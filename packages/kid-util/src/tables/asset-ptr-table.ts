@@ -297,8 +297,8 @@ export const AssetPtrTableTypes = [
   SpriteFrameWithDataType, //$000a0e8e
   SpriteFrameWithDataType, //$000a0e92
   SpriteFrameWithDataType, //$000a0e96
-  SpriteFrameWithDataType, //$000a0e9a
-  SpriteFrameWithDataType, //$000a0e9e
+  SpriteFrameType, //$000a0e9a
+  SpriteFrameType, //$000a0e9e
   'Color(12)', //$000a0ea2
   'Color(3)', //$000a0ea6
   'Color(15)', //$000a0eaa
