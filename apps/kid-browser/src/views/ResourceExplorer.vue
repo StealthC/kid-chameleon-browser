@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import ResourceTree from '@/components/ResourceTree.vue'
-import type { LoadedResource, BaseResource } from '@repo/kid-util'
+import { fromAddressString } from '@repo/kid-util'
 import { ref } from 'vue'
 import ResourceView from '@/components/ResourceView.vue'
 
-const selectedResource = ref<LoadedResource<BaseResource> | null>(null)
+const selectedResource = ref<string|null>(null)
 
-const loadResource = (resource: LoadedResource<BaseResource>) => {
+const loadResource = (resource: string) => {
   selectedResource.value = resource
 }
 </script>
@@ -16,7 +16,7 @@ const loadResource = (resource: LoadedResource<BaseResource>) => {
       <ResourceTree @selected="loadResource" />
     </div>
     <div class="h-full flex-grow overflow-auto">
-      <ResourceView v-if="selectedResource != null" :resource="selectedResource" />
+      <ResourceView v-if="selectedResource != null" :resource-address="fromAddressString(selectedResource)" />
     </div>
   </main>
 </template>

@@ -79,17 +79,17 @@ const draw = () => {
 }
 
 interface Props {
-  tileSheet: SheetRomResourceLoaded
+  resource: SheetRomResourceLoaded
   columns?: number
 }
 
 const props = defineProps<Props>()
 
-const { tileSheet } = toRefs(props)
+const { resource } = toRefs(props)
 
 const columns = ref(props.columns ?? 16)
 const pixels = computed(() => {
-  return bytesToPixels(tileSheet.value.data!)
+  return bytesToPixels(resource.value.data!)
 })
 const cellsTotal = computed(() => pixels.value.length / (8 * 8))
 const rows = computed(() => Math.ceil(cellsTotal.value / columns.value))
@@ -98,7 +98,7 @@ watchEffect(
   () => {
     if (
       canvas.value &&
-      tileSheet.value &&
+      resource.value &&
       pixels.value &&
       columns.value &&
       rows.value &&

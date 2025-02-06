@@ -5,12 +5,11 @@ import {
   getResource,
   loadResource,
   ResourceTypes,
+  toAddressString,
   type AllRomResources,
   type BaseRomResource,
   type LoadedRomResource,
-  type SheetRomResource,
   type SheetRomResourceUnloaded,
-  type SpriteFrameRomResource,
 } from './kid-resources'
 import { readPtr } from './kid-utils'
 import { KnownRoms, type KnowRomDetails } from './tables/known-roms'
@@ -68,16 +67,26 @@ export type RomFileDetails = {
 }
 
 export type RomResources = {
-  spriteFrames: SpriteFrameRomResource[]
-  tileSheets: SheetRomResource[]
+  spriteFrames: string[]
+  tileSheets: string[]
+}
+
+export type RomTables = {
+  assetIndexTable: (string|null)[]
+  collisionIndexTable: (string|null)[]
+  levelIndexTable: (string|null)[]
 }
 
 export class Rom {
   data: DataView
   resourcesByAddress: Record<string, BaseRomResource> = {}
   knownAddresses: KnownAddresses = {}
-  private _frameCollisionTable: FrameCollision[] = []
-  private _assetPtrTable: number[] = []
+  // References to addresses gotten from many tables
+  public tables: RomTables = {
+    assetIndexTable: [],
+    collisionIndexTable: [],
+    levelIndexTable: []
+  }
   private _details: RomFileDetails | null = null
   resources: RomResources = {
     spriteFrames: [],
@@ -167,7 +176,6 @@ export class Rom {
     tryFindingResouces(this)
 
     try {
-      this._readFrameCollisionTable()
       this._findUntabledPackedTileSheetsDirect1().map((result) => {
         const resource = this.createResource(result.ptr, 'sheet') as SheetRomResourceUnloaded
         resource.packed = { format: 'kid' }
@@ -201,77 +209,20 @@ export class Rom {
     } catch (e) {
       console.error(e)
     }
-    for (const resource of Object.values(this.resourcesByAddress)) {
+    for (const resource of Object.values(this.resourcesByAddress).sort((a, b) => a.baseAddress - b.baseAddress)) {
       try {
-
         if (resource.type === 'sheet') {
-
-          this.resources.tileSheets.push(this.loadResource(resource as AllRomResources) as SheetRomResource)
+          this.resources.tileSheets.push(toAddressString(resource.baseAddress))
         } else if (resource.type.includes('sprite-frame')) {
-          this.resources.spriteFrames.push(this.loadResource(resource as AllRomResources) as SpriteFrameRomResource)
+          this.resources.spriteFrames.push(toAddressString(resource.baseAddress))
         }
       } catch (_e) {
         console.error(_e)
-        //ignores
       }
     }
     this._resourcesLoaded = true
+    console.log('Resources loaded', Object.keys(this.resourcesByAddress).length)
     return this.resources
-  }
-
-  private _readFrameCollisionTable(): FrameCollision[] {
-    if (this._frameCollisionTable.length > 0) return this._frameCollisionTable
-    const ptr = this.knownAddresses.collisionWordTable
-    if (!ptr) {
-      throw new Error('Collision Word Table not found')
-    }
-    // There is to be a limit because the original table have invalid references
-    const addressLimit = ptr + 0x1390
-    let firstData = Infinity
-    let pos = ptr
-    while (pos < firstData) {
-      const dataPtr = this.data.getInt16(pos, false)
-      const address = ptr + dataPtr
-      if (address >= addressLimit) {
-        this._frameCollisionTable.push({
-          left: 0,
-          width: 0,
-          top: 0,
-          height: 0,
-          isZero: true,
-          isInvalid: true,
-          address,
-        })
-        pos += 2
-        continue
-      }
-      firstData = Math.min(firstData, address)
-      const left = this.data.getInt16(address, false)
-      if (left === 0) {
-        this._frameCollisionTable.push({
-          left: 0,
-          width: 0,
-          top: 0,
-          height: 0,
-          isZero: true,
-          address,
-        })
-        pos += 2
-        continue
-      }
-      const width = this.data.getInt16(address + 2, false)
-      const top = this.data.getInt16(address + 4, false)
-      const height = this.data.getInt16(address + 6, false)
-      this._frameCollisionTable.push({
-        left,
-        width,
-        top,
-        height,
-        address,
-      })
-      pos += 2
-    }
-    return this._frameCollisionTable
   }
 
   createResource(
@@ -294,38 +245,16 @@ export class Rom {
     return loadResource(this, resource)
   }
 
-  getResource(address: number): BaseRomResource | null {
+  getResource(address: number|string): BaseRomResource | null {
     return getResource(this, address) ?? null
   }
 
-  getLoadedResource(address: number): LoadedRomResource | null {
+  getLoadedResource(address: number|string): LoadedRomResource | null {
     const resource = this.getResource(address)
     if (resource) {
-      try {
-        return this.loadResource(resource as AllRomResources)
-      } catch (_) {
-        return resource as LoadedRomResource
-      }
+      return this.loadResource(resource as AllRomResources)
     }
     return null
-  }
-
-  /**
-   * Read all the pointers of the Asset Point Table The AssetPtrTable is a table of pointers to
-   * various asset types like color palletes, sprite frames and player sprite frames
-   */
-  readAssetPtrTable(): number[] {
-    if (this._assetPtrTable.length > 0) return this._assetPtrTable
-    //const AssetPtrTableStart = 0xa09fe;
-    //const AssetPtrTableEnd = 0xa1c72;
-    // Find the pattern that points to the AssetPtrTable looking in a function that draws a sprite
-    const drawSpritePattern = this.findPattern('67 00 00 dc 49 f9 ?? ?? ?? ?? 3e 2b 00 22') + 6
-    const AssetPtrTableStart = this.readPtr(drawSpritePattern)
-    const AssetPtrTableEnd = AssetPtrTableStart + 0x49d * 4
-    for (let ptr = AssetPtrTableStart; ptr < AssetPtrTableEnd; ptr += 4) {
-      this._assetPtrTable.push(this.readPtr(ptr))
-    }
-    return this._assetPtrTable
   }
 
   private _findUntabledPackedTileSheetsDirect1() {

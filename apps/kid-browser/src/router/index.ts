@@ -22,7 +22,7 @@ const router = createRouter({
     {
       path: '/resources/:address',
       name: 'resourceByAddress',
-      component: () => import('../views/ResourceView.vue'),
+      component: () => import('../views/ResourceViewPage.vue'),
     },
   ],
 })

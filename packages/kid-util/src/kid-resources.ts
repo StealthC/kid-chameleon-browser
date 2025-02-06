@@ -16,11 +16,27 @@ export const ResourceTypes = [
   'level-header',
 ] as const
 
+export function toAddressString(address: number|string): string {
+  if (typeof address === 'string') {
+    return address
+  } else {
+    return address.toString(16)
+  }
+}
+
+export function fromAddressString(address: string|number): number {
+  if (typeof address === 'number') {
+    return address
+  }
+  return parseInt(address, 16)
+}
+
 export const ResourceTypeLoaderMap: ResourceLoaderMap = {
   'level-header': loadLevelHeaderRomResource,
   sheet: loadSheetRomResource,
   'unlinked-sprite-frame': loadUnlinkedSpriteFrameResource,
   'linked-sprite-frame': loadLinkedSpriteFrameResource,
+  'sprite-collision': loadSpriteCollisionRomResource,
 }
 
 export type AllRomResources =
@@ -28,6 +44,7 @@ export type AllRomResources =
   | SheetRomResource
   | UnlinkedSpriteFrameRomResource
   | LinkedSpriteFrameRomResource
+  | SpriteCollisionRomResource
 
 export type LoadedResourceOfType<K extends (typeof ResourceTypes)[number]> = Extract<
   AllRomResources,
@@ -63,6 +80,26 @@ export type LoadedRomResource = BaseRomResource & {
   loaded: true
   hash: number
   inputSize: number
+}
+
+export function isLoadedResource(resource: BaseRomResource): resource is LoadedRomResource {
+  return (resource as LoadedRomResource).loaded
+}
+
+export function isSheetResource(resource: BaseRomResource): resource is SheetRomResource {
+  return resource.type === 'sheet'
+}
+
+export function isSpriteFrameResource(resource: BaseRomResource): resource is SpriteFrameRomResource {
+  return resource.type === 'unlinked-sprite-frame' || resource.type === 'linked-sprite-frame'
+}
+
+export function isUnlinkedSpriteFrameResource(resource: BaseRomResource): resource is UnlinkedSpriteFrameRomResource {
+  return resource.type === 'unlinked-sprite-frame'
+}
+
+export const isLinkedSpriteFrameResource = (spriteFrame: BaseRomResource): spriteFrame is LinkedSpriteFrameRomResource => {
+  return spriteFrame.type === 'linked-sprite-frame'
 }
 
 // Recursos específicos – exemplo com level-header:
@@ -169,9 +206,24 @@ export type SpriteFrameRomResourceUnloaded = UnlinkedSpriteFrameRomResourceUnloa
 
 export type SpriteFrameRomResourceLoaded = LinkedSpriteFrameRomResourceLoaded | UnlinkedSpriteFrameRomResourceLoaded
 
-export const isLinkedSpriteFrame = (spriteFrame: SpriteFrameRomResource): spriteFrame is LinkedSpriteFrameRomResource => {
-  return spriteFrame.type === 'linked-sprite-frame'
+export type SpriteCollisionRomResourceUnloaded = UnloadedRomResource & {
+  type: 'sprite-collision'
+  wordIndex?: number
+  isInvalid?: boolean
 }
+
+export type SpriteCollisionRomResourceLoaded = LoadedRomResource & {
+  type: 'sprite-collision'
+  wordIndex?: number
+  isZero: boolean,
+  left: number,
+  width: number,
+  top: number,
+  height: number,
+  isInvalid: boolean,
+}
+
+export type SpriteCollisionRomResource = SpriteCollisionRomResourceUnloaded | SpriteCollisionRomResourceLoaded
 
 export function loadLevelHeaderRomResource(
   rom: Rom,
@@ -308,10 +360,35 @@ export function loadLinkedSpriteFrameResource(
   }
 }
 
+export function loadSpriteCollisionRomResource(rom: Rom, resource: SpriteCollisionRomResourceUnloaded): SpriteCollisionRomResourceLoaded {
+  const { baseAddress, wordIndex, isInvalid } = resource
+  const rIsInvalid = isInvalid ?? false
+  const left = rIsInvalid ? 0 : rom.data.getInt16(baseAddress, false)
+  const isZero = rIsInvalid || left === 0
+  const width = isZero ? 0 : rom.data.getInt16(baseAddress + 2, false)
+  const top = isZero ? 0 : rom.data.getInt16(baseAddress + 4, false)
+  const height = isZero ? 0 : rom.data.getInt16(baseAddress + 6, false)
+  const inputSize = isInvalid ? 0 : (isZero ? 2 : 8)
+  const bytes = rom.bytes.subarray(baseAddress, baseAddress + inputSize)
+  const hash = crc32(bytes)
+  return {
+    ...resource,
+    wordIndex,
+    loaded: true,
+    inputSize,
+    hash,
+    isZero,
+    left,
+    width,
+    top,
+    height,
+    isInvalid: rIsInvalid,
+  }
+}
 
 export function loadResource(rom: Rom, resource: AllRomResources): LoadedRomResource {
-  if (resource.loaded) {
-    return resource as LoadedRomResource
+  if (isLoadedResource(resource)) {
+    return resource
   }
   if ((resource as BaseRomResource).type == 'unknown') {
     throw new Error('Cannot load unknown resource')
@@ -326,12 +403,12 @@ export function loadResource(rom: Rom, resource: AllRomResources): LoadedRomReso
 }
 
 export function addResource(rom: Rom, resource: BaseRomResource) {
-  const resourceKey = resource.baseAddress.toString(16)
+  const resourceKey = toAddressString(resource.baseAddress)
   const existingResource = rom.resourcesByAddress[resourceKey]
   if (existingResource) {
     if (resource.type !== existingResource.type) {
       if (resource.type !== 'unknown' && existingResource.type !== 'unknown') {
-        throw new Error(`Resource type mismatch at address ${resource.baseAddress.toString(16)}`)
+        throw new Error(`Resource type mismatch at address ${resourceKey}`)
       }
     }
     // Merge the related resources
@@ -363,18 +440,18 @@ export function checkRelated(rom: Rom, resource: BaseRomResource) {
       // Create the related resource
       rom.resourcesByAddress[related] = {
         type: 'unknown',
-        baseAddress: parseInt(related, 16),
-        related: new Set([resource.baseAddress.toString(16)]),
+        baseAddress: fromAddressString(related),
+        related: new Set([toAddressString(resource.baseAddress)]),
       }
     } else {
-      if (!relatedResource.related.has(resource.baseAddress.toString(16))) {
+      if (!relatedResource.related.has(toAddressString(resource.baseAddress))) {
         // Add the resource to the related set
-        relatedResource.related.add(resource.baseAddress.toString(16))
+        relatedResource.related.add(toAddressString(resource.baseAddress))
       }
     }
   }
 }
 
-export function getResource(rom: Rom, address: number): BaseRomResource | undefined {
-  return rom.resourcesByAddress[address.toString(16)]
+export function getResource(rom: Rom, address: number|string): BaseRomResource | undefined {
+  return rom.resourcesByAddress[toAddressString(address)]
 }
