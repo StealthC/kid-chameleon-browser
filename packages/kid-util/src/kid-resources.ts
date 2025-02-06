@@ -1,6 +1,6 @@
 import { crc32 } from './hash'
 import { calculatePlayerSpriteDataSize } from './kid-utils'
-import type { Rom } from './rom'
+import type { Rom } from './kid-rom'
 import { unpackKidFormat } from './unpack-kid'
 
 export type PackedFormat = 'kid' | 'enigma'

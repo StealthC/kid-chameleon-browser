@@ -6,7 +6,7 @@ import {
   type SpriteCollisionRomResourceUnloaded,
   type UnlinkedSpriteFrameRomResourceUnloaded,
 } from './kid-resources'
-import { Rom } from './rom'
+import { Rom } from './kid-rom'
 import {
   AssetPtrTableTypes,
   PackedTileSheet,

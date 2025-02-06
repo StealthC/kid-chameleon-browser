@@ -6,10 +6,10 @@
 import ResourceView from '@/components/ResourceView.vue'
 import { useRoute } from 'vue-router'
 import { computed } from 'vue'
-import { fromAddressString } from '@repo/kid-util'
+import { getAddressNumber } from '@/utils'
 
 const route = useRoute()
-const address = computed(() => fromAddressString(route.params.address as string)) // Torna reativo
+const address = computed(() => getAddressNumber(route.params.address as string)) // Torna reativo
 </script>
 
 <style scoped></style>

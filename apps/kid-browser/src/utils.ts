@@ -19,3 +19,12 @@ export async function executeNextTick<T>(fn: () => T) {
     }, 0)
   })
 }
+
+export function getAddressNumber(address: string|number): number {
+  if (typeof address === 'string') {
+    // remove "$"" or "0x" prefix
+    const cleanAddress = address.trim().replace(/^[\$]|^0x/g, '')
+    address = parseInt(cleanAddress, 16)
+  }
+  return address
+}
