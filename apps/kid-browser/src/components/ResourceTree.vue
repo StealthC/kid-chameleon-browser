@@ -17,30 +17,26 @@ const emit = defineEmits<{
   selected: [resource: string]
 }>()
 
-
-
 const { romResources } = storeToRefs(useRomStore())
 const selectedKey = ref<TreeSelectionKeys | undefined>(undefined)
 const spriteFrames = computed(() => {
   if (!romResources.value) return []
-  return romResources.value.spriteFrames
-    .map((spriteFrame) => ({
-      key: `0x${spriteFrame}`,
-      label: `0x${spriteFrame}`,
-      selectable: true,
-      data: spriteFrame,
-    }))
+  return romResources.value.spriteFrames.map((spriteFrame) => ({
+    key: `${spriteFrame}`,
+    label: `$${spriteFrame.toUpperCase()}`,
+    selectable: true,
+    data: spriteFrame,
+  }))
 })
 
 const tileSheets = computed(() => {
   if (!romResources.value) return []
-  return romResources.value.tileSheets
-    .map((tileSheet) => ({
-      key: `0x${tileSheet}`,
-      label: `0x${tileSheet}`,
-      selectable: true,
-      data: tileSheet,
-    }))
+  return romResources.value.tileSheets.map((tileSheet) => ({
+    key: `${tileSheet}`,
+    label: `$${tileSheet.toUpperCase()}`,
+    selectable: true,
+    data: tileSheet,
+  }))
 })
 
 const nodes = computed(() => {

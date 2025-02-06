@@ -10,7 +10,6 @@ import { fromAddressString } from '@repo/kid-util'
 
 const route = useRoute()
 const address = computed(() => fromAddressString(route.params.address as string)) // Torna reativo
-
 </script>
 
 <style scoped></style>

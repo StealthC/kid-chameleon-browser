@@ -3,13 +3,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, toRefs, useTemplateRef, watch, watchEffect } from 'vue'
+import { ref, toRefs, useTemplateRef, watch, type MaybeRef } from 'vue'
 
 export type Props = {
   width: number
   height: number
   initialZoom?: number
-  updateKey?: any
+  updateKey?: MaybeRef<unknown>
 }
 
 const defaultZoom = 2
@@ -58,7 +58,7 @@ watch(
       draw(canvas.value)
     }
   },
-  { immediate: true, flush: 'post' }
+  { immediate: true, flush: 'post' },
 )
 </script>
 

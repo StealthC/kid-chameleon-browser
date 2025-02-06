@@ -16,7 +16,7 @@ export const ResourceTypes = [
   'level-header',
 ] as const
 
-export function toAddressString(address: number|string): string {
+export function toAddressString(address: number | string): string {
   if (typeof address === 'string') {
     return address
   } else {
@@ -24,7 +24,7 @@ export function toAddressString(address: number|string): string {
   }
 }
 
-export function fromAddressString(address: string|number): number {
+export function fromAddressString(address: string | number): number {
   if (typeof address === 'number') {
     return address
   }
@@ -90,15 +90,21 @@ export function isSheetResource(resource: BaseRomResource): resource is SheetRom
   return resource.type === 'sheet'
 }
 
-export function isSpriteFrameResource(resource: BaseRomResource): resource is SpriteFrameRomResource {
+export function isSpriteFrameResource(
+  resource: BaseRomResource,
+): resource is SpriteFrameRomResource {
   return resource.type === 'unlinked-sprite-frame' || resource.type === 'linked-sprite-frame'
 }
 
-export function isUnlinkedSpriteFrameResource(resource: BaseRomResource): resource is UnlinkedSpriteFrameRomResource {
+export function isUnlinkedSpriteFrameResource(
+  resource: BaseRomResource,
+): resource is UnlinkedSpriteFrameRomResource {
   return resource.type === 'unlinked-sprite-frame'
 }
 
-export const isLinkedSpriteFrameResource = (spriteFrame: BaseRomResource): spriteFrame is LinkedSpriteFrameRomResource => {
+export const isLinkedSpriteFrameResource = (
+  spriteFrame: BaseRomResource,
+): spriteFrame is LinkedSpriteFrameRomResource => {
   return spriteFrame.type === 'linked-sprite-frame'
 }
 
@@ -202,9 +208,13 @@ export type LinkedSpriteFrameRomResource =
 
 export type SpriteFrameRomResource = UnlinkedSpriteFrameRomResource | LinkedSpriteFrameRomResource
 
-export type SpriteFrameRomResourceUnloaded = UnlinkedSpriteFrameRomResourceUnloaded | LinkedSpriteFrameRomResourceUnloaded
+export type SpriteFrameRomResourceUnloaded =
+  | UnlinkedSpriteFrameRomResourceUnloaded
+  | LinkedSpriteFrameRomResourceUnloaded
 
-export type SpriteFrameRomResourceLoaded = LinkedSpriteFrameRomResourceLoaded | UnlinkedSpriteFrameRomResourceLoaded
+export type SpriteFrameRomResourceLoaded =
+  | LinkedSpriteFrameRomResourceLoaded
+  | UnlinkedSpriteFrameRomResourceLoaded
 
 export type SpriteCollisionRomResourceUnloaded = UnloadedRomResource & {
   type: 'sprite-collision'
@@ -215,15 +225,17 @@ export type SpriteCollisionRomResourceUnloaded = UnloadedRomResource & {
 export type SpriteCollisionRomResourceLoaded = LoadedRomResource & {
   type: 'sprite-collision'
   wordIndex?: number
-  isZero: boolean,
-  left: number,
-  width: number,
-  top: number,
-  height: number,
-  isInvalid: boolean,
+  isZero: boolean
+  left: number
+  width: number
+  top: number
+  height: number
+  isInvalid: boolean
 }
 
-export type SpriteCollisionRomResource = SpriteCollisionRomResourceUnloaded | SpriteCollisionRomResourceLoaded
+export type SpriteCollisionRomResource =
+  | SpriteCollisionRomResourceUnloaded
+  | SpriteCollisionRomResourceLoaded
 
 export function loadLevelHeaderRomResource(
   rom: Rom,
@@ -308,7 +320,7 @@ export function loadSheetRomResource(
 
 export function loadUnlinkedSpriteFrameResource(
   rom: Rom,
-  resource : UnlinkedSpriteFrameRomResourceUnloaded,
+  resource: UnlinkedSpriteFrameRomResourceUnloaded,
 ): UnlinkedSpriteFrameRomResourceLoaded {
   const { baseAddress } = resource
   const tileId = rom.data.getUint16(baseAddress, false)
@@ -360,7 +372,10 @@ export function loadLinkedSpriteFrameResource(
   }
 }
 
-export function loadSpriteCollisionRomResource(rom: Rom, resource: SpriteCollisionRomResourceUnloaded): SpriteCollisionRomResourceLoaded {
+export function loadSpriteCollisionRomResource(
+  rom: Rom,
+  resource: SpriteCollisionRomResourceUnloaded,
+): SpriteCollisionRomResourceLoaded {
   const { baseAddress, wordIndex, isInvalid } = resource
   const rIsInvalid = isInvalid ?? false
   const left = rIsInvalid ? 0 : rom.data.getInt16(baseAddress, false)
@@ -368,7 +383,7 @@ export function loadSpriteCollisionRomResource(rom: Rom, resource: SpriteCollisi
   const width = isZero ? 0 : rom.data.getInt16(baseAddress + 2, false)
   const top = isZero ? 0 : rom.data.getInt16(baseAddress + 4, false)
   const height = isZero ? 0 : rom.data.getInt16(baseAddress + 6, false)
-  const inputSize = isInvalid ? 0 : (isZero ? 2 : 8)
+  const inputSize = isInvalid ? 0 : isZero ? 2 : 8
   const bytes = rom.bytes.subarray(baseAddress, baseAddress + inputSize)
   const hash = crc32(bytes)
   return {
@@ -452,6 +467,6 @@ export function checkRelated(rom: Rom, resource: BaseRomResource) {
   }
 }
 
-export function getResource(rom: Rom, address: number|string): BaseRomResource | undefined {
+export function getResource(rom: Rom, address: number | string): BaseRomResource | undefined {
   return rom.resourcesByAddress[toAddressString(address)]
 }

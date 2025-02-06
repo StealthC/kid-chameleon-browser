@@ -44,116 +44,116 @@ export type AddressDescription = {
 }
 
 export const KnownAddressesDescriptions: Partial<Record<keyof KnownAddresses, AddressDescription>> =
-{
-  assetTable: {
-    name: 'Asset Table',
-    addressInJUE: 0xa09fe,
-    type: 'table',
-    description: 'Table of pointers to sprite assets used ingame',
-  },
-  collisionWordTable: {
-    name: 'Collision Frame Table',
-    addressInJUE: 0x30bf4,
-    type: 'table',
-    description: 'Table of word offsets to collision frames for sprites in Asset Table',
-  },
-  unpackGFXFunction: {
-    name: 'Unpack GFX',
-    addressInJUE: 0x142fa,
-    type: 'function',
-    description: 'Function that unpack graphics',
-  },
-  levelIndexesTable: {
-    name: 'Level Indexes Table',
-    addressInJUE: 0x4043e,
-    type: 'table',
-    description: "Table of byte offsets to Level Word Table's levels in order of gameplay",
-  },
-  levelWordTable: {
-    name: 'Level Word Table',
-    addressInJUE: 0x40342,
-    type: 'table',
-    description: 'Table of word offsets to level headers',
-  },
-  levelWordTableBase: {
-    name: 'Level Word Table Base',
-    addressInJUE: 0x4033a,
-    type: 'value',
-    description: 'Base address for Level Word Table offsets',
-  },
-  platformWordTable: {
-    name: 'Platforms Word Table',
-    addressInJUE: 0x43a6,
-    type: 'table',
-    description: 'Table of word offsets to platforms layouts',
-  },
-  platformWordTableBase: {
-    name: 'Platforms Word Table Base',
-    addressInJUE: 0x2bb6,
-    type: 'value',
-    description: 'Base address for Platforms Word Table offsets',
-  },
-  levelMiscPtrTable: {
-    name: 'Level Misc Pointer Table',
-    addressInJUE: 0x7b018,
-    type: 'table',
-    description: 'Table of pointers to level misc data (Mostly GFX related)',
-  },
-  themeBlocksPtrTable: {
-    name: 'Theme Blocks Pointer Table',
-    addressInJUE: 0x7b104,
-    type: 'table',
-    description: 'Table of pointers to theme blocks data',
-  },
-  themeBackgroundPtrTable: {
-    name: 'Theme Background Pointer Table',
-    addressInJUE: 0x7b130,
-    type: 'table',
-    description: 'Table of pointers to theme background data',
-  },
-  themeTileMappingsPtrTable: {
-    name: 'Theme Tile Mappings Pointer Table',
-    addressInJUE: 0x7b168,
-    type: 'table',
-    description: 'Table of pointers to theme tile mappings data',
-  },
-  commonBlocksMappingsWordTable: {
-    name: 'Common Blocks Mappings Word Table',
-    addressInJUE: 0x7b8dc,
-    type: 'table',
-    description: 'Table of word offsets to common blocks mappings data',
-  },
-  themePaletteWordTable: {
-    name: 'Theme Palette Word Table',
-    addressInJUE: 0x7b194,
-    type: 'table',
-    description: 'Table of word offsets to theme palette data',
-  },
-  themeBackgroundPaletteWordTable: {
-    name: 'Theme Background Palette Word Table',
-    addressInJUE: 0x7b1aa,
-    type: 'table',
-    description: 'Table of word offsets to theme background palette data',
-  },
-  themeTileCollisionPtrTable: {
-    name: 'Theme Tile Collision Pointer Table',
-    addressInJUE: 0x7b1c0,
-    type: 'table',
-    description: 'Table of pointers to theme tile collision data',
-  },
-  themeBackgroundPlanePtrTable: {
-    name: 'Theme Background Plane Pointer Table',
-    addressInJUE: 0x7b3e4,
-    type: 'table',
-    description: 'Table of pointers to theme background plane data',
-  },
-  backgroundScrollingPtrTable: {
-    name: 'Background Scrolling Pointer Table',
-    addressInJUE: 0x7b1ec,
-    type: 'table',
-    description: 'Table of pointers to background scrolling data',
-  },
-}
+  {
+    assetTable: {
+      name: 'Asset Table',
+      addressInJUE: 0xa09fe,
+      type: 'table',
+      description: 'Table of pointers to sprite assets used ingame',
+    },
+    collisionWordTable: {
+      name: 'Collision Frame Table',
+      addressInJUE: 0x30bf4,
+      type: 'table',
+      description: 'Table of word offsets to collision frames for sprites in Asset Table',
+    },
+    unpackGFXFunction: {
+      name: 'Unpack GFX',
+      addressInJUE: 0x142fa,
+      type: 'function',
+      description: 'Function that unpack graphics',
+    },
+    levelIndexesTable: {
+      name: 'Level Indexes Table',
+      addressInJUE: 0x4043e,
+      type: 'table',
+      description: "Table of byte offsets to Level Word Table's levels in order of gameplay",
+    },
+    levelWordTable: {
+      name: 'Level Word Table',
+      addressInJUE: 0x40342,
+      type: 'table',
+      description: 'Table of word offsets to level headers',
+    },
+    levelWordTableBase: {
+      name: 'Level Word Table Base',
+      addressInJUE: 0x4033a,
+      type: 'value',
+      description: 'Base address for Level Word Table offsets',
+    },
+    platformWordTable: {
+      name: 'Platforms Word Table',
+      addressInJUE: 0x43a6,
+      type: 'table',
+      description: 'Table of word offsets to platforms layouts',
+    },
+    platformWordTableBase: {
+      name: 'Platforms Word Table Base',
+      addressInJUE: 0x2bb6,
+      type: 'value',
+      description: 'Base address for Platforms Word Table offsets',
+    },
+    levelMiscPtrTable: {
+      name: 'Level Misc Pointer Table',
+      addressInJUE: 0x7b018,
+      type: 'table',
+      description: 'Table of pointers to level misc data (Mostly GFX related)',
+    },
+    themeBlocksPtrTable: {
+      name: 'Theme Blocks Pointer Table',
+      addressInJUE: 0x7b104,
+      type: 'table',
+      description: 'Table of pointers to theme blocks data',
+    },
+    themeBackgroundPtrTable: {
+      name: 'Theme Background Pointer Table',
+      addressInJUE: 0x7b130,
+      type: 'table',
+      description: 'Table of pointers to theme background data',
+    },
+    themeTileMappingsPtrTable: {
+      name: 'Theme Tile Mappings Pointer Table',
+      addressInJUE: 0x7b168,
+      type: 'table',
+      description: 'Table of pointers to theme tile mappings data',
+    },
+    commonBlocksMappingsWordTable: {
+      name: 'Common Blocks Mappings Word Table',
+      addressInJUE: 0x7b8dc,
+      type: 'table',
+      description: 'Table of word offsets to common blocks mappings data',
+    },
+    themePaletteWordTable: {
+      name: 'Theme Palette Word Table',
+      addressInJUE: 0x7b194,
+      type: 'table',
+      description: 'Table of word offsets to theme palette data',
+    },
+    themeBackgroundPaletteWordTable: {
+      name: 'Theme Background Palette Word Table',
+      addressInJUE: 0x7b1aa,
+      type: 'table',
+      description: 'Table of word offsets to theme background palette data',
+    },
+    themeTileCollisionPtrTable: {
+      name: 'Theme Tile Collision Pointer Table',
+      addressInJUE: 0x7b1c0,
+      type: 'table',
+      description: 'Table of pointers to theme tile collision data',
+    },
+    themeBackgroundPlanePtrTable: {
+      name: 'Theme Background Plane Pointer Table',
+      addressInJUE: 0x7b3e4,
+      type: 'table',
+      description: 'Table of pointers to theme background plane data',
+    },
+    backgroundScrollingPtrTable: {
+      name: 'Background Scrolling Pointer Table',
+      addressInJUE: 0x7b1ec,
+      type: 'table',
+      description: 'Table of pointers to background scrolling data',
+    },
+  }
 
 export function tryFindingAllKnownAddresses(rom: Rom) {
   const functions = [
@@ -179,7 +179,7 @@ export function tryFindingResouces(rom: Rom) {
   const functions = [
     findFrameCollisionFramTableResources,
     findAssetTableResources,
-    findAllLevelHeaders
+    findAllLevelHeaders,
   ]
   for (const fn of functions) {
     try {
@@ -323,7 +323,10 @@ function findFrameCollisionFramTableResources(rom: Rom) {
     const dataPtr = rom.data.getInt16(pos, false)
     const address = frameCollisionTable + dataPtr
     rom.tables.collisionIndexTable.push(toAddressString(address))
-    const resource = rom.createResource(address, 'sprite-collision') as SpriteCollisionRomResourceUnloaded
+    const resource = rom.createResource(
+      address,
+      'sprite-collision',
+    ) as SpriteCollisionRomResourceUnloaded
     resource.wordIndex = index
     if (address >= addressLimit) {
       // Garbage pointer

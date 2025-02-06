@@ -27,6 +27,8 @@ coverage
 *.sln
 *.sw?
 
+!vite-env.d.ts
+
 vite.config.js
 eslint.config.js
 

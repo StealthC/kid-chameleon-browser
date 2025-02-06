@@ -19,3 +19,17 @@ app.use(ToastService)
 app.use(router)
 
 app.mount('#app')
+console.log(`
++------------------+
+| +--------------+ |
+| |  +-------+   | |
+| |  |  +--+ ++  | |
+| |  |  |  |  |  | |
+| |  |  +--+ ++  | |
+| |  |  +----+   | |
+| |  |  |        | |
+| |  +--+        | |
+| +--------------+ |
++------------------+
+Kid Chameleon Browser version ${__APP_VERSION__} is running and ready to go!
+`)

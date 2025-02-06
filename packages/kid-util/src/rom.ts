@@ -72,9 +72,9 @@ export type RomResources = {
 }
 
 export type RomTables = {
-  assetIndexTable: (string|null)[]
-  collisionIndexTable: (string|null)[]
-  levelIndexTable: (string|null)[]
+  assetIndexTable: (string | null)[]
+  collisionIndexTable: (string | null)[]
+  levelIndexTable: (string | null)[]
 }
 
 export class Rom {
@@ -85,7 +85,7 @@ export class Rom {
   public tables: RomTables = {
     assetIndexTable: [],
     collisionIndexTable: [],
-    levelIndexTable: []
+    levelIndexTable: [],
   }
   private _details: RomFileDetails | null = null
   resources: RomResources = {
@@ -209,7 +209,9 @@ export class Rom {
     } catch (e) {
       console.error(e)
     }
-    for (const resource of Object.values(this.resourcesByAddress).sort((a, b) => a.baseAddress - b.baseAddress)) {
+    for (const resource of Object.values(this.resourcesByAddress).sort(
+      (a, b) => a.baseAddress - b.baseAddress,
+    )) {
       try {
         if (resource.type === 'sheet') {
           this.resources.tileSheets.push(toAddressString(resource.baseAddress))
@@ -245,11 +247,11 @@ export class Rom {
     return loadResource(this, resource)
   }
 
-  getResource(address: number|string): BaseRomResource | null {
+  getResource(address: number | string): BaseRomResource | null {
     return getResource(this, address) ?? null
   }
 
-  getLoadedResource(address: number|string): LoadedRomResource | null {
+  getLoadedResource(address: number | string): LoadedRomResource | null {
     const resource = this.getResource(address)
     if (resource) {
       return this.loadResource(resource as AllRomResources)

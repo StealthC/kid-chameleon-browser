@@ -10,7 +10,7 @@
 
 <script setup lang="ts">
 import { bytesToPixels, getCellImageBytes } from '@repo/kid-util'
-import { computed, ref, toRefs } from 'vue'
+import { computed, toRefs } from 'vue'
 import CanvasRenderer from './CanvasRenderer.vue'
 
 export type Props = {

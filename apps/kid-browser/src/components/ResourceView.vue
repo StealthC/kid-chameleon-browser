@@ -24,7 +24,13 @@
 <script setup lang="ts">
 import { useResourceLoader } from '@/composables/resource-loader'
 import useRomStore from '@/stores/rom'
-import { isLoadedResource, isSheetResource, isSpriteFrameResource, type SheetRomResourceLoaded, type SpriteFrameRomResourceLoaded } from '@repo/kid-util'
+import {
+  isLoadedResource,
+  isSheetResource,
+  isSpriteFrameResource,
+  type SheetRomResourceLoaded,
+  type SpriteFrameRomResourceLoaded,
+} from '@repo/kid-util'
 import { storeToRefs } from 'pinia'
 import { computed, defineAsyncComponent, toRefs } from 'vue'
 import HexView from './HexView.vue'
@@ -45,12 +51,16 @@ const componentValues = computed(() => {
     return null
   } else if (isSheetResource(loadedResource.value)) {
     return {
-      viewerComponent: defineAsyncComponent(() => import('@/components/rom-resources/TileSheetView.vue')),
+      viewerComponent: defineAsyncComponent(
+        () => import('@/components/rom-resources/TileSheetView.vue'),
+      ),
       props: { resource: loadedResource.value as SheetRomResourceLoaded },
     }
   } else if (isSpriteFrameResource(loadedResource.value)) {
     return {
-      viewerComponent: defineAsyncComponent(() => import('@/components/rom-resources/SpriteFrameView.vue')),
+      viewerComponent: defineAsyncComponent(
+        () => import('@/components/rom-resources/SpriteFrameView.vue'),
+      ),
       props: { resource: loadedResource.value as SpriteFrameRomResourceLoaded },
     }
   }

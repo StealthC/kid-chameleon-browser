@@ -42,24 +42,24 @@ interface Props {
   resource: SpriteFrameRomResourceLoaded
 }
 
-
 const props = defineProps<Props>()
 const { resource } = toRefs(props)
 const sheet = ref(null)
 const { romResources } = storeToRefs(useRomStore())
 const sheets = computed(() => {
   if (romResources.value) {
-    return romResources.value.tileSheets
-      .map((sheet) => ({
-        name: sheet,
-        value: sheet,
-      }))
+    return romResources.value.tileSheets.map((sheet) => ({
+      name: sheet,
+      value: sheet,
+    }))
   }
   return []
 })
 const resourceName = computed(() => `0x${resource.value.baseAddress.toString(16)}`)
 const needSheet = computed(() => !isLinkedSpriteFrameResource(resource.value))
-const tileId = computed(() => !isLinkedSpriteFrameResource(resource.value) ? resource.value.tileId : 0)
+const tileId = computed(() =>
+  !isLinkedSpriteFrameResource(resource.value) ? resource.value.tileId : 0,
+)
 const bytes = computed(() => {
   if (isLinkedSpriteFrameResource(resource.value)) {
     return resource.value.data

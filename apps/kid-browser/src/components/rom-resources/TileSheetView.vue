@@ -26,12 +26,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, toRefs, useTemplateRef, watchEffect } from 'vue'
-import {
-  bytesToPixels,
-  getCellImageBytes,
-  type SheetRomResourceLoaded,
-} from '@repo/kid-util'
+import { computed, ref, toRefs } from 'vue'
+import { bytesToPixels, getCellImageBytes, type SheetRomResourceLoaded } from '@repo/kid-util'
 import Panel from 'primevue/panel'
 import InputNumber from 'primevue/inputnumber'
 import CanvasRenderer from './CanvasRenderer.vue'
@@ -88,10 +84,9 @@ const values = computed(() => {
     pixels,
     columns: columns.value,
     rows,
-    cellsTotal
+    cellsTotal,
   }
 })
-
 </script>
 
 <style scoped></style>

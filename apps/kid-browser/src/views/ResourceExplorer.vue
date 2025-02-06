@@ -4,7 +4,7 @@ import { fromAddressString } from '@repo/kid-util'
 import { ref } from 'vue'
 import ResourceView from '@/components/ResourceView.vue'
 
-const selectedResource = ref<string|null>(null)
+const selectedResource = ref<string | null>(null)
 
 const loadResource = (resource: string) => {
   selectedResource.value = resource
@@ -16,7 +16,10 @@ const loadResource = (resource: string) => {
       <ResourceTree @selected="loadResource" />
     </div>
     <div class="h-full flex-grow overflow-auto">
-      <ResourceView v-if="selectedResource != null" :resource-address="fromAddressString(selectedResource)" />
+      <ResourceView
+        v-if="selectedResource != null"
+        :resource-address="fromAddressString(selectedResource)"
+      />
     </div>
   </main>
 </template>
