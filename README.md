@@ -1,5 +1,7 @@
 # Kid Chameleon Browser
 
+Last build running version at: [Kid Chameleon Browser](https://stealthc.net/kid-chameleon-browser/)
+
 **Analysis and Visualization of Kid Chameleon ROM Resources**
 
 Kid Chameleon Browser is a tool built with TypeScript and Vue.js to identify, extract, and visualize various types of resources (sprites, tile sheets, animations, levels, etc.) from Kid Chameleon ROMs for Sega Genesis/Mega Drive.
