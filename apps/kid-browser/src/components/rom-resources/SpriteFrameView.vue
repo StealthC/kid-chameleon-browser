@@ -29,14 +29,13 @@
 </template>
 
 <script setup lang="ts">
-import { isLinkedSpriteFrameResource, type SpriteFrameRomResourceLoaded } from '@repo/kid-util'
-import { computed, ref, toRefs } from 'vue'
+import { isLinkedSpriteFrameResource, isLoadedResource, isSheetResource, type SpriteFrameRomResourceLoaded } from '@repo/kid-util'
+import { computed, ref, toRefs, type Ref } from 'vue'
 import Panel from 'primevue/panel'
 import Select from 'primevue/select'
 import SpriteRenderer from './SpriteRenderer.vue'
-import useRomStore from '@/stores/rom'
-import { storeToRefs } from 'pinia'
 import { addressFormat } from '@/utils'
+import { useResourceLoader } from '@/composables/resource-loader'
 
 interface Props {
   resource: SpriteFrameRomResourceLoaded
@@ -44,12 +43,16 @@ interface Props {
 
 const props = defineProps<Props>()
 const { resource } = toRefs(props)
-const sheet = ref(null)
-const { romResources } = storeToRefs(useRomStore())
+const sheet = ref<number|null>(null)
+const resourceLoader = useResourceLoader()
+const sheetList = resourceLoader.value.getResourceListOfTypeQuery('sheet')
+const isSheetSelected = computed(() => sheet.value !== null)
+const loadedSheet = resourceLoader.value.useGetResourceQuery(sheet as Ref<number>, true, { enabled: isSheetSelected })
 const sheets = computed(() => {
-  if (romResources.value) {
-    return romResources.value.tileSheets.map((sheet) => ({
-      name: sheet,
+
+  if (sheetList.data.value) {
+    return sheetList.data.value.map((sheet) => ({
+      name: addressFormat(sheet),
       value: sheet,
     }))
   }
@@ -64,8 +67,8 @@ const bytes = computed(() => {
   if (isLinkedSpriteFrameResource(resource.value)) {
     return resource.value.data
   }
-  if (sheet.value) {
-    return sheet.value
+  if (loadedSheet.data.value && isLoadedResource(loadedSheet.data.value) && isSheetResource(loadedSheet.data.value)) {
+    return loadedSheet.data.value.data
   }
   return null
 })

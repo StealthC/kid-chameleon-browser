@@ -1,3 +1,4 @@
+import type { ResourceTypes } from '@repo/kid-util'
 import byteSize from 'byte-size'
 
 export function addressFormat(address: number): string {
@@ -27,4 +28,14 @@ export function getAddressNumber(address: string|number): number {
     address = parseInt(cleanAddress, 16)
   }
   return address
+}
+
+const nameForType: Partial<Record<typeof ResourceTypes[number], string>> = {
+  sheet: 'Tile Sheet',
+  "linked-sprite-frame": 'Sprite Frame (with graphics)',
+  "unlinked-sprite-frame": 'Sprite Frame',
+}
+
+export function getNameForType(type: typeof ResourceTypes[number]): string {
+  return nameForType[type] || type
 }

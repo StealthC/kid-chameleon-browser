@@ -1,6 +1,6 @@
 import useRomStore from '@/stores/rom'
 import { ResourceTypes, type AllRomResources } from '@repo/kid-util'
-import { useQuery } from '@tanstack/vue-query'
+import { useQuery, type UseQueryOptions } from '@tanstack/vue-query'
 import { storeToRefs } from 'pinia'
 import { computed, unref, type MaybeRef } from 'vue'
 
@@ -8,7 +8,7 @@ export function useResourceLoader() {
   const { rom, romDetails } = storeToRefs(useRomStore())
 
 
-  const useGetResourceQuery = (address: MaybeRef<number>, load = true) => {
+  const useGetResourceQuery = (address: MaybeRef<number>, load = true, options: Partial<Omit<UseQueryOptions, "queryKey">> = {}) => {
     return useQuery({
       queryKey: ['getResource', address, load, romDetails],
       queryFn: async () => {
@@ -24,6 +24,7 @@ export function useResourceLoader() {
           ) as AllRomResources & { loaded: true }
         }
       },
+      ...options,
     })
   }
   const useGetMultipleResourcesQuery = (addresses: MaybeRef<number[]>, load = true) => {
