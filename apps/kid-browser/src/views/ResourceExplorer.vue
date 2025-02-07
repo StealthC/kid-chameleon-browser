@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import ResourceTree from '@/components/ResourceTree.vue'
-import { fromAddressString } from '@repo/kid-util'
 import { ref } from 'vue'
 import ResourceView from '@/components/ResourceView.vue'
 
-const selectedResource = ref<string | null>(null)
+const selectedResource = ref<number | null>(null)
 
-const loadResource = (resource: string) => {
+const loadResource = (resource: number) => {
   selectedResource.value = resource
 }
 </script>
@@ -18,7 +17,7 @@ const loadResource = (resource: string) => {
     <div class="h-full flex-grow overflow-auto">
       <ResourceView
         v-if="selectedResource != null"
-        :resource-address="fromAddressString(selectedResource)"
+        :resource-address="selectedResource"
       />
     </div>
   </main>

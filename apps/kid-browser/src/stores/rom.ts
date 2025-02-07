@@ -1,6 +1,6 @@
 import { ref, watchEffect } from 'vue'
 import { defineStore } from 'pinia'
-import { Rom, type RomFileDetails, type RomResources } from '@repo/kid-util'
+import { Rom, type RomFileDetails } from '@repo/kid-util'
 import { executeNextTick } from '@/utils'
 import type { KnownAddresses } from '@repo/kid-util'
 import localforage from 'localforage'
@@ -8,7 +8,6 @@ import localforage from 'localforage'
 const useRomStore = defineStore('rom', () => {
   const rom = ref<Rom | null>(null)
   const romDetails = ref<RomFileDetails | null>(null)
-  const romResources = ref<RomResources | null>(null)
   const romKnownAddresses = ref<KnownAddresses | null>(null)
   async function loadRomFromStorage() {
     const romBytes = await localforage.getItem<Uint8Array>('rom')
@@ -19,14 +18,11 @@ const useRomStore = defineStore('rom', () => {
   async function _loadRom(bytes: Uint8Array) {
     const newRom = new Rom(bytes)
     executeNextTick(async () => {
+      rom.value!.loadResources()
       romDetails.value = await newRom.getRomFileDetails()
-    })
-    executeNextTick(async () => {
       try {
-        romResources.value = newRom.loadResources()
         romKnownAddresses.value = newRom.knownAddresses
       } catch (e) {
-        romResources.value = { spriteFrames: [], tileSheets: [] }
         romKnownAddresses.value = {}
         console.error('Error loading resources', e)
       }
@@ -42,7 +38,7 @@ const useRomStore = defineStore('rom', () => {
       loadRomFromStorage()
     }
   })
-  return { rom, romDetails, romResources, romKnownAddresses, loadRom }
+  return { rom, romDetails, romKnownAddresses, loadRom }
 })
 
 export default useRomStore

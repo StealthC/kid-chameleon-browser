@@ -8,39 +8,44 @@
 </template>
 
 <script setup lang="ts">
-import useRomStore from '@/stores/rom'
-import { storeToRefs } from 'pinia'
+import { useResourceLoader } from '@/composables/resource-loader'
+import { addressFormat } from '@/utils'
 import Tree, { type TreeSelectionKeys } from 'primevue/tree'
 import type { TreeNode } from 'primevue/treenode'
 import { computed, ref } from 'vue'
 const emit = defineEmits<{
-  selected: [resource: string]
+  selected: [resource: number]
 }>()
 
-const { romResources } = storeToRefs(useRomStore())
+const loader = useResourceLoader()
+const spriteFramesList = loader.value.getResourceListOfTypeQuery(['linked-sprite-frame', 'unlinked-sprite-frame'])
+const tileSheetList = loader.value.getResourceListOfTypeQuery('sheet')
 const selectedKey = ref<TreeSelectionKeys | undefined>(undefined)
 const spriteFrames = computed(() => {
-  if (!romResources.value) return []
-  return romResources.value.spriteFrames.map((spriteFrame) => ({
+  if (!spriteFramesList.data.value) {
+    return []
+  }
+  return spriteFramesList.data.value.map((spriteFrame) => ({
     key: `${spriteFrame}`,
-    label: `$${spriteFrame.toUpperCase()}`,
+    label: `${addressFormat(spriteFrame)}`,
     selectable: true,
     data: spriteFrame,
   }))
 })
 
 const tileSheets = computed(() => {
-  if (!romResources.value) return []
-  return romResources.value.tileSheets.map((tileSheet) => ({
+  if (!tileSheetList.data.value) {
+    return []
+  }
+  return tileSheetList.data.value.map((tileSheet) => ({
     key: `${tileSheet}`,
-    label: `$${tileSheet.toUpperCase()}`,
+    label: `${addressFormat(tileSheet)}`,
     selectable: true,
     data: tileSheet,
   }))
 })
 
 const nodes = computed(() => {
-  if (!romResources.value) return []
   return [
     {
       label: 'Sprite Frames',

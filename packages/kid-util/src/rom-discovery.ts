@@ -1,5 +1,4 @@
 import {
-  toAddressString,
   type LevelHeaderRomResourceUnloaded,
   type LinkedSpriteFrameRomResourceUnloaded,
   type SheetRomResourceUnloaded,
@@ -273,7 +272,7 @@ function findAssetTableResources(rom: Rom) {
       continue
     }
     const resourcePtr = rom.readPtr(ptr)
-    rom.tables.assetIndexTable.push(toAddressString(resourcePtr))
+    rom.tables.assetIndexTable.push(resourcePtr)
     const collisionPtr = rom.tables.collisionIndexTable[index]
     if (type === PackedTileSheet) {
       const resource = rom.createResource(resourcePtr, 'sheet') as SheetRomResourceUnloaded
@@ -322,7 +321,7 @@ function findFrameCollisionFramTableResources(rom: Rom) {
   while (pos < firstData) {
     const dataPtr = rom.data.getInt16(pos, false)
     const address = frameCollisionTable + dataPtr
-    rom.tables.collisionIndexTable.push(toAddressString(address))
+    rom.tables.collisionIndexTable.push(address)
     const resource = rom.createResource(
       address,
       'sprite-collision',

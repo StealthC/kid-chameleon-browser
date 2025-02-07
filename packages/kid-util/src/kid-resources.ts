@@ -16,20 +16,8 @@ export const ResourceTypes = [
   'level-header',
 ] as const
 
-export function toAddressString(address: number | string): string {
-  if (typeof address === 'string') {
-    return address
-  } else {
-    return address.toString(16)
-  }
-}
-
-export function fromAddressString(address: string | number): number {
-  if (typeof address === 'number') {
-    return address
-  }
-  return parseInt(address, 16)
-}
+export type RomResourceIndex = Map<number, BaseRomResource>
+export type RomResourcesByType = Record<typeof ResourceTypes[number], Set<number>>
 
 export const ResourceTypeLoaderMap: ResourceLoaderMap = {
   'level-header': loadLevelHeaderRomResource,
@@ -69,7 +57,7 @@ export type BaseRomResource = {
   tags?: string[]
   name?: string
   description?: string
-  related: Set<string>
+  related: Set<number>
 }
 
 export type UnloadedRomResource = BaseRomResource & {
@@ -418,12 +406,11 @@ export function loadResource(rom: Rom, resource: AllRomResources): LoadedRomReso
 }
 
 export function addResource(rom: Rom, resource: BaseRomResource) {
-  const resourceKey = toAddressString(resource.baseAddress)
-  const existingResource = rom.resourcesByAddress[resourceKey]
+  const existingResource = rom.resources.get(resource.baseAddress)
   if (existingResource) {
     if (resource.type !== existingResource.type) {
       if (resource.type !== 'unknown' && existingResource.type !== 'unknown') {
-        throw new Error(`Resource type mismatch at address ${resourceKey}`)
+        throw new Error(`Resource type mismatch at address ${resource.baseAddress}`)
       }
     }
     // Merge the related resources
@@ -433,9 +420,12 @@ export function addResource(rom: Rom, resource: BaseRomResource) {
     const types = [existingResource.type, resource.type]
     const type: (typeof ResourceTypes)[number] = types.find((t) => t !== 'unknown') ?? 'unknown'
     const mergedResource = { ...existingResource, ...resource, type, related }
-    rom.resourcesByAddress[resourceKey] = mergedResource
+    rom.resources.set(resource.baseAddress, mergedResource)
   } else {
-    rom.resourcesByAddress[resourceKey] = resource
+    rom.resources.set(resource.baseAddress, resource)
+  }
+  if (resource.type !== 'unknown') {
+    rom.resourcesByType[resource.type]?.add(resource.baseAddress)
   }
   checkRelated(rom, resource)
 }
@@ -443,30 +433,24 @@ export function addResource(rom: Rom, resource: BaseRomResource) {
 export function createResource(
   baseAddress: number,
   type: (typeof ResourceTypes)[number] = 'unknown',
-  related: string[] = [],
+  related: number[] = [],
 ): BaseRomResource {
   return { baseAddress, type, related: new Set(related) }
 }
 
 export function checkRelated(rom: Rom, resource: BaseRomResource) {
   for (const related of resource.related) {
-    const relatedResource = rom.resourcesByAddress[related]
+    const relatedResource = rom.resources.get(related)
     if (!relatedResource) {
       // Create the related resource
-      rom.resourcesByAddress[related] = {
+      rom.resources.set(related, {
         type: 'unknown',
-        baseAddress: fromAddressString(related),
-        related: new Set([toAddressString(resource.baseAddress)]),
-      }
+        baseAddress: related,
+        related: new Set([resource.baseAddress]),
+      })
     } else {
-      if (!relatedResource.related.has(toAddressString(resource.baseAddress))) {
-        // Add the resource to the related set
-        relatedResource.related.add(toAddressString(resource.baseAddress))
-      }
+      // Add the resource to the related set
+      relatedResource.related.add(resource.baseAddress)
     }
   }
-}
-
-export function getResource(rom: Rom, address: number | string): BaseRomResource | undefined {
-  return rom.resourcesByAddress[toAddressString(address)]
 }

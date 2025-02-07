@@ -2,13 +2,13 @@ import {
   addResource,
   checkRelated,
   createResource,
-  getResource,
   loadResource,
   ResourceTypes,
-  toAddressString,
   type AllRomResources,
   type BaseRomResource,
   type LoadedRomResource,
+  type RomResourceIndex,
+  type RomResourcesByType,
   type SheetRomResourceUnloaded,
 } from './kid-resources'
 import { readPtr } from './kid-utils'
@@ -66,20 +66,16 @@ export type RomFileDetails = {
   known?: KnowRomDetails
 }
 
-export type RomResources = {
-  spriteFrames: string[]
-  tileSheets: string[]
-}
-
 export type RomTables = {
-  assetIndexTable: (string | null)[]
-  collisionIndexTable: (string | null)[]
-  levelIndexTable: (string | null)[]
+  assetIndexTable: (number | null)[]
+  collisionIndexTable: (number | null)[]
+  levelIndexTable: (number | null)[]
 }
 
 export class Rom {
   data: DataView
-  resourcesByAddress: Record<string, BaseRomResource> = {}
+  resources: RomResourceIndex = new Map()
+  resourcesByType: RomResourcesByType;
   knownAddresses: KnownAddresses = {}
   // References to addresses gotten from many tables
   public tables: RomTables = {
@@ -88,13 +84,15 @@ export class Rom {
     levelIndexTable: [],
   }
   private _details: RomFileDetails | null = null
-  resources: RomResources = {
-    spriteFrames: [],
-    tileSheets: [],
-  }
+
   private _resourcesLoaded = false
   constructor(public bytes: Uint8Array) {
     this.data = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+    this.resourcesByType = Object.fromEntries(
+      ResourceTypes.map((type) => {
+        return [type, new Set()]
+      })
+    ) as RomResourcesByType
   }
   async getRomFileDetails(): Promise<RomFileDetails> {
     if (this._details) return this._details
@@ -171,7 +169,7 @@ export class Rom {
   }
 
   loadResources() {
-    if (this._resourcesLoaded) return this.resources
+    if (this._resourcesLoaded) return this.resourcesByType
     tryFindingAllKnownAddresses(this)
     tryFindingResouces(this)
 
@@ -209,28 +207,16 @@ export class Rom {
     } catch (e) {
       console.error(e)
     }
-    for (const resource of Object.values(this.resourcesByAddress).sort(
-      (a, b) => a.baseAddress - b.baseAddress,
-    )) {
-      try {
-        if (resource.type === 'sheet') {
-          this.resources.tileSheets.push(toAddressString(resource.baseAddress))
-        } else if (resource.type.includes('sprite-frame')) {
-          this.resources.spriteFrames.push(toAddressString(resource.baseAddress))
-        }
-      } catch (_e) {
-        console.error(_e)
-      }
-    }
+
     this._resourcesLoaded = true
-    console.log('Resources loaded', Object.keys(this.resourcesByAddress).length)
-    return this.resources
+    console.log('Resources loaded', Object.keys(this.resources).length)
+    return this.resourcesByType
   }
 
   createResource(
     baseAddress: number,
     type?: (typeof ResourceTypes)[number],
-    related: string[] = [],
+    related: number[] = [],
   ): BaseRomResource {
     return createResource(baseAddress, type, related)
   }
@@ -247,12 +233,12 @@ export class Rom {
     return loadResource(this, resource)
   }
 
-  getResource(address: number | string): BaseRomResource | null {
-    return getResource(this, address) ?? null
+  getResource(address: number): BaseRomResource | undefined {
+    return this.resources.get(address)
   }
 
-  getLoadedResource(address: number | string): LoadedRomResource | null {
-    const resource = this.getResource(address)
+  getLoadedResource(address: number): LoadedRomResource | null {
+    const resource = this.resources.get(address)
     if (resource) {
       return this.loadResource(resource as AllRomResources)
     }

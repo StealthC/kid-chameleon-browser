@@ -1,20 +1,25 @@
 <template>
   <div class="h-full overflow-auto">
     <Panel header="Resource Viewer">
-      <div class="mx-auto flex max-w-5xl flex-col gap-4">
-        <component
-          v-if="componentValues"
-          :is="componentValues?.viewerComponent"
-          v-bind="componentValues?.props"
-        />
-        {{ addressFormat(resourceAddress) }}
-        <div class="grid gap-2 lg:grid-cols-2">
-          <HexView
-            v-if="hexData.inputData"
-            title="input Data"
-            :data="hexData.inputData"
-            :address="hexData.inputAddress"
+      <div class="w-full text-center" v-if="isPending">
+        <ProgressSpinner/>
+      </div>
+      <div v-else>
+        <div>
+            <component
+            v-if="componentValues"
+            :is="componentValues.viewerComponent"
+            v-bind="componentValues.props"
           />
+          {{ addressFormat(resourceAddress) }}
+          <div class="grid gap-2 lg:grid-cols-2">
+            <HexView
+              v-if="hexData.inputData"
+              title="input Data"
+              :data="hexData.inputData"
+              :address="hexData.inputAddress"
+            />
+          </div>
         </div>
       </div>
     </Panel>
@@ -35,7 +40,7 @@ import { storeToRefs } from 'pinia'
 import { computed, defineAsyncComponent, toRefs } from 'vue'
 import HexView from './HexView.vue'
 import { addressFormat } from '@/utils'
-import { Panel } from 'primevue'
+import { Panel, ProgressSpinner } from 'primevue'
 
 interface Props {
   resourceAddress: number
@@ -46,21 +51,22 @@ const { rom } = storeToRefs(useRomStore())
 const resourceLoader = useResourceLoader()
 const resource = resourceLoader.value.useGetResourceQuery(resourceAddress, true)
 
+const isPending = computed(() => resource.isPending.value || !loadedResource.value)
+const tileSheetComponent = defineAsyncComponent(() => import('@/components/rom-resources/TileSheetView.vue'))
+const spriteFrameComponent = defineAsyncComponent(() => import('@/components/rom-resources/SpriteFrameView.vue'))
+
+
 const componentValues = computed(() => {
   if (!loadedResource.value) {
     return null
   } else if (isSheetResource(loadedResource.value)) {
     return {
-      viewerComponent: defineAsyncComponent(
-        () => import('@/components/rom-resources/TileSheetView.vue'),
-      ),
+      viewerComponent: tileSheetComponent,
       props: { resource: loadedResource.value as SheetRomResourceLoaded },
     }
   } else if (isSpriteFrameResource(loadedResource.value)) {
     return {
-      viewerComponent: defineAsyncComponent(
-        () => import('@/components/rom-resources/SpriteFrameView.vue'),
-      ),
+      viewerComponent: spriteFrameComponent,
       props: { resource: loadedResource.value as SpriteFrameRomResourceLoaded },
     }
   }
