@@ -1,11 +1,13 @@
 import PQueue from 'p-queue'
 import type { KidDiscovery, KidDiscoveryFunction } from '~/kid-discovery'
-import type {
-  LevelHeaderRomResourceUnloaded,
-  SheetRomResourceUnloaded,
-  UnlinkedSpriteFrameRomResourceUnloaded,
-  LinkedSpriteFrameRomResourceUnloaded,
-  SpriteCollisionRomResourceUnloaded,
+import {
+  type LevelHeaderRomResourceUnloaded,
+  type SheetRomResourceUnloaded,
+  type UnlinkedSpriteFrameRomResourceUnloaded,
+  type LinkedSpriteFrameRomResourceUnloaded,
+  type SpriteCollisionRomResourceUnloaded,
+  type PlaneRomResourceUnloaded,
+  AddAllRelated,
 } from '~/kid-resources'
 import { ExecuteInNextTick } from '~/kid-utils'
 import {
@@ -21,6 +23,7 @@ export async function findAllResouces(kd: KidDiscovery) {
     findAssetTableResources,
     findAllLevelHeaders,
     findSomeMoreResources,
+    addThemeResources,
   ]
   const queue = new PQueue({ concurrency: 4 })
   for (const fn of fns) {
@@ -332,4 +335,36 @@ function findUntabledPackedTileSheetsWithPaletteSwap2(kd: KidDiscovery) {
     return { pos, palRel, palPtr, tile, ptr }
   })
   return results
+}
+
+function addThemeResources(kd: KidDiscovery) {
+  const numberOfThemes = kd.knownAddresses.get('numberOfThemes')
+  if (!numberOfThemes) {
+    return
+  }
+  // Theme starts at 1
+  for (let theme = 1; theme <= numberOfThemes; theme++) {
+    // Load theme title screen GFX
+    const themeTitleScreenGFXPtrTable = kd.knownAddresses.get('themeTitleScreenGFXPtrTable')
+    const related = new Set<number>()
+    if (themeTitleScreenGFXPtrTable) {
+      const themeTitlePackedGFXPtr = kd.rom.readPtr(themeTitleScreenGFXPtrTable + theme * 4)
+      const resource = kd.rom.createResource(themeTitlePackedGFXPtr, 'sheet') as SheetRomResourceUnloaded
+      resource.name = `Theme ${theme} Title Screen GFX`
+      resource.packed = { format: 'kid' }
+      kd.rom.addResource(resource)
+      related.add(themeTitlePackedGFXPtr)
+    }
+    // Load theme title screen plane
+    const themeTitleScreenPlanePtrTable = kd.knownAddresses.get('themeTitleScreenPlanePtrTable')
+    if (themeTitleScreenPlanePtrTable) {
+      const themeTitlePlanePtr = kd.rom.readPtr(themeTitleScreenPlanePtrTable + theme * 4)
+      const resource = kd.rom.createResource(themeTitlePlanePtr, 'plane') as PlaneRomResourceUnloaded
+      resource.name = `Theme ${theme} Title Screen Plane`
+      resource.packed = { format: 'enigma' }
+      kd.rom.addResource(resource)
+      related.add(themeTitlePlanePtr)
+    }
+    AddAllRelated(kd.rom, related)
+  }
 }

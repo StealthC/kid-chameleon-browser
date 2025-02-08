@@ -23,6 +23,7 @@ const spriteFramesList = loader.value.getResourceListOfTypeQuery([
   'unlinked-sprite-frame',
 ])
 const tileSheetList = loader.value.getResourceListOfTypeQuery('sheet')
+const planeList = loader.value.getResourceListOfTypeQuery('plane')
 const selectedKey = ref<TreeSelectionKeys | undefined>(undefined)
 const spriteFrames = computed(() => {
   if (!spriteFramesList.data.value) {
@@ -48,6 +49,18 @@ const tileSheets = computed(() => {
   }))
 })
 
+const planes = computed(() => {
+  if (!planeList.data.value) {
+    return []
+  }
+  return planeList.data.value.map((plane) => ({
+    key: `${plane}`,
+    label: `${addressFormat(plane)}`,
+    selectable: true,
+    data: plane,
+  }))
+})
+
 const nodes = computed(() => {
   return [
     {
@@ -61,6 +74,12 @@ const nodes = computed(() => {
       key: 'tileSheets',
       selectable: false,
       children: tileSheets.value,
+    },
+    {
+      label: 'Planes',
+      key: 'planes',
+      selectable: false,
+      children: planes.value,
     },
   ] as TreeNode[]
 })

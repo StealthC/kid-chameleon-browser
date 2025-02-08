@@ -22,6 +22,7 @@ export const ImportantValues = [
   'themeBackgroundPlanePtrTable',
   'backgroundScrollingPtrTable',
   'themeTitleScreenGFXPtrTable',
+  'themeTitleScreenPlanePtrTable',
   'numberOfThemes',
   'numberOfLevels',
 ] as const
@@ -37,6 +38,7 @@ export async function findAllKnownAddresses(kd: KidDiscovery) {
     findPlatformAddresses,
     findlevelMiscPtrTable,
     findThemeTitleScreenGFXPtrTable,
+    findThemeTitleScreenPlanePtrTable
   ]
   const queue = new PQueue({ concurrency: 4 })
   for (const fn of fns) {
@@ -173,12 +175,38 @@ function findThemeTitleScreenGFXPtrTable(kd: KidDiscovery) {
 */
 
   const pattern =
-    '3c 00 d0 40 d0 40 3e 00 41 fa ?? ?? 20 70 00 00 30 3c 5f 60 48 e7 ff 00 4e b9 00 01 19 38'
+    '3c 00 d0 40 d0 40 3e 00 41 fa ?? ?? 20 70 00 00 30 3c 5f 60 48 e7 ff 00 4e b9'
   const ptr = kd.rom.findPattern(pattern)
   const offset = kd.rom.data.getInt16(ptr + 10, false)
   const PC = ptr + 10
   const address = PC + offset
   kd.knownAddresses.set('themeTitleScreenGFXPtrTable', address)
+}
+
+function findThemeTitleScreenPlanePtrTable(kd: KidDiscovery) {
+  /*
+                00019b24 4c  df  00       movem.l             (SP => local_20 )+, { D0  D1  D2  D3  D4  D5  D6  D7 }
+                 ff
+        00019b28 30  3c  02       move.w              #0x2fb ,D0w
+                 fb
+        00019b2c 41  fa  ba       lea                 (-0x4586 ,PC )=> LevelTitleBackgroundPackedPlanes
+                 7a
+        00019b30 20  70  70       movea.l             (0x0 ,A0 ,D7w *offset  LevelTitleBackgroundPackedP
+                 00
+        00019b34 43  f9  ff       lea                 (TempDataGFX ).l,A1
+                 ff  77  b2
+        00019b3a 48  e7  ff       movem.l             {  D7  D6  D5  D4  D3  D2  D1  D0 },-( SP )
+                 00
+
+*/
+
+  const pattern =
+    '4c df 00 ff 30 3c 02 fb 41 fa ?? ?? 20 70 70 00 43 f9 ff ff 77 b2 48 e7 ff 00'
+  const ptr = kd.rom.findPattern(pattern)
+  const offset = kd.rom.data.getInt16(ptr + 10, false)
+  const PC = ptr + 10
+  const address = PC + offset
+  kd.knownAddresses.set('themeTitleScreenPlanePtrTable', address)
 }
 
 function findFrameCollisionFrameTable(kd: KidDiscovery) {

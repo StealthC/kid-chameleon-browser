@@ -3,6 +3,7 @@ import { calculatePlayerSpriteDataSize } from './kid-utils'
 import type { Rom } from './kid-rom'
 import { unpackKidFormat } from './unpack-kid'
 import { unpackEnigmaFormat } from './unpack-enigma'
+import { KidImageData, TILE_INDEXED4_BYTE_COUNT, TILE_WIDTH } from './kid-graphics'
 
 export type PackedFormat = 'kid' | 'enigma'
 
@@ -137,8 +138,7 @@ export type LevelHeaderRomResource = LevelHeaderRomResourceUnloaded | LevelHeade
 
 export type EnigmaPacked = {
   format: 'enigma'
-  dataStart: number
-  tile: number
+  tileIndex?: number
 }
 export type KidPacked = {
   format: 'kid'
@@ -178,6 +178,7 @@ export type PlaneRomResource = PlaneRomResourceUnloaded | PlaneRomResourceLoaded
 export type SheetRomResourceUnloaded = PackableResource &
   UnloadedRomResource & {
     type: 'sheet'
+    startTile?: number
     tableIndex?: number
     inputSize?: number
   }
@@ -185,8 +186,10 @@ export type SheetRomResourceUnloaded = PackableResource &
 export type SheetRomResourceLoaded = PackableResource &
   LoadedRomResource & {
     type: 'sheet'
+    startTile?: number
     tableIndex?: number
     data: Uint8Array
+    tiles: KidImageData[]
   }
 
 export type SheetRomResource = SheetRomResourceUnloaded | SheetRomResourceLoaded
@@ -391,6 +394,12 @@ export function loadSheetRomResource(
     data = rom.bytes.subarray(baseAddress, baseAddress + rInputSize)
   }
 
+  const tiles: KidImageData[] = []
+  for (let i = 0; i < data.length; i += TILE_INDEXED4_BYTE_COUNT) {
+    const tile = data.subarray(i, i + TILE_INDEXED4_BYTE_COUNT)
+    tiles.push(KidImageData.from(tile, TILE_WIDTH, TILE_WIDTH, 'Indexed4'))
+  }
+
   const bytes = rom.bytes.subarray(baseAddress, baseAddress + rInputSize)
   const hash = crc32(bytes)
   return {
@@ -399,6 +408,7 @@ export function loadSheetRomResource(
     hash,
     inputSize: rInputSize,
     data,
+    tiles,
   }
 }
 
@@ -511,7 +521,7 @@ export function addResource(rom: Rom, resource: BaseRomResource) {
     }
     // Merge the related resources
     const related = new Set([...existingResource.related, ...resource.related])
-
+    related.delete(resource.baseAddress)
     // Merge the new resource into the existing one, prefers the typo of not 'unknown'
     const types = [existingResource.type, resource.type]
     const type: (typeof ResourceTypes)[number] = types.find((t) => t !== 'unknown') ?? 'unknown'
@@ -535,6 +545,7 @@ export function createResource(
 }
 
 export function checkRelated(rom: Rom, resource: BaseRomResource) {
+  resource.related.delete(resource.baseAddress)
   for (const related of resource.related) {
     const relatedResource = rom.resources.get(related)
     if (!relatedResource) {
@@ -547,6 +558,16 @@ export function checkRelated(rom: Rom, resource: BaseRomResource) {
     } else {
       // Add the resource to the related set
       relatedResource.related.add(resource.baseAddress)
+    }
+  }
+}
+
+export function AddAllRelated(rom: Rom, list: number[]|Set<number>) {
+  for (const address of list) {
+    const resource = rom.resources.get(address)
+    if (resource) {
+      list.forEach(item => resource.related.add(item))
+      checkRelated(rom, resource)
     }
   }
 }

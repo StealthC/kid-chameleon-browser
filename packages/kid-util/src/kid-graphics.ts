@@ -175,9 +175,10 @@ export class KidImageData {
     return KidImageData.from(tileData, TILE_WIDTH, TILE_HEIGHT, 'Indexed4')
   }
 
-  static fromSprite(sheetDataIndexed4: Uint8Array, width: number, height: number, spriteId: number): KidImageData {
+  static fromSprite(sheetOrDataIndexed4: Uint8Array|SheetRomResourceLoaded, width: number, height: number, spriteId: number): KidImageData {
     const tilesPerRow = Math.ceil(width / TILE_WIDTH)
     const tilesPerColumn = Math.ceil(height / TILE_HEIGHT)
+    const sheetDataIndexed4 = sheetOrDataIndexed4 instanceof Uint8Array ? sheetOrDataIndexed4 : sheetOrDataIndexed4.data
     const spriteBytes = getIndexed4TilesBytesRange(
       sheetDataIndexed4,
       spriteId,
@@ -185,7 +186,6 @@ export class KidImageData {
     )
     const spriteImage = KidImageData.create(tilesPerRow * TILE_WIDTH, tilesPerColumn * TILE_HEIGHT, 'Indexed4')
 
-    console.log(spriteImage)
     let tileIndex = 0
     // Dividing the sprite into blocks (quadrants) of 4×4 tiles.
     const quadTiles = 4
@@ -214,20 +214,35 @@ export class KidImageData {
     return spriteImage
   }
 
-  static fromPlane(_plane: PlaneRomResourceLoaded, _sheet: SheetRomResourceLoaded, widthInTiles: number, startIndex: number = 0, sizeLimit?: number): KidImageData {
+  static fromPlane(plane: PlaneRomResourceLoaded, sheet: SheetRomResourceLoaded, widthInTiles: number, startIndex: number = 0, sizeLimit?: number): KidImageData {
     if (sizeLimit === undefined) {
-      sizeLimit = _plane.tiles.length - startIndex
+      sizeLimit = plane.tiles.length - startIndex
     }
     const width = widthInTiles * TILE_WIDTH
     const height = Math.ceil(sizeLimit / widthInTiles) * TILE_HEIGHT
     const image = KidImageData.create(width, height, 'Indexed4')
+    let dstIndex = 0
+    for (let i = startIndex; i < startIndex + sizeLimit; i++) {
+      const planeTile = plane.tiles[i]
+      if (!planeTile) {
+        break
+      }
+      const tileImage = sheet.tiles[planeTile.tileIndex]
+      if (!tileImage) {
+        continue
+      }
+      const x = (dstIndex % widthInTiles) * TILE_WIDTH
+      const y = Math.floor(dstIndex / widthInTiles) * TILE_HEIGHT
+      image.draw(tileImage, x, y)
+      dstIndex++
+    }
     return image
   }
 
   /**
    * Creates a KidImageData from a complete Indexed4 sheet.
    *
-   * @param sheetData - Complete sheet data in Indexed4 format.
+   * @param sheet - Complete sheet data in Indexed4 format.
    * @param variant - Determines which dimension is fixed:
    *                  - 'rows': the provided count is the number of columns (row-major order)
    *                  - 'columns': the provided count is the number of rows (column-major order)
@@ -235,12 +250,12 @@ export class KidImageData {
    * @returns KidImageData representing the entire sheet.
    */
   static fromSheet(
-    sheetData: Uint8Array,
+    sheet: SheetRomResourceLoaded,
     variant: 'rows' | 'columns' = 'rows',
     count: number
   ): KidImageData {
     // Calculate the total number of tiles in the sheet.
-    const totalTiles = sheetData.length / TILE_INDEXED4_BYTE_COUNT;
+    const totalTiles = sheet.tiles.length;
     const order = variant === 'rows' ? 'row-major' : 'column-major';
     let rows: number, columns: number;
     if (variant === 'rows') {
@@ -275,8 +290,9 @@ export class KidImageData {
         x = Math.floor(i / rows);
         y = i % rows;
       }
-      const tileData = getIndexed4TileBytes(i, sheetData);
-      const tileImageData = KidImageData.from(tileData, TILE_WIDTH, TILE_HEIGHT, 'Indexed4');
+      //const tileData = getIndexed4TileBytes(i, sheetData);
+      //const tileImageData = KidImageData.from(tileData, TILE_WIDTH, TILE_HEIGHT, 'Indexed4');
+      const tileImageData = sheet.tiles[i]!
       sheetImageData.draw(tileImageData, x * TILE_WIDTH, y * TILE_HEIGHT);
     }
 

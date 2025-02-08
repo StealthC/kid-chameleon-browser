@@ -38,7 +38,7 @@ const draw = async (ctx: CanvasRenderingContext2D) => {
   if (!values.value) {
     return
   }
-  const sheetImage = KidImageData.fromSheet(values.value.data, valueMode.value, value.value)
+  const sheetImage = KidImageData.fromSheet(resource.value, valueMode.value, value.value)
   const bitmap = await bitmapFromKidImageData(sheetImage)
   ctx.drawImage(bitmap, 0, 0)
 }
@@ -61,13 +61,11 @@ const values = computed(() => {
   if (!resource.value) {
     return null
   }
-  const data = resource.value.data
-  const cellsTotal = data.length / (8 * 4)
+  const cellsTotal = resource.value.tiles.length
   const columns = valueMode.value === 'columns' ? value.value : Math.ceil(cellsTotal / value.value)
   const rows = valueMode.value === 'rows' ? value.value : Math.ceil(cellsTotal / value.value)
 
   return {
-    data,
     columns,
     rows,
     cellsTotal,
