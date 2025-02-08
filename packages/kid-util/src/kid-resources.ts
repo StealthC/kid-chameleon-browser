@@ -157,11 +157,20 @@ export type PlaneRomResourceUnloaded = PackableResource &
     inputSize?: number
   }
 
+export type PlaneRomResourceTile = {
+  priority: boolean
+  palette: number
+  yFlip: boolean
+  xFlip: boolean
+  tileIndex: number
+}
+
 export type PlaneRomResourceLoaded = PackableResource &
   LoadedRomResource & {
     type: 'plane'
     startTile?: number
-    data: Uint8Array
+    data: Uint8Array,
+    tiles: PlaneRomResourceTile[]
   }
 
 export type PlaneRomResource = PlaneRomResourceUnloaded | PlaneRomResourceLoaded
@@ -335,6 +344,18 @@ export function loadPlaneRomResource(
     data = rom.bytes.subarray(baseAddress, baseAddress + rInputSize)
   }
 
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength)
+  const tiles: PlaneRomResourceTile[] = []
+  for (let i = 0; i < data.length; i += 2) {
+    const word = view.getUint16(i, false)
+    const priority = (word & 0x8000) !== 0
+    const palette = (word & 0x6000) >> 13
+    const yFlip = (word & 0x1000) !== 0
+    const xFlip = (word & 0x0800) !== 0
+    const tileIndex = word & 0x7ff
+    tiles.push({ priority, palette, yFlip, xFlip, tileIndex })
+  }
+
   const bytes = rom.bytes.subarray(baseAddress, baseAddress + rInputSize)
   const hash = crc32(bytes)
   return {
@@ -343,6 +364,7 @@ export function loadPlaneRomResource(
     hash,
     inputSize: rInputSize,
     data,
+    tiles,
   }
 }
 
