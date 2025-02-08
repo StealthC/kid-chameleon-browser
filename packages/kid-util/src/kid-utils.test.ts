@@ -1,5 +1,5 @@
 //@ts-check
-import { describe, expect, test } from '@jest/globals'
+import { describe, expect, test } from 'vitest'
 import { calculatePlayerSpriteDataSize } from './kid-utils'
 
 describe('Data Utils Testing', () => {

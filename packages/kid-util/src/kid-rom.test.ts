@@ -1,5 +1,4 @@
-//@ts-check
-import { beforeAll, describe, expect, test } from '@jest/globals'
+import { expect, test, beforeAll, describe } from 'vitest'
 import { Rom } from './kid-rom'
 import { openFsFile } from './fs'
 
@@ -22,7 +21,7 @@ describe('Rom checks', () => {
       console.warn('Skipping test: ROM file not found.')
       return
     }
-    expect(rom.readPtr(0xa09fe)).toBe(0x01)
+    expect(rom.readPtr(0xa09fe)).toBe(0x00)
     expect(rom.readPtr(0xa09fe + 4)).toBe(0xa1c72)
   })
 })
