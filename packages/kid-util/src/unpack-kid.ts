@@ -1,4 +1,4 @@
-import type { UnpackResults, UnpackReturn } from "./kid-utils"
+import type { UnpackResults, UnpackReturn } from './kid-utils'
 
 /**
  * Decodes compressed data in the format used by the game Kid Chameleon. This function tries to
@@ -9,7 +9,11 @@ import type { UnpackResults, UnpackReturn } from "./kid-utils"
  * @param maxSize Maximum size for the output (optional, default 65535)
  * @returns Uint8Array containing the decompressed data
  */
-export function unpackKidFormat(input: Uint8Array | DataView, compressedDataStart = 0, maxSize = 0xffff): UnpackReturn {
+export function unpackKidFormat(
+  input: Uint8Array | DataView,
+  compressedDataStart = 0,
+  maxSize = 0xffff,
+): UnpackReturn {
   // Convert input to DataView if it's Uint8Array
   let dataView: DataView
   if (input instanceof Uint8Array) {
@@ -222,9 +226,8 @@ export function unpackKidFormat(input: Uint8Array | DataView, compressedDataStar
     results.success = false
   }
 
-
   return {
     output: new Uint8Array(output),
-    results
+    results,
   }
 }

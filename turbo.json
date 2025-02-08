@@ -3,7 +3,8 @@
   "ui": "stream",
   "tasks": {
     "test": {
-      "inputs": ["apps/*/src/**", "packages/*/src/**"]
+      "inputs": ["apps/*/src/**/*.test.*", "packages/*/src/**/*.test.*"],
+      "cache": false
     },
     "lint": {
       "inputs": ["apps/*/src/**", "packages/*/src/**"]

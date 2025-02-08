@@ -1,32 +1,33 @@
 /**
- * Unpacks data from a 4bpp indexed image to an 8bpp indexed image.
- * Each byte of the 4bpp image contains two pixels (each with 4 bits), and this function
- * returns a new array where each byte represents a pixel (even if the values are 0–15).
+ * Unpacks data from a 4bpp indexed image to an 8bpp indexed image. Each byte of the 4bpp image
+ * contains two pixels (each with 4 bits), and this function returns a new array where each byte
+ * represents a pixel (even if the values are 0–15).
  *
  * @param data Image data in Indexed4.
  * @param inputSize Data size (default: data.length).
  * @returns Unpacked data in Indexed8.
  */
 export function unpackIndexed4ToIndexed8(data: Uint8Array, inputSize?: number): Uint8Array {
-  const size = inputSize ?? data.length;
-  const pixels = new Uint8Array(size * 2);
+  const size = inputSize ?? data.length
+  const pixels = new Uint8Array(size * 2)
   for (let i = 0; i < size; i++) {
-    const byte = data[i];
+    const byte = data[i]
     if (byte === undefined) {
-      throw new Error(`Invalid byte at position ${i}`);
+      throw new Error(`Invalid byte at position ${i}`)
     }
-    pixels[i * 2] = byte >> 4;
-    pixels[i * 2 + 1] = byte & 0x0F;
+    pixels[i * 2] = byte >> 4
+    pixels[i * 2 + 1] = byte & 0x0f
   }
-  return pixels;
+  return pixels
 }
 
-export type RGBA = [number, number, number, number];
+export type RGBA = [number, number, number, number]
 
 /**
- * A palette can be an array of RGBA colors or a function that returns the RGBA color given an index.
+ * A palette can be an array of RGBA colors or a function that returns the RGBA color given an
+ * index.
  */
-export type Palette = RGBA[] | ((n: number) => RGBA);
+export type Palette = RGBA[] | ((n: number) => RGBA)
 
 /**
  * Default palette: generates a color from an index (just a simple example).
@@ -35,11 +36,11 @@ export type Palette = RGBA[] | ((n: number) => RGBA);
  * @returns RGBA color.
  */
 export function normalizedPalette(color: number): RGBA {
-  const x = color % 4;
-  const y = Math.floor(color / 4);
-  const r = x * (255 / 3);
-  const g = y * (255 / 3);
-  return [r, g, 0, 255];
+  const x = color % 4
+  const y = Math.floor(color / 4)
+  const r = x * (255 / 3)
+  const g = y * (255 / 3)
+  return [r, g, 0, 255]
 }
 
 /**
@@ -50,31 +51,34 @@ export function normalizedPalette(color: number): RGBA {
  */
 export function usePalette(palette: Palette): (n: number) => RGBA {
   if (typeof palette === 'function') {
-    return palette;
+    return palette
   } else {
     return (n: number) => {
-      const color = palette[n];
+      const color = palette[n]
       if (!color) {
-        throw new Error(`Palette color not found for index ${n}`);
+        throw new Error(`Palette color not found for index ${n}`)
       }
-      return color;
-    };
+      return color
+    }
   }
 }
 
 /**
- * From a byte in Indexed4, returns the two corresponding RGBA colors.
- * That is, the most significant nibble and the least significant nibble.
+ * From a byte in Indexed4, returns the two corresponding RGBA colors. That is, the most significant
+ * nibble and the least significant nibble.
  *
  * @param byte Byte containing two pixels in Indexed4.
  * @param palette Palette to convert indices to RGBA colors.
  * @returns Tuple with the two RGBA colors.
  */
-export function getRGBAColorsFromIndexed4Byte(byte: number, palette: Palette = normalizedPalette): [RGBA, RGBA] {
-  const highNibble = byte >> 4;
-  const lowNibble = byte & 0x0F;
-  const getColor = usePalette(palette);
-  return [getColor(highNibble), getColor(lowNibble)];
+export function getRGBAColorsFromIndexed4Byte(
+  byte: number,
+  palette: Palette = normalizedPalette,
+): [RGBA, RGBA] {
+  const highNibble = byte >> 4
+  const lowNibble = byte & 0x0f
+  const getColor = usePalette(palette)
+  return [getColor(highNibble), getColor(lowNibble)]
 }
 
 /**
@@ -85,16 +89,16 @@ export function getRGBAColorsFromIndexed4Byte(byte: number, palette: Palette = n
  * @returns RGBA color.
  */
 export function getRGBAFromIndexed8Byte(byte: number, palette: Palette = normalizedPalette): RGBA {
-  const getColor = usePalette(palette);
-  return getColor(byte);
+  const getColor = usePalette(palette)
+  return getColor(byte)
 }
 
 // Constants for cell (tile) dimensions
-export const CELL_WIDTH = 8;
-export const CELL_HEIGHT = 8;
-export const CELL_PIXEL_COUNT = CELL_WIDTH * CELL_HEIGHT;          // 64 pixels per cell
-export const CELL_INDEXED4_BYTE_COUNT = CELL_PIXEL_COUNT / 2;      // 32 bytes (4bpp)
-export const CELL_RGBA_BYTE_COUNT = CELL_PIXEL_COUNT * 4;          // 256 bytes (RGBA)
+export const CELL_WIDTH = 8
+export const CELL_HEIGHT = 8
+export const CELL_PIXEL_COUNT = CELL_WIDTH * CELL_HEIGHT // 64 pixels per cell
+export const CELL_INDEXED4_BYTE_COUNT = CELL_PIXEL_COUNT / 2 // 32 bytes (4bpp)
+export const CELL_RGBA_BYTE_COUNT = CELL_PIXEL_COUNT * 4 // 256 bytes (RGBA)
 
 /**
  * Converts an entire cell (in Indexed4) to a cell in RGBA format.
@@ -103,15 +107,18 @@ export const CELL_RGBA_BYTE_COUNT = CELL_PIXEL_COUNT * 4;          // 256 bytes 
  * @param palette Palette to convert the pixels.
  * @returns Cell data in RGBA.
  */
-export function convertIndexed4ToRGBA(indexed4Image: Uint8Array, palette: Palette = normalizedPalette): Uint8ClampedArray {
+export function convertIndexed4ToRGBA(
+  indexed4Image: Uint8Array,
+  palette: Palette = normalizedPalette,
+): Uint8ClampedArray {
   // Each Indexed4 byte becomes 2 pixels, each pixel with 4 bytes (RGBA)
-  const rgbaImage = new Uint8ClampedArray(indexed4Image.length * 2 * 4);
+  const rgbaImage = new Uint8ClampedArray(indexed4Image.length * 2 * 4)
   for (let i = 0; i < indexed4Image.length; i++) {
-    const [color1, color2] = getRGBAColorsFromIndexed4Byte(indexed4Image[i]!, palette);
-    rgbaImage.set(color1, i * 8);
-    rgbaImage.set(color2, i * 8 + 4);
+    const [color1, color2] = getRGBAColorsFromIndexed4Byte(indexed4Image[i]!, palette)
+    rgbaImage.set(color1, i * 8)
+    rgbaImage.set(color2, i * 8 + 4)
   }
-  return rgbaImage;
+  return rgbaImage
 }
 
 /**
@@ -122,22 +129,23 @@ export function convertIndexed4ToRGBA(indexed4Image: Uint8Array, palette: Palett
  * @returns Subarray containing the cell bytes.
  */
 export function getIndexed4CellBytes(cellId: number, indexed4Image: Uint8Array): Uint8Array {
-  const start = cellId * CELL_INDEXED4_BYTE_COUNT;
-  return indexed4Image.subarray(start, start + CELL_INDEXED4_BYTE_COUNT);
+  const start = cellId * CELL_INDEXED4_BYTE_COUNT
+  return indexed4Image.subarray(start, start + CELL_INDEXED4_BYTE_COUNT)
 }
 
 /**
  * Returns the bytes of all cells in an Indexed4 image sheet in a array. (useful for a cache)
+ *
  * @param indexed4Sheet
  * @returns
  */
 export function getIndexed4CellBytesList(indexed4Sheet: Uint8Array): Uint8Array[] {
-  const cellCount = indexed4Sheet.length / CELL_INDEXED4_BYTE_COUNT;
-  const cells: Uint8Array[] = [];
+  const cellCount = indexed4Sheet.length / CELL_INDEXED4_BYTE_COUNT
+  const cells: Uint8Array[] = []
   for (let i = 0; i < cellCount; i++) {
-    cells.push(getIndexed4CellBytes(i, indexed4Sheet));
+    cells.push(getIndexed4CellBytes(i, indexed4Sheet))
   }
-  return cells;
+  return cells
 }
 
 /**
@@ -148,9 +156,13 @@ export function getIndexed4CellBytesList(indexed4Sheet: Uint8Array): Uint8Array[
  * @param palette Palette to convert the pixels.
  * @returns RGBA data of the cell.
  */
-export function getCellRGBABytes(cellId: number, indexed4Image: Uint8Array, palette: Palette = normalizedPalette): Uint8ClampedArray {
-  const cellBytes = getIndexed4CellBytes(cellId, indexed4Image);
-  return convertIndexed4ToRGBA(cellBytes, palette);
+export function getCellRGBABytes(
+  cellId: number,
+  indexed4Image: Uint8Array,
+  palette: Palette = normalizedPalette,
+): Uint8ClampedArray {
+  const cellBytes = getIndexed4CellBytes(cellId, indexed4Image)
+  return convertIndexed4ToRGBA(cellBytes, palette)
 }
 
 /**
@@ -166,7 +178,10 @@ export function getIndexed4CellsBytesRange(
   from: number = 0,
   to: number = indexed4Image.length / CELL_INDEXED4_BYTE_COUNT,
 ): Uint8Array {
-  return indexed4Image.subarray(from * CELL_INDEXED4_BYTE_COUNT, Math.min(to * CELL_INDEXED4_BYTE_COUNT, indexed4Image.length));
+  return indexed4Image.subarray(
+    from * CELL_INDEXED4_BYTE_COUNT,
+    Math.min(to * CELL_INDEXED4_BYTE_COUNT, indexed4Image.length),
+  )
 }
 
 /**
@@ -184,9 +199,13 @@ export function getSpriteBytes(
   height: number,
   spriteId: number = 0,
 ): Uint8Array {
-  const cellsPerRow = Math.ceil(width / CELL_WIDTH);
-  const cellsPerColumn = Math.ceil(height / CELL_HEIGHT);
-  return getIndexed4CellsBytesRange(tileSheetIndexed4, spriteId, spriteId + cellsPerRow * cellsPerColumn);
+  const cellsPerRow = Math.ceil(width / CELL_WIDTH)
+  const cellsPerColumn = Math.ceil(height / CELL_HEIGHT)
+  return getIndexed4CellsBytesRange(
+    tileSheetIndexed4,
+    spriteId,
+    spriteId + cellsPerRow * cellsPerColumn,
+  )
 }
 
 /**
@@ -205,23 +224,26 @@ function drawIndexed4CellToRGBA(
   dstWidth: number,
   dstColumn: number,
   dstRow: number,
-  palette: Palette
+  palette: Palette,
 ): void {
-  const cellRGBA = convertIndexed4ToRGBA(cellIndexed4, palette);
+  const cellRGBA = convertIndexed4ToRGBA(cellIndexed4, palette)
   // Calculate the starting position (in bytes) in the destination buffer:
-  const startX = dstColumn * CELL_WIDTH * 4; // each pixel = 4 bytes
-  const startY = dstRow * CELL_HEIGHT;
-  const dstRowBytes = dstWidth * 4; // number of bytes per row in the destination buffer
-  const dstStartIndex = startY * dstRowBytes + startX;
-  const cellRowBytes = CELL_WIDTH * 4;
+  const startX = dstColumn * CELL_WIDTH * 4 // each pixel = 4 bytes
+  const startY = dstRow * CELL_HEIGHT
+  const dstRowBytes = dstWidth * 4 // number of bytes per row in the destination buffer
+  const dstStartIndex = startY * dstRowBytes + startX
+  const cellRowBytes = CELL_WIDTH * 4
   for (let y = 0; y < CELL_HEIGHT; y++) {
-    dst.set(cellRGBA.subarray(y * cellRowBytes, y * cellRowBytes + cellRowBytes), dstStartIndex + y * dstRowBytes);
+    dst.set(
+      cellRGBA.subarray(y * cellRowBytes, y * cellRowBytes + cellRowBytes),
+      dstStartIndex + y * dstRowBytes,
+    )
   }
 }
 
 /**
- * Returns the RGBA data of a sprite from the tile sheet in Indexed4.
- * The function assembles the sprite by composing cells in the correct positions.
+ * Returns the RGBA data of a sprite from the tile sheet in Indexed4. The function assembles the
+ * sprite by composing cells in the correct positions.
  *
  * @param spriteId Starting sprite index.
  * @param width Sprite width in pixels.
@@ -237,28 +259,45 @@ export function getSpriteRGBABytes(
   tileSheetIndexed4: Uint8Array,
   palette: Palette = normalizedPalette,
 ): Uint8ClampedArray {
-  const spriteIndexed4Bytes = getSpriteBytes(tileSheetIndexed4, width, height, spriteId);
-  const cellsPerRow = Math.ceil(width / CELL_WIDTH);
-  const cellsPerColumn = Math.ceil(height / CELL_HEIGHT);
-  const spriteRGBA = new Uint8ClampedArray(cellsPerRow * CELL_WIDTH * cellsPerColumn * CELL_HEIGHT * 4);
+  const spriteIndexed4Bytes = getSpriteBytes(tileSheetIndexed4, width, height, spriteId)
+  const cellsPerRow = Math.ceil(width / CELL_WIDTH)
+  const cellsPerColumn = Math.ceil(height / CELL_HEIGHT)
+  const spriteRGBA = new Uint8ClampedArray(
+    cellsPerRow * CELL_WIDTH * cellsPerColumn * CELL_HEIGHT * 4,
+  )
 
-  let cellIndex = 0;
+  let cellIndex = 0
   // Dividing the sprite into blocks (quadrants) of 4×4 cells.
-  const quadCells = 4;
-  const quadCols = Math.ceil(cellsPerRow / quadCells);
-  const quadRows = Math.ceil(cellsPerColumn / quadCells);
+  const quadCells = 4
+  const quadCols = Math.ceil(cellsPerRow / quadCells)
+  const quadRows = Math.ceil(cellsPerColumn / quadCells)
 
   for (let qRow = 0; qRow < quadRows; qRow++) {
     for (let qCol = 0; qCol < quadCols; qCol++) {
-      for (let cellX = qCol * quadCells; cellX < Math.min(qCol * quadCells + quadCells, cellsPerRow); cellX++) {
-        for (let cellY = qRow * quadCells; cellY < Math.min(qRow * quadCells + quadCells, cellsPerColumn); cellY++) {
-          const cellData = getIndexed4CellBytes(cellIndex++, spriteIndexed4Bytes);
-          drawIndexed4CellToRGBA(spriteRGBA, cellData, cellsPerRow * CELL_WIDTH, cellX, cellY, palette);
+      for (
+        let cellX = qCol * quadCells;
+        cellX < Math.min(qCol * quadCells + quadCells, cellsPerRow);
+        cellX++
+      ) {
+        for (
+          let cellY = qRow * quadCells;
+          cellY < Math.min(qRow * quadCells + quadCells, cellsPerColumn);
+          cellY++
+        ) {
+          const cellData = getIndexed4CellBytes(cellIndex++, spriteIndexed4Bytes)
+          drawIndexed4CellToRGBA(
+            spriteRGBA,
+            cellData,
+            cellsPerRow * CELL_WIDTH,
+            cellX,
+            cellY,
+            palette,
+          )
         }
       }
     }
   }
-  return spriteRGBA;
+  return spriteRGBA
 }
 
 /**
@@ -266,7 +305,8 @@ export function getSpriteRGBABytes(
  *
  * @param width Canvas width.
  * @param height Canvas height.
- * @returns A canvas (OffscreenCanvas in the browser or Canvas from the "canvas" package in Node.js).
+ * @returns A canvas (OffscreenCanvas in the browser or Canvas from the "canvas" package in
+ *   Node.js).
  */
 export async function createCanvas(
   width: number,
@@ -274,10 +314,10 @@ export async function createCanvas(
 ): Promise<OffscreenCanvas | import('canvas').Canvas> {
   if (typeof window !== 'undefined') {
     // Browser environment
-    return new OffscreenCanvas(width, height);
+    return new OffscreenCanvas(width, height)
   } else {
     // Node.js environment
-    const { createCanvas } = await import('canvas');
-    return createCanvas(width, height);
+    const { createCanvas } = await import('canvas')
+    return createCanvas(width, height)
   }
 }

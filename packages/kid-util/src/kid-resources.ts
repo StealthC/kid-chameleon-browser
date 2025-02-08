@@ -18,7 +18,7 @@ export const ResourceTypes = [
 ] as const
 
 export type RomResourceIndex = Map<number, BaseRomResource>
-export type RomResourcesByType = Record<typeof ResourceTypes[number], Set<number>>
+export type RomResourcesByType = Record<(typeof ResourceTypes)[number], Set<number>>
 
 export const ResourceTypeLoaderMap: ResourceLoaderMap = {
   'level-header': loadLevelHeaderRomResource,
@@ -262,14 +262,14 @@ export function loadLevelHeaderRomResource(
   const yOffset = heightComposite >> 6
   const height = heightComposite & 0x3f
   const themeComposite = rom.data.getUint8(baseAddress + 2)
-  const themeIndex = themeComposite & 0x3F
+  const themeIndex = themeComposite & 0x3f
   const murderWall = (themeComposite & 0x80) !== 0
   const murderWallVariant = (themeComposite & 0x40) !== 0
   const backgroundComposite = rom.data.getUint8(baseAddress + 3)
-  const backgroundType = backgroundComposite & 0x0F
+  const backgroundType = backgroundComposite & 0x0f
   const backgroundIsPacked = ((1 << backgroundType) & 0b1010101000) !== 0
   const backgroundMisc = backgroundComposite >> 4
-  const backgroundWidth = backgroundIsPacked ? 0x40 : (widthInBlocks / 4) + 0x1E
+  const backgroundWidth = backgroundIsPacked ? 0x40 : widthInBlocks / 4 + 0x1e
   const playerX = rom.data.getUint16(baseAddress + 4, false)
   const playerY = rom.data.getUint16(baseAddress + 6, false)
   const flagX = rom.data.getUint16(baseAddress + 8, false)
@@ -291,7 +291,7 @@ export function loadLevelHeaderRomResource(
     width,
     widthInBlocks,
     height,
-    heightInBlocks: height * 0xE,
+    heightInBlocks: height * 0xe,
     yOffset,
     yOffsetInBlocks: yOffset * 2,
     murderWall,

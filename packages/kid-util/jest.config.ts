@@ -7,8 +7,6 @@ const preset = createDefaultEsmPreset({
 
 const jestConfig: JestConfigWithTsJest = {
   ...preset,
-
-  // Other options.
 };
 
 export default jestConfig;

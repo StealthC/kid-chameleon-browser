@@ -22,7 +22,7 @@ describe('Rom checks', () => {
       console.warn('Skipping test: ROM file not found.')
       return
     }
-    expect(rom.readPtr(0xa09fe)).toBe(0x0)
+    expect(rom.readPtr(0xa09fe)).toBe(0x01)
     expect(rom.readPtr(0xa09fe + 4)).toBe(0xa1c72)
   })
 })

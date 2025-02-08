@@ -14,11 +14,7 @@ import { readPtr } from './kid-utils'
 import { KnownRoms, type KnowRomDetails } from './tables/known-roms'
 import { PatternFinder } from './pattern-finder'
 import { sha256, mdCrc } from './hash'
-import {
-  DiscoverAllResources,
-  type KnownAddresses,
-  type knownFunctions
-} from './kid-discovery'
+import { KidDiscovery } from './kid-discovery'
 
 export type FrameCollision = {
   left: number
@@ -73,9 +69,8 @@ export type RomTables = {
 export class Rom {
   data: DataView
   resources: RomResourceIndex = new Map()
-  resourcesByType: RomResourcesByType;
-  knownAddresses: KnownAddresses = {}
-  knownFunctions: knownFunctions = new Map()
+  discovery: KidDiscovery = new KidDiscovery(this)
+  resourcesByType: RomResourcesByType
   // References to addresses gotten from many tables
   public tables: RomTables = {
     assetIndexTable: [],
@@ -90,7 +85,7 @@ export class Rom {
     this.resourcesByType = Object.fromEntries(
       ResourceTypes.map((type) => {
         return [type, new Set()]
-      })
+      }),
     ) as RomResourcesByType
   }
   async getRomFileDetails(): Promise<RomFileDetails> {
@@ -167,7 +162,7 @@ export class Rom {
 
   async loadResources() {
     if (this._resourcesLoaded) return this.resourcesByType
-    await DiscoverAllResources(this)
+    await this.discovery.run()
     this._resourcesLoaded = true
     return this.resourcesByType
   }
@@ -203,5 +198,4 @@ export class Rom {
     }
     return null
   }
-
 }

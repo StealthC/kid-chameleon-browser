@@ -1,4 +1,4 @@
-import type { UnpackResults, UnpackReturn } from "./kid-utils"
+import type { UnpackResults, UnpackReturn } from './kid-utils'
 
 /** Helper class to read bits from a DataView, simulating the behavior of "bitio" in Go. */
 class BitReader {
