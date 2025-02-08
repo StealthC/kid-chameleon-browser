@@ -9,7 +9,6 @@ import {
   type LoadedRomResource,
   type RomResourceIndex,
   type RomResourcesByType,
-  type SheetRomResourceUnloaded,
 } from './kid-resources'
 import { readPtr } from './kid-utils'
 import { KnownRoms, type KnowRomDetails } from './tables/known-roms'
@@ -17,10 +16,10 @@ import { PatternFinder } from './pattern-finder'
 import { sha256, mdCrc } from './hash'
 import { unpackKidFormat, type KidUnpackResults } from './unpack-kid'
 import {
-  tryFindingAllKnownAddresses,
-  tryFindingResouces,
+  DiscoverAllResources,
   type KnownAddresses,
-} from './rom-discovery'
+  type knownFunctions
+} from './kid-discovery'
 
 export type FrameCollision = {
   left: number
@@ -77,6 +76,7 @@ export class Rom {
   resources: RomResourceIndex = new Map()
   resourcesByType: RomResourcesByType;
   knownAddresses: KnownAddresses = {}
+  knownFunctions: knownFunctions = new Map()
   // References to addresses gotten from many tables
   public tables: RomTables = {
     assetIndexTable: [],
@@ -154,12 +154,16 @@ export class Rom {
   }
 
   findPattern(pattern: string): number {
-    const patternFinder = new PatternFinder(pattern, this.bytes)
+    const patternFinder = this.createPatternFinder(pattern)
     const pos = patternFinder.findNext()
     if (pos === -1) {
       throw new Error(`Pattern ${pattern} not found`)
     }
     return pos
+  }
+
+  createPatternFinder(pattern: string): PatternFinder {
+    return new PatternFinder(pattern, this.bytes)
   }
 
   unpackKidFormat(ptr: number): KidUnpackResults {
@@ -168,48 +172,10 @@ export class Rom {
     )
   }
 
-  loadResources() {
+  async loadResources() {
     if (this._resourcesLoaded) return this.resourcesByType
-    tryFindingAllKnownAddresses(this)
-    tryFindingResouces(this)
-
-    try {
-      this._findUntabledPackedTileSheetsDirect1().map((result) => {
-        const resource = this.createResource(result.ptr, 'sheet') as SheetRomResourceUnloaded
-        resource.packed = { format: 'kid' }
-        this.addResource(resource)
-      })
-      this._findUntabledPackedTileSheetsDirect2().map((result) => {
-        const resource = this.createResource(result.ptr, 'sheet') as SheetRomResourceUnloaded
-        resource.packed = { format: 'kid' }
-        this.addResource(resource)
-      })
-      this._findUntabledPackedTileSheetsRelative1().map((result) => {
-        const resource = this.createResource(result.ptr, 'sheet') as SheetRomResourceUnloaded
-        resource.packed = { format: 'kid' }
-        this.addResource(resource)
-      })
-      this._findUntabledPackedTileSheetsRelative2().map((result) => {
-        const resource = this.createResource(result.ptr, 'sheet') as SheetRomResourceUnloaded
-        resource.packed = { format: 'kid' }
-        this.addResource(resource)
-      })
-      this._findUntabledPackedTileSheetsWithPaletteSwap1().map((result) => {
-        const resource = this.createResource(result.ptr, 'sheet') as SheetRomResourceUnloaded
-        resource.packed = { format: 'kid' }
-        this.addResource(resource)
-      })
-      this._findUntabledPackedTileSheetsWithPaletteSwap2().map((result) => {
-        const resource = this.createResource(result.ptr, 'sheet') as SheetRomResourceUnloaded
-        resource.packed = { format: 'kid' }
-        this.addResource(resource)
-      })
-    } catch (e) {
-      console.error(e)
-    }
-
+    await DiscoverAllResources(this)
     this._resourcesLoaded = true
-    console.log('Resources loaded', Object.keys(this.resources).length)
     return this.resourcesByType
   }
 
@@ -245,148 +211,4 @@ export class Rom {
     return null
   }
 
-  private _findUntabledPackedTileSheetsDirect1() {
-    /*
-     *
-     * 0001d188 30  3c  7b       move.w              #0x7ba0 ,D0w
-     *          a0
-     * 0001d18c 41  f9  00       lea                 (BYTE_ARRAY_0002d51b ).l,A0
-     *          02  d5  1b
-     * 0001d192 4e  b9  00       jsr                 UnpackGfx .l
-     *          01  19  38
-     *
-     */
-    const pattern = '30 3c ?? ?? 41 f9 ?? ?? ?? ?? 4e b9 ?? ?? ?? ??' // Calls to UnpackGfx
-    const patternFinder = new PatternFinder(pattern, this.bytes)
-    const matchs = patternFinder.findAll()
-    const results = matchs.map((pos) => {
-      const tile = this.data.getUint16(pos + 2, false)
-      const ptr = this.readPtr(pos + 6)
-      return { pos, tile, ptr }
-    })
-    return results
-  }
-
-  private _findUntabledPackedTileSheetsDirect2() {
-    /*
-     *
-     * 0001b58a 30  3c  9a       move.w              #-0x65a0 ,D0w
-     *          60
-     * 0001b58e 20  7c  00       movea.l             #KidTitleTextPackedGFX ,A0
-     *          02  49  85
-     * 0001b594 4e  b9  00       jsr                 UnpackGfx .l
-     *          01  19  38
-     *
-     */
-    const pattern = '30 3c ?? ?? 20 7C ?? ?? ?? ?? 4e b9 ?? ?? ?? ??' // Calls to UnpackGfx
-    const patternFinder = new PatternFinder(pattern, this.bytes)
-    const matchs = patternFinder.findAll()
-    const results = matchs.map((pos) => {
-      const tile = this.data.getUint16(pos + 2, false)
-      const ptr = this.readPtr(pos + 6)
-      return { pos, tile, ptr }
-    })
-    return results
-  }
-
-  private _findUntabledPackedTileSheetsRelative1() {
-    /*
-     *
-     *
-     * 0001d15e 30  3c  27       move.w              #0x27c0 ,D0w
-     *          c0
-     * 0001d162 41  fa  2a       lea                 (0x2abc ,PC )=> EndingBossScreenPackedGFX ,A0
-     *          bc
-     * 0001d166 4e  b9  00       jsr                 UnpackGfx .l
-     *          01  19  38
-     *
-     */
-    const pattern = '30 3c ?? ?? 41 fa ?? ?? 4e b9 ?? ?? ?? ??' // Calls to UnpackGfx
-    const patternFinder = new PatternFinder(pattern, this.bytes)
-    const matchs = patternFinder.findAll()
-    const results = matchs.map((pos) => {
-      const tile = this.data.getUint16(pos + 2, false)
-      const rel = this.data.getInt16(pos + 6, false)
-      const ptr = pos + 6 + rel
-      return { pos, rel, tile, ptr }
-    })
-    return results
-  }
-
-  private _findUntabledPackedTileSheetsRelative2() {
-    /*
-     *
-     * 00012de0 30  3c  17       move.w              #0x1780 ,D0w
-     *          80
-     * 00012de4 41  fa  01       lea                 (0x14a ,PC )=> PackedGFXSegaLogo ,A0
-     *          4a
-     * 00012de8 61  00  15       bsr.w               UnpackGfx
-     *          10
-     *
-     */
-    const pattern = '30 3c ?? ?? 41 fa ?? ?? 61 00 ?? ?? ?? ??' // Calls to UnpackGfx
-    const patternFinder = new PatternFinder(pattern, this.bytes)
-    const matchs = patternFinder.findAll()
-    const results = matchs.map((pos) => {
-      const tile = this.data.getUint16(pos + 2, false)
-      const rel = this.data.getInt16(pos + 6, false)
-      const ptr = pos + 6 + rel
-      return { pos, rel, tile, ptr }
-    })
-    return results
-  }
-
-  private _findUntabledPackedTileSheetsWithPaletteSwap1() {
-    /*
-     *
-     * 0001d0ec 30  3c  17       move.w              #0x1780 ,D0w
-     *          80
-     * 0001d0f0 20  78  71       movea.l             (-> HologramBackgroundPackedGFX ).w,A0 => Hologra  = 0000c65a
-     *          86
-     * 0001d0f4 47  fa  00       lea                 (0x22 ,PC )=> EndingHologramBackgroundPaletteMap
-     *          22
-     * 0001d0f8 4e  b9  00       jsr                 UnpackGFXWithPaletteMap .l
-     *          01  19  40
-     *
-     */
-    const pattern = '30 3c ?? ?? 20 78 ?? ?? 47 fa ?? ?? 4e b9 ?? ?? ?? ??' // Calls to UnpackGFXWithPaletteMap
-    const patternFinder = new PatternFinder(pattern, this.bytes)
-    const matchs = patternFinder.findAll()
-    const results = matchs.map((pos) => {
-      const tile = this.data.getUint16(pos + 2, false)
-      const ptr = this.readPtr(this.data.getInt16(pos + 6, false))
-      const palRel = this.data.getInt16(pos + 10, false)
-      const palPtr = pos + 10 + palRel
-      return { pos, palRel, palPtr, tile, ptr }
-    })
-    return results
-  }
-
-  private _findUntabledPackedTileSheetsWithPaletteSwap2() {
-    /*
-     *
-     * 0001b128 30  3c  fa       move.w              #-0x5a0 ,D0w
-     *          60
-     * 0001b12c 41  fa  29       lea                 (0x2958 ,PC )=> TitleTextPackedGFX ,A0
-     *          58
-     * 0001b130 47  fa  12       lea                 (0x12be ,PC )=> TitleTextAlternatePaletteMapping
-     *          be
-     * 0001b134 4e  b9  00       jsr                 UnpackGFXWithPaletteMap .l
-     *          01  19  40
-     *
-     *
-     */
-    const pattern = '30 3c ?? ?? 41 fa ?? ?? 47 fa ?? ?? 4e b9 ?? ?? ?? ??' // Calls to UnpackGFXWithPaletteMap
-    const patternFinder = new PatternFinder(pattern, this.bytes)
-    const matchs = patternFinder.findAll()
-    const results = matchs.map((pos) => {
-      const tile = this.data.getUint16(pos + 2, false)
-      const rel = this.data.getInt16(pos + 6, false)
-      const ptr = pos + 6 + rel
-      const palRel = this.data.getInt16(pos + 10, false)
-      const palPtr = pos + 10 + palRel
-      return { pos, palRel, palPtr, tile, ptr }
-    })
-    return results
-  }
 }

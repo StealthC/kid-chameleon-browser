@@ -127,6 +127,20 @@ export function getIndexed4CellBytes(cellId: number, indexed4Image: Uint8Array):
 }
 
 /**
+ * Returns the bytes of all cells in an Indexed4 image sheet in a array. (useful for a cache)
+ * @param indexed4Sheet
+ * @returns
+ */
+export function getIndexed4CellBytesList(indexed4Sheet: Uint8Array): Uint8Array[] {
+  const cellCount = indexed4Sheet.length / CELL_INDEXED4_BYTE_COUNT;
+  const cells: Uint8Array[] = [];
+  for (let i = 0; i < cellCount; i++) {
+    cells.push(getIndexed4CellBytes(i, indexed4Sheet));
+  }
+  return cells;
+}
+
+/**
  * Returns the RGBA data of a cell, converting the bytes in Indexed4.
  *
  * @param cellId Cell index.
@@ -147,7 +161,7 @@ export function getCellRGBABytes(cellId: number, indexed4Image: Uint8Array, pale
  * @param to Ending cell index.
  * @returns Subarray containing the selected cells' bytes.
  */
-export function getIndexed4CellsBytes(
+export function getIndexed4CellsBytesRange(
   indexed4Image: Uint8Array,
   from: number = 0,
   to: number = indexed4Image.length / CELL_INDEXED4_BYTE_COUNT,
@@ -172,7 +186,7 @@ export function getSpriteBytes(
 ): Uint8Array {
   const cellsPerRow = Math.ceil(width / CELL_WIDTH);
   const cellsPerColumn = Math.ceil(height / CELL_HEIGHT);
-  return getIndexed4CellsBytes(tileSheetIndexed4, spriteId, spriteId + cellsPerRow * cellsPerColumn);
+  return getIndexed4CellsBytesRange(tileSheetIndexed4, spriteId, spriteId + cellsPerRow * cellsPerColumn);
 }
 
 /**

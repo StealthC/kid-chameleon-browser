@@ -13,7 +13,8 @@
 				"Vue.volar",
 				"EditorConfig.EditorConfig",
 				"aaron-bond.better-comments",
-				"Gruntfuggly.todo-tree"
+				"Gruntfuggly.todo-tree",
+				"github.vscode-github-actions"
 			],
 			"settings": {
 				"editor.defaultFormatter": "esbenp.prettier-vscode",
