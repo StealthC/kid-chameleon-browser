@@ -100,6 +100,10 @@ export const isLinkedSpriteFrameResource = (
   return spriteFrame.type === 'linked-sprite-frame'
 }
 
+export const isPlaneResource = (resource: BaseRomResource): resource is PlaneRomResource => {
+  return resource.type === 'plane'
+}
+
 // Recursos específicos – exemplo com level-header:
 export type LevelHeaderRomResourceUnloaded = UnloadedRomResource & {
   type: 'level-header'

@@ -205,7 +205,6 @@ export class KidImageData {
             tileY++
           ) {
             const tileData = KidImageData.fromCell(spriteBytes, tileIndex++)
-            console.log(tileData)
             spriteImage.draw(tileData, tileX * TILE_WIDTH, tileY * TILE_HEIGHT)
           }
         }

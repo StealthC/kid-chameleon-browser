@@ -31,10 +31,9 @@ import { useResourceLoader } from '@/composables/resource-loader'
 import useRomStore from '@/stores/rom'
 import {
   isLoadedResource,
+  isPlaneResource,
   isSheetResource,
   isSpriteFrameResource,
-  type SheetRomResourceLoaded,
-  type SpriteFrameRomResourceLoaded,
 } from '@repo/kid-util'
 import { storeToRefs } from 'pinia'
 import { computed, defineAsyncComponent, toRefs } from 'vue'
@@ -69,17 +68,28 @@ const tileSheetComponent = defineAsyncComponent(
 const spriteFrameComponent = defineAsyncComponent(
   () => import('@/components/rom-resources/SpriteFrameView.vue'),
 )
+const planeComponent = defineAsyncComponent(
+  () => import('@/components/rom-resources/PlaneView.vue'),
+)
 
 const componentValues = computed(() => {
+  if (!resource.data.value || !isLoadedResource(resource.data.value)) {
+    return null
+  }
   if (isSheetResource(resource.data.value!)) {
     return {
       viewerComponent: tileSheetComponent,
-      props: { resource: resource.data.value as SheetRomResourceLoaded },
+      props: { resource: resource.data.value },
     }
   } else if (isSpriteFrameResource(resource.data.value!)) {
     return {
       viewerComponent: spriteFrameComponent,
-      props: { resource: resource.data.value as SpriteFrameRomResourceLoaded },
+      props: { resource: resource.data.value },
+    }
+  } else if (isPlaneResource(resource.data.value!)) {
+    return {
+      viewerComponent: planeComponent,
+      props: { resource: resource.data.value },
     }
   }
   return null
