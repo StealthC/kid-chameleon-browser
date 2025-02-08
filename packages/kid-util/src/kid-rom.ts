@@ -14,7 +14,6 @@ import { readPtr } from './kid-utils'
 import { KnownRoms, type KnowRomDetails } from './tables/known-roms'
 import { PatternFinder } from './pattern-finder'
 import { sha256, mdCrc } from './hash'
-import { unpackKidFormat, type KidUnpackResults } from './unpack-kid'
 import {
   DiscoverAllResources,
   type KnownAddresses,
@@ -164,12 +163,6 @@ export class Rom {
 
   createPatternFinder(pattern: string): PatternFinder {
     return new PatternFinder(pattern, this.bytes)
-  }
-
-  unpackKidFormat(ptr: number): KidUnpackResults {
-    return unpackKidFormat(
-      new DataView(this.bytes.buffer, this.bytes.byteOffset + ptr, this.bytes.length - ptr),
-    )
   }
 
   async loadResources() {

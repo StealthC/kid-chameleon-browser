@@ -2,6 +2,7 @@ import { crc32 } from './hash'
 import { calculatePlayerSpriteDataSize } from './kid-utils'
 import type { Rom } from './kid-rom'
 import { unpackKidFormat } from './unpack-kid'
+import { unpackEnigmaFormat } from './unpack-enigma'
 
 export type PackedFormat = 'kid' | 'enigma'
 
@@ -25,6 +26,7 @@ export const ResourceTypeLoaderMap: ResourceLoaderMap = {
   'unlinked-sprite-frame': loadUnlinkedSpriteFrameResource,
   'linked-sprite-frame': loadLinkedSpriteFrameResource,
   'sprite-collision': loadSpriteCollisionRomResource,
+  plane: loadPlaneRomResource,
 }
 
 export type AllRomResources =
@@ -33,6 +35,7 @@ export type AllRomResources =
   | UnlinkedSpriteFrameRomResource
   | LinkedSpriteFrameRomResource
   | SpriteCollisionRomResource
+  | PlaneRomResource
 
 export type LoadedResourceOfType<K extends (typeof ResourceTypes)[number]> = Extract<
   AllRomResources,
@@ -146,6 +149,22 @@ export type PackedData = EnigmaPacked | KidPacked
 export type PackableResource = {
   packed?: PackedData
 }
+
+export type PlaneRomResourceUnloaded = PackableResource &
+  UnloadedRomResource & {
+    type: 'plane'
+    startTile?: number
+    inputSize?: number
+  }
+
+export type PlaneRomResourceLoaded = PackableResource &
+  LoadedRomResource & {
+    type: 'plane'
+    startTile?: number
+    data: Uint8Array
+  }
+
+export type PlaneRomResource = PlaneRomResourceUnloaded | PlaneRomResourceLoaded
 
 export type SheetRomResourceUnloaded = PackableResource &
   UnloadedRomResource & {
@@ -293,6 +312,40 @@ export function loadLevelHeaderRomResource(
   }
 }
 
+export function loadPlaneRomResource(
+  rom: Rom,
+  resource: PlaneRomResourceUnloaded,
+): PlaneRomResourceLoaded {
+  const { baseAddress, inputSize, packed, startTile } = resource
+  let data: Uint8Array
+  let rInputSize: number = inputSize ?? 0
+  if (packed) {
+    if (packed.format === 'enigma') {
+      const packedData = rom.bytes.subarray(baseAddress)
+      const unpacked = unpackEnigmaFormat(packedData, 0, startTile ?? 0)
+      data = unpacked.output
+      rInputSize = unpacked.results.sizePacked
+    } else {
+      throw new Error(`Unsupported packed format for plane: ${packed.format}`)
+    }
+  } else {
+    if (!rInputSize || rInputSize === 0) {
+      throw new Error('Resource input size needs to be defined when the resource is not packed')
+    }
+    data = rom.bytes.subarray(baseAddress, baseAddress + rInputSize)
+  }
+
+  const bytes = rom.bytes.subarray(baseAddress, baseAddress + rInputSize)
+  const hash = crc32(bytes)
+  return {
+    ...resource,
+    loaded: true,
+    hash,
+    inputSize: rInputSize,
+    data,
+  }
+}
+
 export function loadSheetRomResource(
   rom: Rom,
   resource: SheetRomResourceUnloaded,
@@ -305,9 +358,9 @@ export function loadSheetRomResource(
       const packedData = rom.bytes.subarray(baseAddress)
       const unpacked = unpackKidFormat(packedData)
       data = unpacked.output
-      rInputSize = unpacked.totalInputSize
+      rInputSize = unpacked.results.sizeUnpacked
     } else {
-      throw new Error(`Unsupported packed format ${packed.format}`)
+      throw new Error(`Unsupported packed format for sheet: ${packed.format}`)
     }
   } else {
     if (!rInputSize || rInputSize === 0) {
