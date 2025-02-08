@@ -226,9 +226,15 @@ export class KidImageData {
       if (!planeTile) {
         break
       }
-      const tileImage = sheet.tiles[planeTile.tileIndex]
+      let tileImage = sheet.tiles[planeTile.tileIndex]
       if (!tileImage) {
         continue
+      }
+      if (planeTile.xFlip) {
+        tileImage = tileImage.flipHorizontal()
+      }
+      if (planeTile.yFlip) {
+        tileImage = tileImage.flipVertical()
       }
       const x = (dstIndex % widthInTiles) * TILE_WIDTH
       const y = Math.floor(dstIndex / widthInTiles) * TILE_HEIGHT
@@ -330,5 +336,69 @@ export class KidImageData {
       const sourceLine = src.imageData.subarray(srcStart, srcStart + src.width * FormatBytesPerPixel[src.format])
       this.imageData.set(sourceLine, dstStart)
     }
+  }
+/**
+ * Flips the image horizontally. (creates a new image)
+ */
+flipHorizontal(): KidImageData {
+  const newImage = KidImageData.create(this.width, this.height, this.format)
+
+  if (this.format === 'Indexed4') {
+    // Each pixel occupies half a byte (a nibble)
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        // Calculate the pixel index in the row
+        const srcPixelIndex = y * this.width + x
+        // Each byte stores 2 pixels:
+        const srcByteIndex = Math.floor(srcPixelIndex / 2)
+        const isSrcHighNibble = (srcPixelIndex % 2 === 0)
+        const srcByte = this.imageData[srcByteIndex]!
+        // Extract the corresponding nibble
+        const pixelValue = isSrcHighNibble ? (srcByte >> 4) : (srcByte & 0x0f)
+
+        // Inverted horizontal position
+        const newX = this.width - 1 - x
+        const dstPixelIndex = y * this.width + newX
+        const dstByteIndex = Math.floor(dstPixelIndex / 2)
+        const isDstHighNibble = (dstPixelIndex % 2 === 0)
+
+        // Insert the pixel into the destination byte, keeping the other nibble intact
+        if (isDstHighNibble) {
+          // Write to the high nibble
+          newImage.imageData[dstByteIndex] = (pixelValue << 4) | (newImage.imageData[dstByteIndex]! & 0x0f)
+        } else {
+          // Write to the low nibble
+          newImage.imageData[dstByteIndex] = (newImage.imageData[dstByteIndex]! & 0xf0) | (pixelValue & 0x0f)
+        }
+      }
+    }
+  } else {
+    // For formats that have an integer number of bytes per pixel (RGBA, Indexed8)
+    const bytesPerPixel = FormatBytesPerPixel[this.format]
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        const srcIndex = (y * this.width + x) * bytesPerPixel
+        const dstIndex = (y * this.width + (this.width - 1 - x)) * bytesPerPixel
+        const sourcePixel = this.imageData.subarray(srcIndex, srcIndex + bytesPerPixel)
+        newImage.imageData.set(sourcePixel, dstIndex)
+      }
+    }
+  }
+
+  return newImage
+}
+
+  /**
+   * Flips the image vertically. (creates a new image)
+   */
+  flipVertical(): KidImageData {
+    const newImageData = KidImageData.create(this.width, this.height, this.format)
+    for (let y = 0; y < this.height; y++) {
+      const srcStart = y * this.width * FormatBytesPerPixel[this.format]
+      const dstStart = (this.height - 1 - y) * this.width * FormatBytesPerPixel[this.format]
+      const sourceLine = this.imageData.subarray(srcStart, srcStart + this.width * FormatBytesPerPixel[this.format])
+      newImageData.imageData.set(sourceLine, dstStart)
+    }
+    return newImageData
   }
 }
