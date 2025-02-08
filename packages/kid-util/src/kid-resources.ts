@@ -110,9 +110,16 @@ export type LevelHeaderRomResourceLoaded = LoadedRomResource & {
   width: number
   height: number
   yOffset: number
+  widthInBlocks: number
+  heightInBlocks: number
+  yOffsetInBlocks: number
+  murderWall?: boolean
+  murderWallVariant?: boolean
   themeIndex: number
-  backgroundIndex: number
+  backgroundType: number
   backgroundMisc: number
+  backgroundIsPacked?: boolean
+  backgroundWidth: number
   playerX: number
   playerY: number
   flagX: number
@@ -231,12 +238,19 @@ export function loadLevelHeaderRomResource(
 ): LevelHeaderRomResourceLoaded {
   const { baseAddress } = resource
   const width = rom.data.getUint8(baseAddress)
+  const widthInBlocks = width * 0x14
   const heightComposite = rom.data.getUint8(baseAddress + 1)
   const yOffset = heightComposite >> 6
   const height = heightComposite & 0x3f
-  // TODO: Implement theme and background
-  // const themeComposite = rom.data.getUint8(readPos + 2)
-  // const backgroundComposite = rom.data.getUint8(readPos + 3)
+  const themeComposite = rom.data.getUint8(baseAddress + 2)
+  const themeIndex = themeComposite & 0x3F
+  const murderWall = (themeComposite & 0x80) !== 0
+  const murderWallVariant = (themeComposite & 0x40) !== 0
+  const backgroundComposite = rom.data.getUint8(baseAddress + 3)
+  const backgroundType = backgroundComposite & 0x0F
+  const backgroundIsPacked = ((1 << backgroundType) & 0b1010101000) !== 0
+  const backgroundMisc = backgroundComposite >> 4
+  const backgroundWidth = backgroundIsPacked ? 0x40 : (widthInBlocks / 4) + 0x1E
   const playerX = rom.data.getUint16(baseAddress + 4, false)
   const playerY = rom.data.getUint16(baseAddress + 6, false)
   const flagX = rom.data.getUint16(baseAddress + 8, false)
@@ -256,11 +270,18 @@ export function loadLevelHeaderRomResource(
     hash,
     inputSize,
     width,
+    widthInBlocks,
     height,
+    heightInBlocks: height * 0xE,
     yOffset,
-    themeIndex: 0,
-    backgroundIndex: 0,
-    backgroundMisc: 0,
+    yOffsetInBlocks: yOffset * 2,
+    murderWall,
+    murderWallVariant,
+    themeIndex,
+    backgroundMisc,
+    backgroundType,
+    backgroundIsPacked,
+    backgroundWidth,
     playerX,
     playerY,
     flagX,
