@@ -42,7 +42,9 @@ type DetailsData = Record<string, Record<string, string>>
 
 const romKnownAddressesValues = computed(() => {
   const knownAdresses: KnownAddresses = romKnownAddresses.value ?? new Map()
-  const mappedAddresses = (Object.keys(KnownAddressesDescriptions) as typeof ImportantValues[number][]).map((key) => {
+  const mappedAddresses = (
+    Object.keys(KnownAddressesDescriptions) as (typeof ImportantValues)[number][]
+  ).map((key) => {
     const knownValue = knownAdresses.get(key)
     const knownFormattedValue = knownValue ? addressFormat(knownValue) : '??'
     const description = KnownAddressesDescriptions[key] ?? {
@@ -51,7 +53,12 @@ const romKnownAddressesValues = computed(() => {
       name: key,
       type: 'Unknown',
     }
-    return [description.name, knownFormattedValue, description.type.toUpperCase(), description.description]
+    return [
+      description.name,
+      knownFormattedValue,
+      description.type.toUpperCase(),
+      description.description,
+    ]
   })
   return [['Name', 'Address', 'Type', 'Description'], ...mappedAddresses]
 })

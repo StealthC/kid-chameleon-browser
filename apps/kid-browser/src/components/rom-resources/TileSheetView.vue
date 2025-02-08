@@ -32,7 +32,12 @@ import Panel from 'primevue/panel'
 import InputNumber from 'primevue/inputnumber'
 import CanvasRenderer from './CanvasRenderer.vue'
 
-const drawCell = async (ctx: CanvasRenderingContext2D, id: number = 0, x: number = 0, y: number = 0) => {
+const drawCell = async (
+  ctx: CanvasRenderingContext2D,
+  id: number = 0,
+  x: number = 0,
+  y: number = 0,
+) => {
   if (!values.value) {
     return
   }

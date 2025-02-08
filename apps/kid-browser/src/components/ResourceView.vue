@@ -50,7 +50,7 @@ const { resourceAddress } = toRefs(props)
 const { rom } = storeToRefs(useRomStore())
 const resourceLoader = useResourceLoader()
 const resource = resourceLoader.value.useGetResourceQuery(resourceAddress, true)
-const {isError, isPending} = resource
+const { isError, isPending } = resource
 
 const title = computed(() => {
   let str = `Resource Viewer: (${addressFormat(resourceAddress.value)})`

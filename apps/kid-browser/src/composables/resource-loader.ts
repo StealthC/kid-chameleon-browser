@@ -7,8 +7,11 @@ import { computed, unref, type MaybeRef } from 'vue'
 export function useResourceLoader() {
   const { rom, romDetails } = storeToRefs(useRomStore())
 
-
-  const useGetResourceQuery = (address: MaybeRef<number>, load = true, options: Partial<Omit<UseQueryOptions, "queryKey">> = {}) => {
+  const useGetResourceQuery = (
+    address: MaybeRef<number>,
+    load = true,
+    options: Partial<Omit<UseQueryOptions, 'queryKey'>> = {},
+  ) => {
     return useQuery({
       queryKey: ['getResource', address, load, romDetails],
       queryFn: async () => {
@@ -19,9 +22,7 @@ export function useResourceLoader() {
         if (!load) {
           return rom.value.getResource(addressValue) as AllRomResources
         } else {
-          return rom.value.getLoadedResource(
-            addressValue,
-          ) as AllRomResources & { loaded: true }
+          return rom.value.getLoadedResource(addressValue) as AllRomResources & { loaded: true }
         }
       },
       ...options,
@@ -42,7 +43,9 @@ export function useResourceLoader() {
       })
     }
   }
-  const getResourceListOfTypeQuery = (type: MaybeRef<typeof ResourceTypes[number] | typeof ResourceTypes[number][]> ) => {
+  const getResourceListOfTypeQuery = (
+    type: MaybeRef<(typeof ResourceTypes)[number] | (typeof ResourceTypes)[number][]>,
+  ) => {
     return useQuery({
       queryKey: ['getResourcesOfType', type, romDetails],
       queryFn: async () => {
@@ -54,14 +57,14 @@ export function useResourceLoader() {
           return typeValue.flatMap((t) => [...rom.value!.resourcesByType[t].values()]).sort()
         }
         return [...rom.value.resourcesByType[typeValue].values()]
-      }
+      },
     })
   }
   const resourceLoader = computed(() => ({
     rom,
     useGetResourceQuery,
     useGetMultipleResourcesQuery,
-    getResourceListOfTypeQuery
+    getResourceListOfTypeQuery,
   }))
   return resourceLoader
 }

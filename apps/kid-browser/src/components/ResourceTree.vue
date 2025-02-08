@@ -18,7 +18,10 @@ const emit = defineEmits<{
 }>()
 
 const loader = useResourceLoader()
-const spriteFramesList = loader.value.getResourceListOfTypeQuery(['linked-sprite-frame', 'unlinked-sprite-frame'])
+const spriteFramesList = loader.value.getResourceListOfTypeQuery([
+  'linked-sprite-frame',
+  'unlinked-sprite-frame',
+])
 const tileSheetList = loader.value.getResourceListOfTypeQuery('sheet')
 const selectedKey = ref<TreeSelectionKeys | undefined>(undefined)
 const spriteFrames = computed(() => {
