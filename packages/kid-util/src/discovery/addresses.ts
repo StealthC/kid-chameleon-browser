@@ -42,7 +42,7 @@ export async function findAllKnownAddresses(kd: KidDiscovery) {
     findThemeTitleScreenGFXPtrTable,
     findThemeTitleScreenPlanePtrTable,
     findThemeTitleScreenPalettePtrTable,
-    findThemeTitleScreenSizeTable
+    findThemeTitleScreenSizeTable,
   ]
   const queue = new PQueue({ concurrency: 4 })
   for (const fn of fns) {
@@ -178,8 +178,7 @@ function findThemeTitleScreenGFXPtrTable(kd: KidDiscovery) {
                  01  19  38
 */
 
-  const pattern =
-    '3c 00 d0 40 d0 40 3e 00 41 fa ?? ?? 20 70 00 00 30 3c 5f 60 48 e7 ff 00 4e b9'
+  const pattern = '3c 00 d0 40 d0 40 3e 00 41 fa ?? ?? 20 70 00 00 30 3c 5f 60 48 e7 ff 00 4e b9'
   const ptr = kd.rom.findPattern(pattern)
   const offset = kd.rom.data.getInt16(ptr + 10, false)
   const PC = ptr + 10
@@ -204,8 +203,7 @@ function findThemeTitleScreenPlanePtrTable(kd: KidDiscovery) {
 
 */
 
-  const pattern =
-    '4c df 00 ff 30 3c 02 fb 41 fa ?? ?? 20 70 70 00 43 f9 ff ff 77 b2 48 e7 ff 00'
+  const pattern = '4c df 00 ff 30 3c 02 fb 41 fa ?? ?? 20 70 70 00 43 f9 ff ff 77 b2 48 e7 ff 00'
   const ptr = kd.rom.findPattern(pattern)
   const offset = kd.rom.data.getInt16(ptr + 10, false)
   const PC = ptr + 10
@@ -229,15 +227,13 @@ function findThemeTitleScreenPalettePtrTable(kd: KidDiscovery) {
 
 */
 
-  const pattern =
-    '3c 81 51 c8 ff fc 41 fa ?? ?? 20 70 70 00 43 f9 ff ff 4e 58'
+  const pattern = '3c 81 51 c8 ff fc 41 fa ?? ?? 20 70 70 00 43 f9 ff ff 4e 58'
   const ptr = kd.rom.findPattern(pattern)
   const offset = kd.rom.data.getInt16(ptr + 8, false)
   const PC = ptr + 8
   const address = PC + offset
   kd.knownAddresses.set('themeTitleScreenPalettePtrTable', address)
 }
-
 
 function findThemeTitleScreenSizeTable(kd: KidDiscovery) {
   /*
@@ -267,7 +263,6 @@ function findThemeTitleScreenSizeTable(kd: KidDiscovery) {
   const address = kd.rom.readPtr(ptr + 22)
   kd.knownAddresses.set('themeTitleScreenSizeTable', address)
 }
-
 
 function findFrameCollisionFrameTable(kd: KidDiscovery) {
   const pattern = 'e2 40 49 f9 ?? ?? ?? ?? d8 f4 00 00'

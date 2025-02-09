@@ -1,4 +1,8 @@
-import type { PaletteRomResourceLoaded, PlaneRomResourceLoaded, SheetRomResourceLoaded } from './kid-resources'
+import type {
+  PaletteRomResourceLoaded,
+  PlaneRomResourceLoaded,
+  SheetRomResourceLoaded,
+} from './kid-resources'
 
 export type RGBA = [number, number, number, number]
 
@@ -51,7 +55,7 @@ function usePalette(palette: Palette): (n: number) => RGBA {
 }
 
 function MDColorToRGBA(byte: number): RGBA {
-  const r = (byte & 0x0f)
+  const r = byte & 0x0f
   const g = (byte >> 4) & 0x0f
   const b = (byte >> 8) & 0x0f
   return [r * 17, g * 17, b * 17, 255]
@@ -164,13 +168,17 @@ const FormatBytesPerPixel: Record<KidImageFormat, number> = {
   Indexed8: 1,
 } as const
 
-
 /**
- * Helper class to handle image data in different formats. Mainly the Indexed4 format used in the Kid Chameleon
+ * Helper class to handle image data in different formats. Mainly the Indexed4 format used in the
+ * Kid Chameleon
  */
 export class KidImageData {
-  constructor(public imageData: Uint8ClampedArray, public width: number, public height: number, public format: KidImageFormat) {
-  }
+  constructor(
+    public imageData: Uint8ClampedArray,
+    public width: number,
+    public height: number,
+    public format: KidImageFormat,
+  ) {}
 
   static create(width: number, height: number, format: KidImageFormat = 'Indexed4'): KidImageData {
     const size = Math.ceil(width * height * FormatBytesPerPixel[format])
@@ -178,7 +186,12 @@ export class KidImageData {
     return new KidImageData(imageData, width, height, format)
   }
 
-  static from(imageData: Uint8ClampedArray | Uint8Array, width: number, height: number, format: KidImageFormat = 'Indexed4'): KidImageData {
+  static from(
+    imageData: Uint8ClampedArray | Uint8Array,
+    width: number,
+    height: number,
+    format: KidImageFormat = 'Indexed4',
+  ): KidImageData {
     if (imageData instanceof Uint8Array) {
       imageData = new Uint8ClampedArray(imageData)
     }
@@ -190,16 +203,26 @@ export class KidImageData {
     return KidImageData.from(tileData, TILE_WIDTH, TILE_HEIGHT, 'Indexed4')
   }
 
-  static fromSprite(sheetOrDataIndexed4: Uint8Array|SheetRomResourceLoaded, width: number, height: number, spriteId: number): KidImageData {
+  static fromSprite(
+    sheetOrDataIndexed4: Uint8Array | SheetRomResourceLoaded,
+    width: number,
+    height: number,
+    spriteId: number,
+  ): KidImageData {
     const tilesPerRow = Math.ceil(width / TILE_WIDTH)
     const tilesPerColumn = Math.ceil(height / TILE_HEIGHT)
-    const sheetDataIndexed4 = sheetOrDataIndexed4 instanceof Uint8Array ? sheetOrDataIndexed4 : sheetOrDataIndexed4.data
+    const sheetDataIndexed4 =
+      sheetOrDataIndexed4 instanceof Uint8Array ? sheetOrDataIndexed4 : sheetOrDataIndexed4.data
     const spriteBytes = getIndexed4TilesBytesRange(
       sheetDataIndexed4,
       spriteId,
       spriteId + tilesPerRow * tilesPerColumn,
     )
-    const spriteImage = KidImageData.create(tilesPerRow * TILE_WIDTH, tilesPerColumn * TILE_HEIGHT, 'Indexed4')
+    const spriteImage = KidImageData.create(
+      tilesPerRow * TILE_WIDTH,
+      tilesPerColumn * TILE_HEIGHT,
+      'Indexed4',
+    )
 
     let tileIndex = 0
     // Dividing the sprite into blocks (quadrants) of 4×4 tiles.
@@ -228,7 +251,13 @@ export class KidImageData {
     return spriteImage
   }
 
-  static fromPlane(plane: PlaneRomResourceLoaded, sheet: SheetRomResourceLoaded, widthInTiles: number, startIndex: number = 0, sizeLimit?: number): KidImageData {
+  static fromPlane(
+    plane: PlaneRomResourceLoaded,
+    sheet: SheetRomResourceLoaded,
+    widthInTiles: number,
+    startIndex: number = 0,
+    sizeLimit?: number,
+  ): KidImageData {
     if (sizeLimit === undefined) {
       sizeLimit = plane.tiles.length - startIndex
     }
@@ -263,60 +292,60 @@ export class KidImageData {
    * Creates a KidImageData from a complete Indexed4 sheet.
    *
    * @param sheet - Complete sheet data in Indexed4 format.
-   * @param variant - Determines which dimension is fixed:
-   *                  - 'rows': the provided count is the number of columns (row-major order)
-   *                  - 'columns': the provided count is the number of rows (column-major order)
-   * @param count - The number of tiles in the fixed dimension (columns for 'rows' or rows for 'columns').
+   * @param variant - Determines which dimension is fixed: - 'rows': the provided count is the
+   *   number of columns (row-major order) - 'columns': the provided count is the number of rows
+   *   (column-major order)
+   * @param count - The number of tiles in the fixed dimension (columns for 'rows' or rows for
+   *   'columns').
    * @returns KidImageData representing the entire sheet.
    */
   static fromSheet(
     sheet: SheetRomResourceLoaded,
     variant: 'rows' | 'columns' = 'rows',
-    count: number
+    count: number,
   ): KidImageData {
     // Calculate the total number of tiles in the sheet.
-    const totalTiles = sheet.tiles.length;
-    const order = variant === 'rows' ? 'row-major' : 'column-major';
-    let rows: number, columns: number;
+    const totalTiles = sheet.tiles.length
+    const order = variant === 'rows' ? 'row-major' : 'column-major'
+    let rows: number, columns: number
     if (variant === 'rows') {
       // For 'rows' variant, the provided count is the number of rows.
-      rows = count;
-      columns = Math.ceil(totalTiles / rows);
+      rows = count
+      columns = Math.ceil(totalTiles / rows)
     } else {
       // For 'columns' variant, the provided count is the number of columns.
-      columns = count;
-      rows = Math.ceil(totalTiles / columns);
-
+      columns = count
+      rows = Math.ceil(totalTiles / columns)
     }
 
     // Calculate the overall dimensions of the sheet in pixels.
-    const width = columns * TILE_WIDTH;
-    const height = rows * TILE_HEIGHT;
+    const width = columns * TILE_WIDTH
+    const height = rows * TILE_HEIGHT
 
     // Create a new KidImageData in Indexed4 format with the calculated dimensions.
-    const sheetImageData = KidImageData.create(width, height, 'Indexed4');
+    const sheetImageData = KidImageData.create(width, height, 'Indexed4')
 
     // Draw each tile in the correct position based on the chosen variant.
     for (let i = 0; i < totalTiles; i++) {
-      let x: number, y: number;
+      let x: number, y: number
       if (order === 'row-major') {
         // Row-major order: fill rows left-to-right.
         // Here, the fixed number of columns is used to determine the x coordinate.
-        x = i % columns;
-        y = Math.floor(i / columns);
+        x = i % columns
+        y = Math.floor(i / columns)
       } else {
         // Column-major order: fill columns top-to-bottom.
         // Here, the fixed number of rows is used to determine the y coordinate.
-        x = Math.floor(i / rows);
-        y = i % rows;
+        x = Math.floor(i / rows)
+        y = i % rows
       }
       //const tileData = getIndexed4TileBytes(i, sheetData);
       //const tileImageData = KidImageData.from(tileData, TILE_WIDTH, TILE_HEIGHT, 'Indexed4');
       const tileImageData = sheet.tiles[i]!
-      sheetImageData.draw(tileImageData, x * TILE_WIDTH, y * TILE_HEIGHT);
+      sheetImageData.draw(tileImageData, x * TILE_WIDTH, y * TILE_HEIGHT)
     }
 
-    return sheetImageData;
+    return sheetImageData
   }
 
   getRGBAData(palette?: Palette): Uint8ClampedArray {
@@ -340,78 +369,83 @@ export class KidImageData {
   draw(src: KidImageData, x: number, y: number): void {
     if (this.format !== src.format) {
       throw new Error('Different formats')
-    } if (this.format === 'Indexed4') {
+    }
+    if (this.format === 'Indexed4') {
       if (x % 2 !== 0) {
         throw new Error('Invalid position for Indexed4 format')
       }
     }
     for (let sy = 0; sy < src.height; sy++) {
       const srcStart = sy * src.width * FormatBytesPerPixel[src.format]
-      const dstStart = (((y + sy) * this.width) + x) * FormatBytesPerPixel[this.format]
-      const sourceLine = src.imageData.subarray(srcStart, srcStart + src.width * FormatBytesPerPixel[src.format])
+      const dstStart = ((y + sy) * this.width + x) * FormatBytesPerPixel[this.format]
+      const sourceLine = src.imageData.subarray(
+        srcStart,
+        srcStart + src.width * FormatBytesPerPixel[src.format],
+      )
       this.imageData.set(sourceLine, dstStart)
     }
   }
-/**
- * Flips the image horizontally. (creates a new image)
- */
-flipHorizontal(): KidImageData {
-  const newImage = KidImageData.create(this.width, this.height, this.format)
+  /** Flips the image horizontally. (creates a new image) */
+  flipHorizontal(): KidImageData {
+    const newImage = KidImageData.create(this.width, this.height, this.format)
 
-  if (this.format === 'Indexed4') {
-    // Each pixel occupies half a byte (a nibble)
-    for (let y = 0; y < this.height; y++) {
-      for (let x = 0; x < this.width; x++) {
-        // Calculate the pixel index in the row
-        const srcPixelIndex = y * this.width + x
-        // Each byte stores 2 pixels:
-        const srcByteIndex = Math.floor(srcPixelIndex / 2)
-        const isSrcHighNibble = (srcPixelIndex % 2 === 0)
-        const srcByte = this.imageData[srcByteIndex]!
-        // Extract the corresponding nibble
-        const pixelValue = isSrcHighNibble ? (srcByte >> 4) : (srcByte & 0x0f)
+    if (this.format === 'Indexed4') {
+      // Each pixel occupies half a byte (a nibble)
+      for (let y = 0; y < this.height; y++) {
+        for (let x = 0; x < this.width; x++) {
+          // Calculate the pixel index in the row
+          const srcPixelIndex = y * this.width + x
+          // Each byte stores 2 pixels:
+          const srcByteIndex = Math.floor(srcPixelIndex / 2)
+          const isSrcHighNibble = srcPixelIndex % 2 === 0
+          const srcByte = this.imageData[srcByteIndex]!
+          // Extract the corresponding nibble
+          const pixelValue = isSrcHighNibble ? srcByte >> 4 : srcByte & 0x0f
 
-        // Inverted horizontal position
-        const newX = this.width - 1 - x
-        const dstPixelIndex = y * this.width + newX
-        const dstByteIndex = Math.floor(dstPixelIndex / 2)
-        const isDstHighNibble = (dstPixelIndex % 2 === 0)
+          // Inverted horizontal position
+          const newX = this.width - 1 - x
+          const dstPixelIndex = y * this.width + newX
+          const dstByteIndex = Math.floor(dstPixelIndex / 2)
+          const isDstHighNibble = dstPixelIndex % 2 === 0
 
-        // Insert the pixel into the destination byte, keeping the other nibble intact
-        if (isDstHighNibble) {
-          // Write to the high nibble
-          newImage.imageData[dstByteIndex] = (pixelValue << 4) | (newImage.imageData[dstByteIndex]! & 0x0f)
-        } else {
-          // Write to the low nibble
-          newImage.imageData[dstByteIndex] = (newImage.imageData[dstByteIndex]! & 0xf0) | (pixelValue & 0x0f)
+          // Insert the pixel into the destination byte, keeping the other nibble intact
+          if (isDstHighNibble) {
+            // Write to the high nibble
+            newImage.imageData[dstByteIndex] =
+              (pixelValue << 4) | (newImage.imageData[dstByteIndex]! & 0x0f)
+          } else {
+            // Write to the low nibble
+            newImage.imageData[dstByteIndex] =
+              (newImage.imageData[dstByteIndex]! & 0xf0) | (pixelValue & 0x0f)
+          }
+        }
+      }
+    } else {
+      // For formats that have an integer number of bytes per pixel (RGBA, Indexed8)
+      const bytesPerPixel = FormatBytesPerPixel[this.format]
+      for (let y = 0; y < this.height; y++) {
+        for (let x = 0; x < this.width; x++) {
+          const srcIndex = (y * this.width + x) * bytesPerPixel
+          const dstIndex = (y * this.width + (this.width - 1 - x)) * bytesPerPixel
+          const sourcePixel = this.imageData.subarray(srcIndex, srcIndex + bytesPerPixel)
+          newImage.imageData.set(sourcePixel, dstIndex)
         }
       }
     }
-  } else {
-    // For formats that have an integer number of bytes per pixel (RGBA, Indexed8)
-    const bytesPerPixel = FormatBytesPerPixel[this.format]
-    for (let y = 0; y < this.height; y++) {
-      for (let x = 0; x < this.width; x++) {
-        const srcIndex = (y * this.width + x) * bytesPerPixel
-        const dstIndex = (y * this.width + (this.width - 1 - x)) * bytesPerPixel
-        const sourcePixel = this.imageData.subarray(srcIndex, srcIndex + bytesPerPixel)
-        newImage.imageData.set(sourcePixel, dstIndex)
-      }
-    }
+
+    return newImage
   }
 
-  return newImage
-}
-
-  /**
-   * Flips the image vertically. (creates a new image)
-   */
+  /** Flips the image vertically. (creates a new image) */
   flipVertical(): KidImageData {
     const newImageData = KidImageData.create(this.width, this.height, this.format)
     for (let y = 0; y < this.height; y++) {
       const srcStart = y * this.width * FormatBytesPerPixel[this.format]
       const dstStart = (this.height - 1 - y) * this.width * FormatBytesPerPixel[this.format]
-      const sourceLine = this.imageData.subarray(srcStart, srcStart + this.width * FormatBytesPerPixel[this.format])
+      const sourceLine = this.imageData.subarray(
+        srcStart,
+        srcStart + this.width * FormatBytesPerPixel[this.format],
+      )
       newImageData.imageData.set(sourceLine, dstStart)
     }
     return newImageData

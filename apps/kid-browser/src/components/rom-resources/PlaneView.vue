@@ -1,7 +1,8 @@
 <template>
   <div class="flex h-full w-full flex-row">
     <div class="flex flex-col items-center">
-      <InputNumber v-if="useColumns"
+      <InputNumber
+        v-if="useColumns"
         v-model="columns"
         showButtons
         buttonLayout="vertical"
@@ -77,7 +78,6 @@ const selectedPalette = computed(() => {
 })
 
 const computedValues = computed(() => {
-
   const width = calculatedColumns.value * 8
   const height = (resource.value.tiles.length / calculatedColumns.value) * 8
   return {
@@ -93,7 +93,8 @@ const draw = async (ctx: CanvasRenderingContext2D) => {
     return
   }
   const bitmap = await bitmapFromKidImageData(
-    KidImageData.fromPlane(resource.value, selectedSheet.value, calculatedColumns.value), selectedPalette.value
+    KidImageData.fromPlane(resource.value, selectedSheet.value, calculatedColumns.value),
+    selectedPalette.value,
   )
   ctx.drawImage(bitmap, 0, 0)
   return

@@ -4,7 +4,9 @@ import { useQuery, type UseQueryOptions } from '@tanstack/vue-query'
 import { storeToRefs } from 'pinia'
 import { computed, unref, type MaybeRef } from 'vue'
 
-type typeFilter = MaybeRef<(typeof ResourceTypes)[number] | (typeof ResourceTypes)[number][]> | undefined
+type typeFilter =
+  | MaybeRef<(typeof ResourceTypes)[number] | (typeof ResourceTypes)[number][]>
+  | undefined
 
 const computedFilter = (filter: typeFilter) => {
   if (!filter) {
@@ -41,7 +43,11 @@ export function useResourceLoader() {
       ...options,
     })
   }
-  const useGetRelatedResourcesQuery = (resource: MaybeRef<LoadedRomResource>, load = true, filter?: typeFilter) => {
+  const useGetRelatedResourcesQuery = (
+    resource: MaybeRef<LoadedRomResource>,
+    load = true,
+    filter?: typeFilter,
+  ) => {
     return useQuery({
       queryKey: ['getMultipleResources', resource, load, romDetails],
       queryFn: async () => {
@@ -66,7 +72,11 @@ export function useResourceLoader() {
       },
     })
   }
-  const useGetMultipleResourcesQuery = (addresses: MaybeRef<Iterable<number>>, load = true, filter?: typeFilter) => {
+  const useGetMultipleResourcesQuery = (
+    addresses: MaybeRef<Iterable<number>>,
+    load = true,
+    filter?: typeFilter,
+  ) => {
     return useQuery({
       queryKey: ['getMultipleResources', addresses, load, filter, romDetails],
       queryFn: async () => {

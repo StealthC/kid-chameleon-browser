@@ -350,7 +350,10 @@ function addThemeResources(kd: KidDiscovery) {
     const titleThemeRelated = new Set<number>()
     if (themeTitleScreenGFXPtrTable) {
       const themeTitlePackedGFXPtr = kd.rom.readPtr(themeTitleScreenGFXPtrTable + theme * 4)
-      const resource = kd.rom.createResource(themeTitlePackedGFXPtr, 'sheet') as SheetRomResourceUnloaded
+      const resource = kd.rom.createResource(
+        themeTitlePackedGFXPtr,
+        'sheet',
+      ) as SheetRomResourceUnloaded
       resource.name = `Theme ${theme} Title Screen GFX`
       resource.packed = { format: 'kid' }
       kd.rom.addResource(resource)
@@ -361,7 +364,10 @@ function addThemeResources(kd: KidDiscovery) {
     const themeTitleScreenSizeTable = kd.knownAddresses.get('themeTitleScreenSizeTable')
     if (themeTitleScreenPlanePtrTable) {
       const themeTitlePlanePtr = kd.rom.readPtr(themeTitleScreenPlanePtrTable + theme * 4)
-      const resource = kd.rom.createResource(themeTitlePlanePtr, 'plane') as PlaneRomResourceUnloaded
+      const resource = kd.rom.createResource(
+        themeTitlePlanePtr,
+        'plane',
+      ) as PlaneRomResourceUnloaded
       resource.name = `Theme ${theme} Title Screen Plane`
       resource.packed = { format: 'enigma' }
       if (themeTitleScreenSizeTable) {
@@ -375,7 +381,10 @@ function addThemeResources(kd: KidDiscovery) {
     const themeTitleScreenPalettePtrTable = kd.knownAddresses.get('themeTitleScreenPalettePtrTable')
     if (themeTitleScreenPalettePtrTable) {
       const themeTitlePalettePtr = kd.rom.readPtr(themeTitleScreenPalettePtrTable + theme * 4)
-      const resource = kd.rom.createResource(themeTitlePalettePtr, 'palette') as PaletteRomResourceUnloaded
+      const resource = kd.rom.createResource(
+        themeTitlePalettePtr,
+        'palette',
+      ) as PaletteRomResourceUnloaded
       resource.name = `Theme ${theme} Title Screen Palette`
       resource.size = 16
       kd.rom.addResource(resource)

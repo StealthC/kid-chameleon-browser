@@ -17,7 +17,7 @@ export const ResourceTypes = [
   'plane',
   'level-header',
   'palette',
-  'palette-map'
+  'palette-map',
 ] as const
 
 export type RomResourceIndex = Map<number, BaseRomResource>
@@ -108,9 +108,9 @@ export type PaletteMapRomResource = PaletteMapRomResourceUnloaded | PaletteMapRo
 
 export function isRomResourceOfType<T extends (typeof ResourceTypes)[number]>(
   resource: BaseRomResource,
-  type: T
+  type: T,
 ): resource is Extract<BaseRomResource, { type: T }> {
-  return resource.type === type;
+  return resource.type === type
 }
 
 export function isLoadedResource(resource: BaseRomResource): resource is LoadedRomResource {
@@ -221,7 +221,7 @@ export type PlaneRomResourceLoaded = PackableResource &
   LoadedRomResource & {
     type: 'plane'
     startTile?: number
-    data: Uint8Array,
+    data: Uint8Array
     tiles: PlaneRomResourceTile[]
     width?: number
   }
@@ -512,7 +512,6 @@ export function loadPaletteRomResource(
   }
 }
 
-
 export function loadPaletteMapRomResource(
   rom: Rom,
   resource: PaletteMapRomResourceUnloaded,
@@ -658,11 +657,11 @@ export function checkRelated(rom: Rom, resource: BaseRomResource) {
   }
 }
 
-export function AddAllRelated(rom: Rom, list: number[]|Set<number>) {
+export function AddAllRelated(rom: Rom, list: number[] | Set<number>) {
   for (const address of list) {
     const resource = rom.resources.get(address)
     if (resource) {
-      list.forEach(item => resource.related.add(item))
+      list.forEach((item) => resource.related.add(item))
       checkRelated(rom, resource)
     }
   }

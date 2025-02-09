@@ -54,9 +54,7 @@ const draw = async (ctx: CanvasRenderingContext2D) => {
     return
   }
   const { tileId, width, height, bytes } = computedValues.value
-  const bitmap = await bitmapFromKidImageData(
-    KidImageData.fromSprite(bytes, width, height, tileId),
-  )
+  const bitmap = await bitmapFromKidImageData(KidImageData.fromSprite(bytes, width, height, tileId))
   ctx.drawImage(bitmap, 0, 0)
   return
 }
