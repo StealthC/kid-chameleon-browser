@@ -8,9 +8,7 @@
       <ProgressSpinner />
     </div>
   </div>
-  <div v-else>
-    <slot></slot>
-  </div>
+  <slot v-else></slot>
 </template>
 
 <script setup lang="ts">
