@@ -14,14 +14,13 @@
 </template>
 
 <script setup lang="ts">
-import useRomStore from '@/stores/romStore';
-import { storeToRefs } from 'pinia';
-import ProgressSpinner from 'primevue/progressspinner';
-import { computed } from 'vue';
-const {romFullLoaded, romLoading} = storeToRefs(useRomStore());
+import useRomStore from '@/stores/romStore'
+import { storeToRefs } from 'pinia'
+import ProgressSpinner from 'primevue/progressspinner'
+import { computed } from 'vue'
+const { romFullLoaded, romLoading } = storeToRefs(useRomStore())
 
-const isStale = computed(() => !romFullLoaded.value && !romLoading.value);
-
+const isStale = computed(() => !romFullLoaded.value && !romLoading.value)
 </script>
 
 <style scoped></style>
