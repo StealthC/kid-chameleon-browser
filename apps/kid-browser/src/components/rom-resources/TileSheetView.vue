@@ -2,9 +2,9 @@
   <Panel header="Tile Sheet">
     <div class="flex h-full w-full flex-row">
       <div class="flex flex-col items-center">
-        <label for="columns">Columns:</label>
+        <ToggleButton class="w-full" v-model="useColumns" onLabel="Columns" offLabel="Rows" />
         <InputNumber
-          v-model="columns"
+          v-model="value"
           showButtons
           buttonLayout="vertical"
           size="small"
@@ -27,56 +27,46 @@
 
 <script setup lang="ts">
 import { computed, ref, toRefs } from 'vue'
-import { getCellRGBABytes, type SheetRomResourceLoaded } from '@repo/kid-util'
+import { KidImageData, type SheetRomResourceLoaded } from '@repo/kid-util'
 import Panel from 'primevue/panel'
+import ToggleButton from 'primevue/togglebutton'
 import InputNumber from 'primevue/inputnumber'
 import CanvasRenderer from './CanvasRenderer.vue'
-
-const drawCell = async (ctx: CanvasRenderingContext2D, id: number = 0, x: number = 0, y: number = 0) => {
-  if (!values.value) {
-    return
-  }
-  const { data } = values.value
-  const cellImage = await createImageBitmap(new ImageData(getCellRGBABytes(id, data), 8, 8))
-  ctx.drawImage(cellImage, x * 8, y * 8, 8, 8)
-}
+import { bitmapFromKidImageData } from '@/utils'
 
 const draw = async (ctx: CanvasRenderingContext2D) => {
   if (!values.value) {
     return
   }
-  const { columns, rows, cellsTotal } = values.value
-  for (let x = 0; x < columns; x++) {
-    for (let y = 0; y < rows; y++) {
-      const cellIndex = x + y * columns
-      if (cellIndex < cellsTotal) {
-        await drawCell(ctx, cellIndex, x, y)
-      }
-    }
-  }
+  const sheetImage = KidImageData.fromSheet(resource.value, valueMode.value, value.value)
+  const bitmap = await bitmapFromKidImageData(sheetImage)
+  ctx.drawImage(bitmap, 0, 0)
 }
 
 interface Props {
   resource: SheetRomResourceLoaded
-  columns?: number
+  value?: number
+  mode?: 'rows' | 'columns'
 }
 
 const props = defineProps<Props>()
 
 const { resource } = toRefs(props)
-const columns = ref(props.columns ?? 16)
+const value = ref(props.value ?? 16)
+const useColumns = ref(props.mode === 'columns')
+
+const valueMode = computed(() => (useColumns.value ? 'columns' : 'rows'))
 
 const values = computed(() => {
   if (!resource.value) {
     return null
   }
-  const data = resource.value.data
-  const cellsTotal = data.length / (8 * 4)
-  const rows = Math.ceil(cellsTotal / columns.value)
+  const cellsTotal = resource.value.tiles.length
+  const columns = valueMode.value === 'columns' ? value.value : Math.ceil(cellsTotal / value.value)
+  const rows = valueMode.value === 'rows' ? value.value : Math.ceil(cellsTotal / value.value)
 
   return {
-    data,
-    columns: columns.value,
+    columns,
     rows,
     cellsTotal,
   }

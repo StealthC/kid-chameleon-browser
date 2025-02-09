@@ -1,5 +1,5 @@
 //@ts-check
-import { beforeAll, describe, expect, test, it } from '@jest/globals'
+import { beforeAll, describe, expect, test, it } from 'vitest'
 import { compilePattern, PatternFinder } from './pattern-finder'
 
 describe('Pattern Matching', () => {

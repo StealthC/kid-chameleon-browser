@@ -1,4 +1,4 @@
-import type { ResourceTypes } from '@repo/kid-util'
+import type { KidImageData, Palette, ResourceTypes } from '@repo/kid-util'
 import byteSize from 'byte-size'
 
 export function addressFormat(address: number): string {
@@ -21,7 +21,7 @@ export async function executeNextTick<T>(fn: () => T) {
   })
 }
 
-export function getAddressNumber(address: string|number): number {
+export function getAddressNumber(address: string | number): number {
   if (typeof address === 'string') {
     // remove "$"" or "0x" prefix
     const cleanAddress = address.trim().replace(/^[\$]|^0x/g, '')
@@ -30,12 +30,16 @@ export function getAddressNumber(address: string|number): number {
   return address
 }
 
-const nameForType: Partial<Record<typeof ResourceTypes[number], string>> = {
+const nameForType: Partial<Record<(typeof ResourceTypes)[number], string>> = {
   sheet: 'Tile Sheet',
-  "linked-sprite-frame": 'Sprite Frame (with graphics)',
-  "unlinked-sprite-frame": 'Sprite Frame',
+  'linked-sprite-frame': 'Sprite Frame (with graphics)',
+  'unlinked-sprite-frame': 'Sprite Frame',
 }
 
-export function getNameForType(type: typeof ResourceTypes[number]): string {
+export function getNameForType(type: (typeof ResourceTypes)[number]): string {
   return nameForType[type] || type
+}
+
+export async function bitmapFromKidImageData(image: KidImageData, palette?: Palette) {
+  return createImageBitmap(new ImageData(image.getRGBAData(palette), image.width, image.height))
 }

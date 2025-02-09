@@ -35,22 +35,30 @@ import useRomStore from '@/stores/rom'
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { addressFormat, getByteSize } from '@/utils'
-import { ImportantAddresses, KnownAddressesDescriptions } from '@repo/kid-util'
+import { ImportantValues, KnownAddressesDescriptions, type KnownAddresses } from '@repo/kid-util'
 
 const { romDetails, romKnownAddresses } = storeToRefs(useRomStore())
 type DetailsData = Record<string, Record<string, string>>
 
 const romKnownAddressesValues = computed(() => {
-  const knownAdresses = romKnownAddresses.value ?? {}
-  const mappedAddresses = ImportantAddresses.map((key) => {
-    const knownValue = knownAdresses[key] ? addressFormat(knownAdresses[key]) : '??'
+  const knownAdresses: KnownAddresses = romKnownAddresses.value ?? new Map()
+  const mappedAddresses = (
+    Object.keys(KnownAddressesDescriptions) as (typeof ImportantValues)[number][]
+  ).map((key) => {
+    const knownValue = knownAdresses.get(key)
+    const knownFormattedValue = knownValue ? addressFormat(knownValue) : '??'
     const description = KnownAddressesDescriptions[key] ?? {
       description: 'Not Implemented yet',
       addressInJUE: 'Unknown',
       name: key,
       type: 'Unknown',
     }
-    return [description.name, knownValue, description.type.toUpperCase(), description.description]
+    return [
+      description.name,
+      knownFormattedValue,
+      description.type.toUpperCase(),
+      description.description,
+    ]
   })
   return [['Name', 'Address', 'Type', 'Description'], ...mappedAddresses]
 })

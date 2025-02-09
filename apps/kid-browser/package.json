@@ -1,6 +1,6 @@
 {
   "name": "kid-browser",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,6 +12,7 @@
     "lint": "eslint . --fix",
     "format": "prettier --write src/"
   },
+  "license": "MIT",
   "dependencies": {
     "@repo/kid-util": "workspace:*",
     "@tanstack/vue-query": "^5.66.0",

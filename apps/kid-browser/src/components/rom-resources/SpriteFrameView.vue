@@ -29,7 +29,12 @@
 </template>
 
 <script setup lang="ts">
-import { isLinkedSpriteFrameResource, isLoadedResource, isSheetResource, type SpriteFrameRomResourceLoaded } from '@repo/kid-util'
+import {
+  isLinkedSpriteFrameResource,
+  isLoadedResource,
+  isSheetResource,
+  type SpriteFrameRomResourceLoaded,
+} from '@repo/kid-util'
 import { computed, ref, toRefs, type Ref } from 'vue'
 import Panel from 'primevue/panel'
 import Select from 'primevue/select'
@@ -43,13 +48,14 @@ interface Props {
 
 const props = defineProps<Props>()
 const { resource } = toRefs(props)
-const sheet = ref<number|null>(null)
+const sheet = ref<number | null>(null)
 const resourceLoader = useResourceLoader()
 const sheetList = resourceLoader.value.getResourceListOfTypeQuery('sheet')
 const isSheetSelected = computed(() => sheet.value !== null)
-const loadedSheet = resourceLoader.value.useGetResourceQuery(sheet as Ref<number>, true, { enabled: isSheetSelected })
+const loadedSheet = resourceLoader.value.useGetResourceQuery(sheet as Ref<number>, true, {
+  enabled: isSheetSelected,
+})
 const sheets = computed(() => {
-
   if (sheetList.data.value) {
     return sheetList.data.value.map((sheet) => ({
       name: addressFormat(sheet),
@@ -67,7 +73,11 @@ const bytes = computed(() => {
   if (isLinkedSpriteFrameResource(resource.value)) {
     return resource.value.data
   }
-  if (loadedSheet.data.value && isLoadedResource(loadedSheet.data.value) && isSheetResource(loadedSheet.data.value)) {
+  if (
+    loadedSheet.data.value &&
+    isLoadedResource(loadedSheet.data.value) &&
+    isSheetResource(loadedSheet.data.value)
+  ) {
     return loadedSheet.data.value.data
   }
   return null

@@ -1,11 +1,4 @@
-export type UnpackEnigmaResults = {
-  startAddress: number
-  endAddress: number
-  sizePacked: number
-  sizeUnpacked: number
-  ratio: number
-  success: boolean
-}
+import type { UnpackResults, UnpackReturn } from './kid-utils'
 
 /** Helper class to read bits from a DataView, simulating the behavior of "bitio" in Go. */
 class BitReader {
@@ -117,9 +110,9 @@ function readUint16BE(view: DataView, pos: number): number {
  */
 export function unpackEnigmaFormat(
   input: Uint8Array | DataView,
-  compressedDataStart: number,
-  tile: number,
-): { data: Uint8Array; results: UnpackEnigmaResults } {
+  compressedDataStart: number = 0,
+  tile: number = 0,
+): UnpackReturn {
   // Convert input to DataView, if Uint8Array
   let dataView: DataView
   if (input instanceof Uint8Array) {
@@ -129,7 +122,7 @@ export function unpackEnigmaFormat(
   }
 
   // Result
-  const results: UnpackEnigmaResults = {
+  const results: UnpackResults = {
     startAddress: compressedDataStart,
     endAddress: 0,
     sizePacked: 0,
@@ -270,7 +263,7 @@ export function unpackEnigmaFormat(
     results.ratio = (sizePacked / sizeUnpacked) * 100.0
   }
 
-  // If (in the end) the uncompressed size is smaller than the compressed size, Go defines success = false
+  // If (in the end) the uncompressed size is smaller than the compressed size, defines success = false
   if (sizeUnpacked < sizePacked) {
     results.success = false
   }
@@ -278,5 +271,5 @@ export function unpackEnigmaFormat(
   // Convert the output array to Uint8Array
   const data = new Uint8Array(output)
 
-  return { data, results }
+  return { output: data, results }
 }

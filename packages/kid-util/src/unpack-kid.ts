@@ -1,9 +1,4 @@
-export type KidUnpackResults = {
-  keyDataSize: number
-  inputDataSize: number
-  totalInputSize: number
-  output: Uint8Array
-}
+import type { UnpackResults, UnpackReturn } from './kid-utils'
 
 /**
  * Decodes compressed data in the format used by the game Kid Chameleon. This function tries to
@@ -14,7 +9,11 @@ export type KidUnpackResults = {
  * @param maxSize Maximum size for the output (optional, default 65535)
  * @returns Uint8Array containing the decompressed data
  */
-export function unpackKidFormat(input: Uint8Array | DataView, maxSize = 0xffff): KidUnpackResults {
+export function unpackKidFormat(
+  input: Uint8Array | DataView,
+  compressedDataStart = 0,
+  maxSize = 0xffff,
+): UnpackReturn {
   // Convert input to DataView if it's Uint8Array
   let dataView: DataView
   if (input instanceof Uint8Array) {
@@ -22,7 +21,14 @@ export function unpackKidFormat(input: Uint8Array | DataView, maxSize = 0xffff):
   } else {
     dataView = input
   }
-
+  const results: UnpackResults = {
+    startAddress: compressedDataStart,
+    endAddress: 0,
+    sizePacked: 0,
+    sizeUnpacked: 0,
+    ratio: 0,
+    success: false,
+  }
   // Helper function to read a byte from DataView without overflow
   function readByte(pos: number): number {
     if (pos < 0 || pos >= dataView.byteLength) {
@@ -199,12 +205,29 @@ export function unpackKidFormat(input: Uint8Array | DataView, maxSize = 0xffff):
   const keyDataSize = keyDataEnd - keyDataStart
   const inputDataSize = inputPos - keyDataEnd
   const totalInputSize = keyDataSize + inputDataSize
+  const sizePacked = totalInputSize
+  const sizeUnpacked = output.length
+
+  results.endAddress = results.startAddress + sizePacked
+  results.sizeUnpacked = sizeUnpacked
+  results.sizePacked = sizePacked
+  results.success = true
+
+  if (sizeUnpacked === 0) {
+    // Avoid division by zero
+    results.ratio = 0
+    results.success = false
+  } else {
+    results.ratio = (sizePacked / sizeUnpacked) * 100.0
+  }
+
+  // If (in the end) the uncompressed size is smaller than the compressed size, defines success = false
+  if (sizeUnpacked < sizePacked) {
+    results.success = false
+  }
 
   return {
-    keyDataSize,
-    inputDataSize,
-    totalInputSize,
-    // Convert the output array to Uint8Array
     output: new Uint8Array(output),
+    results,
   }
 }

@@ -15,10 +15,7 @@ const loadResource = (resource: number) => {
       <ResourceTree @selected="loadResource" />
     </div>
     <div class="h-full flex-grow overflow-auto">
-      <ResourceView
-        v-if="selectedResource != null"
-        :resource-address="selectedResource"
-      />
+      <ResourceView v-if="selectedResource != null" :resource-address="selectedResource" />
     </div>
   </main>
 </template>

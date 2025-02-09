@@ -2,6 +2,8 @@ import { crc32 } from './hash'
 import { calculatePlayerSpriteDataSize } from './kid-utils'
 import type { Rom } from './kid-rom'
 import { unpackKidFormat } from './unpack-kid'
+import { unpackEnigmaFormat } from './unpack-enigma'
+import { KidImageData, TILE_INDEXED4_BYTE_COUNT, TILE_WIDTH } from './kid-graphics'
 
 export type PackedFormat = 'kid' | 'enigma'
 
@@ -14,10 +16,12 @@ export const ResourceTypes = [
   'animation-frame',
   'plane',
   'level-header',
+  'palette',
+  'palette-map',
 ] as const
 
 export type RomResourceIndex = Map<number, BaseRomResource>
-export type RomResourcesByType = Record<typeof ResourceTypes[number], Set<number>>
+export type RomResourcesByType = Record<(typeof ResourceTypes)[number], Set<number>>
 
 export const ResourceTypeLoaderMap: ResourceLoaderMap = {
   'level-header': loadLevelHeaderRomResource,
@@ -25,6 +29,9 @@ export const ResourceTypeLoaderMap: ResourceLoaderMap = {
   'unlinked-sprite-frame': loadUnlinkedSpriteFrameResource,
   'linked-sprite-frame': loadLinkedSpriteFrameResource,
   'sprite-collision': loadSpriteCollisionRomResource,
+  plane: loadPlaneRomResource,
+  palette: loadPaletteRomResource,
+  'palette-map': loadPaletteMapRomResource,
 }
 
 export type AllRomResources =
@@ -33,6 +40,9 @@ export type AllRomResources =
   | UnlinkedSpriteFrameRomResource
   | LinkedSpriteFrameRomResource
   | SpriteCollisionRomResource
+  | PlaneRomResource
+  | PaletteRomResource
+  | PaletteMapRomResource
 
 export type LoadedResourceOfType<K extends (typeof ResourceTypes)[number]> = Extract<
   AllRomResources,
@@ -70,12 +80,53 @@ export type LoadedRomResource = BaseRomResource & {
   inputSize: number
 }
 
+export type PaletteRomResourceUnloaded = UnloadedRomResource & {
+  type: 'palette'
+  size: number
+}
+
+export type PaletteRomResourceLoaded = LoadedRomResource & {
+  type: 'palette'
+  size: number
+  colors: number[]
+}
+
+export type PaletteRomResource = PaletteRomResourceUnloaded | PaletteRomResourceLoaded
+
+export type PaletteMapRomResourceUnloaded = UnloadedRomResource & {
+  type: 'palette-map'
+  size: number
+}
+
+export type PaletteMapRomResourceLoaded = LoadedRomResource & {
+  type: 'palette-map'
+  size: number
+  map: number[]
+}
+
+export type PaletteMapRomResource = PaletteMapRomResourceUnloaded | PaletteMapRomResourceLoaded
+
+export function isRomResourceOfType<T extends (typeof ResourceTypes)[number]>(
+  resource: BaseRomResource,
+  type: T,
+): resource is Extract<BaseRomResource, { type: T }> {
+  return resource.type === type
+}
+
 export function isLoadedResource(resource: BaseRomResource): resource is LoadedRomResource {
   return (resource as LoadedRomResource).loaded
 }
 
 export function isSheetResource(resource: BaseRomResource): resource is SheetRomResource {
   return resource.type === 'sheet'
+}
+
+export function isPaletteResource(resource: BaseRomResource): resource is PaletteRomResource {
+  return resource.type === 'palette'
+}
+
+export function isPaletteMapResource(resource: BaseRomResource): resource is PaletteMapRomResource {
+  return resource.type === 'palette-map'
 }
 
 export function isSpriteFrameResource(
@@ -96,6 +147,10 @@ export const isLinkedSpriteFrameResource = (
   return spriteFrame.type === 'linked-sprite-frame'
 }
 
+export const isPlaneResource = (resource: BaseRomResource): resource is PlaneRomResource => {
+  return resource.type === 'plane'
+}
+
 // Recursos específicos – exemplo com level-header:
 export type LevelHeaderRomResourceUnloaded = UnloadedRomResource & {
   type: 'level-header'
@@ -110,9 +165,16 @@ export type LevelHeaderRomResourceLoaded = LoadedRomResource & {
   width: number
   height: number
   yOffset: number
+  widthInBlocks: number
+  heightInBlocks: number
+  yOffsetInBlocks: number
+  murderWall?: boolean
+  murderWallVariant?: boolean
   themeIndex: number
-  backgroundIndex: number
+  backgroundType: number
   backgroundMisc: number
+  backgroundIsPacked?: boolean
+  backgroundWidth: number
   playerX: number
   playerY: number
   flagX: number
@@ -127,8 +189,7 @@ export type LevelHeaderRomResource = LevelHeaderRomResourceUnloaded | LevelHeade
 
 export type EnigmaPacked = {
   format: 'enigma'
-  dataStart: number
-  tile: number
+  tileIndex?: number
 }
 export type KidPacked = {
   format: 'kid'
@@ -140,9 +201,37 @@ export type PackableResource = {
   packed?: PackedData
 }
 
+export type PlaneRomResourceUnloaded = PackableResource &
+  UnloadedRomResource & {
+    type: 'plane'
+    startTile?: number
+    inputSize?: number
+    width?: number
+  }
+
+export type PlaneRomResourceTile = {
+  priority: boolean
+  palette: number
+  yFlip: boolean
+  xFlip: boolean
+  tileIndex: number
+}
+
+export type PlaneRomResourceLoaded = PackableResource &
+  LoadedRomResource & {
+    type: 'plane'
+    startTile?: number
+    data: Uint8Array
+    tiles: PlaneRomResourceTile[]
+    width?: number
+  }
+
+export type PlaneRomResource = PlaneRomResourceUnloaded | PlaneRomResourceLoaded
+
 export type SheetRomResourceUnloaded = PackableResource &
   UnloadedRomResource & {
     type: 'sheet'
+    startTile?: number
     tableIndex?: number
     inputSize?: number
   }
@@ -150,8 +239,10 @@ export type SheetRomResourceUnloaded = PackableResource &
 export type SheetRomResourceLoaded = PackableResource &
   LoadedRomResource & {
     type: 'sheet'
+    startTile?: number
     tableIndex?: number
     data: Uint8Array
+    tiles: KidImageData[]
   }
 
 export type SheetRomResource = SheetRomResourceUnloaded | SheetRomResourceLoaded
@@ -231,12 +322,19 @@ export function loadLevelHeaderRomResource(
 ): LevelHeaderRomResourceLoaded {
   const { baseAddress } = resource
   const width = rom.data.getUint8(baseAddress)
+  const widthInBlocks = width * 0x14
   const heightComposite = rom.data.getUint8(baseAddress + 1)
   const yOffset = heightComposite >> 6
   const height = heightComposite & 0x3f
-  // TODO: Implement theme and background
-  // const themeComposite = rom.data.getUint8(readPos + 2)
-  // const backgroundComposite = rom.data.getUint8(readPos + 3)
+  const themeComposite = rom.data.getUint8(baseAddress + 2)
+  const themeIndex = themeComposite & 0x3f
+  const murderWall = (themeComposite & 0x80) !== 0
+  const murderWallVariant = (themeComposite & 0x40) !== 0
+  const backgroundComposite = rom.data.getUint8(baseAddress + 3)
+  const backgroundType = backgroundComposite & 0x0f
+  const backgroundIsPacked = ((1 << backgroundType) & 0b1010101000) !== 0
+  const backgroundMisc = backgroundComposite >> 4
+  const backgroundWidth = backgroundIsPacked ? 0x40 : widthInBlocks / 4 + 0x1e
   const playerX = rom.data.getUint16(baseAddress + 4, false)
   const playerY = rom.data.getUint16(baseAddress + 6, false)
   const flagX = rom.data.getUint16(baseAddress + 8, false)
@@ -256,11 +354,18 @@ export function loadLevelHeaderRomResource(
     hash,
     inputSize,
     width,
+    widthInBlocks,
     height,
+    heightInBlocks: height * 0xe,
     yOffset,
-    themeIndex: 0,
-    backgroundIndex: 0,
-    backgroundMisc: 0,
+    yOffsetInBlocks: yOffset * 2,
+    murderWall,
+    murderWallVariant,
+    themeIndex,
+    backgroundMisc,
+    backgroundType,
+    backgroundIsPacked,
+    backgroundWidth,
     playerX,
     playerY,
     flagX,
@@ -269,6 +374,53 @@ export function loadLevelHeaderRomResource(
     blocksDataPtr,
     backgroundDataPtr,
     levelObjectsHeaderPtr,
+  }
+}
+
+export function loadPlaneRomResource(
+  rom: Rom,
+  resource: PlaneRomResourceUnloaded,
+): PlaneRomResourceLoaded {
+  const { baseAddress, inputSize, packed, startTile } = resource
+  let data: Uint8Array
+  let rInputSize: number = inputSize ?? 0
+  if (packed) {
+    if (packed.format === 'enigma') {
+      const packedData = rom.bytes.subarray(baseAddress)
+      const unpacked = unpackEnigmaFormat(packedData, 0, startTile ?? 0)
+      data = unpacked.output
+      rInputSize = unpacked.results.sizePacked
+    } else {
+      throw new Error(`Unsupported packed format for plane: ${packed.format}`)
+    }
+  } else {
+    if (!rInputSize || rInputSize === 0) {
+      throw new Error('Resource input size needs to be defined when the resource is not packed')
+    }
+    data = rom.bytes.subarray(baseAddress, baseAddress + rInputSize)
+  }
+
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength)
+  const tiles: PlaneRomResourceTile[] = []
+  for (let i = 0; i < data.length; i += 2) {
+    const word = view.getUint16(i, false)
+    const priority = (word & 0x8000) !== 0
+    const palette = (word & 0x6000) >> 13
+    const yFlip = (word & 0x1000) !== 0
+    const xFlip = (word & 0x0800) !== 0
+    const tileIndex = word & 0x7ff
+    tiles.push({ priority, palette, yFlip, xFlip, tileIndex })
+  }
+
+  const bytes = rom.bytes.subarray(baseAddress, baseAddress + rInputSize)
+  const hash = crc32(bytes)
+  return {
+    ...resource,
+    loaded: true,
+    hash,
+    inputSize: rInputSize,
+    data,
+    tiles,
   }
 }
 
@@ -284,15 +436,21 @@ export function loadSheetRomResource(
       const packedData = rom.bytes.subarray(baseAddress)
       const unpacked = unpackKidFormat(packedData)
       data = unpacked.output
-      rInputSize = unpacked.totalInputSize
+      rInputSize = unpacked.results.sizeUnpacked
     } else {
-      throw new Error(`Unsupported packed format ${packed.format}`)
+      throw new Error(`Unsupported packed format for sheet: ${packed.format}`)
     }
   } else {
     if (!rInputSize || rInputSize === 0) {
       throw new Error('Resource input size needs to be defined when the resource is not packed')
     }
     data = rom.bytes.subarray(baseAddress, baseAddress + rInputSize)
+  }
+
+  const tiles: KidImageData[] = []
+  for (let i = 0; i < data.length; i += TILE_INDEXED4_BYTE_COUNT) {
+    const tile = data.subarray(i, i + TILE_INDEXED4_BYTE_COUNT)
+    tiles.push(KidImageData.from(tile, TILE_WIDTH, TILE_WIDTH, 'Indexed4'))
   }
 
   const bytes = rom.bytes.subarray(baseAddress, baseAddress + rInputSize)
@@ -303,6 +461,7 @@ export function loadSheetRomResource(
     hash,
     inputSize: rInputSize,
     data,
+    tiles,
   }
 }
 
@@ -329,6 +488,48 @@ export function loadUnlinkedSpriteFrameResource(
     height,
     xOffset,
     yOffset,
+  }
+}
+
+export function loadPaletteRomResource(
+  rom: Rom,
+  resource: PaletteRomResourceUnloaded,
+): PaletteRomResourceLoaded {
+  const { baseAddress, size } = resource
+  const colors = []
+  for (let i = 0; i < size; i++) {
+    colors.push(rom.data.getUint16(baseAddress + i * 2, false))
+  }
+  const inputSize = size * 2
+  const bytes = rom.bytes.subarray(baseAddress, baseAddress + inputSize)
+  const hash = crc32(bytes)
+  return {
+    ...resource,
+    loaded: true,
+    colors,
+    hash,
+    inputSize,
+  }
+}
+
+export function loadPaletteMapRomResource(
+  rom: Rom,
+  resource: PaletteMapRomResourceUnloaded,
+): PaletteMapRomResourceLoaded {
+  const { baseAddress, size } = resource
+  const map = []
+  for (let i = 0; i < size; i++) {
+    map.push(rom.data.getUint8(baseAddress + i))
+  }
+  const inputSize = size
+  const bytes = rom.bytes.subarray(baseAddress, baseAddress + inputSize)
+  const hash = crc32(bytes)
+  return {
+    ...resource,
+    loaded: true,
+    map,
+    hash,
+    inputSize,
   }
 }
 
@@ -415,7 +616,7 @@ export function addResource(rom: Rom, resource: BaseRomResource) {
     }
     // Merge the related resources
     const related = new Set([...existingResource.related, ...resource.related])
-
+    related.delete(resource.baseAddress)
     // Merge the new resource into the existing one, prefers the typo of not 'unknown'
     const types = [existingResource.type, resource.type]
     const type: (typeof ResourceTypes)[number] = types.find((t) => t !== 'unknown') ?? 'unknown'
@@ -439,6 +640,7 @@ export function createResource(
 }
 
 export function checkRelated(rom: Rom, resource: BaseRomResource) {
+  resource.related.delete(resource.baseAddress)
   for (const related of resource.related) {
     const relatedResource = rom.resources.get(related)
     if (!relatedResource) {
@@ -451,6 +653,16 @@ export function checkRelated(rom: Rom, resource: BaseRomResource) {
     } else {
       // Add the resource to the related set
       relatedResource.related.add(resource.baseAddress)
+    }
+  }
+}
+
+export function AddAllRelated(rom: Rom, list: number[] | Set<number>) {
+  for (const address of list) {
+    const resource = rom.resources.get(address)
+    if (resource) {
+      list.forEach((item) => resource.related.add(item))
+      checkRelated(rom, resource)
     }
   }
 }
