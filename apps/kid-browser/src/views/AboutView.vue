@@ -66,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { Panel } from 'primevue'
+import Panel from 'primevue/panel'
 </script>
 
 <style scoped></style>

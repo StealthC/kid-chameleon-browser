@@ -43,7 +43,12 @@
           <p class="text-gray-400">ROM Hacks are partially supported.</p>
         </div>
       </div>
-      <ReadFile @load="onFileRead" />
+      <div class="flex items-center justify-center gap-2">
+        <ReadFile @load="onFileRead" />
+        <Button v-if="rom" @click="unloadRom" severity="warn" class="p-button-outlined"
+          >Unload</Button
+        >
+      </div>
     </div>
     <template #footer>
       <div
@@ -59,17 +64,16 @@
 <script setup lang="ts">
 import useRomStore from '@/stores/romStore'
 import ReadFile from './ReadFile.vue'
+import Button from 'primevue/button'
 import { storeToRefs } from 'pinia'
 import { useToast } from 'primevue/usetoast'
 import { ref } from 'vue'
-import { Panel } from 'primevue'
-import { useRouter } from 'vue-router'
+import Panel from 'primevue/panel'
 
 const minimized = ref(true)
 const { rom, romDetails } = storeToRefs(useRomStore())
-const { loadRom } = useRomStore()
+const { loadRom, unloadRom } = useRomStore()
 const toast = useToast()
-const router = useRouter()
 
 const onToggle = () => {
   minimized.value = !minimized.value
@@ -85,7 +89,6 @@ const onFileRead = (bytes: ArrayBuffer) => {
       life: 2000,
     })
     minimized.value = true
-    router.push('/rom')
   } catch (e) {
     console.error(e)
   }

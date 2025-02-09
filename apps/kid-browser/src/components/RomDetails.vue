@@ -30,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import { Panel } from 'primevue'
+import Panel from 'primevue/panel'
 import useRomStore from '@/stores/romStore'
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'

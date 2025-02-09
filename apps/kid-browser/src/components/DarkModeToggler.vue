@@ -8,7 +8,7 @@
 
 <script setup lang="ts">
 import { useDark } from '@vueuse/core'
-import { ToggleSwitch } from 'primevue'
+import ToggleSwitch from 'primevue/toggleswitch'
 const dark = useDark()
 </script>
 

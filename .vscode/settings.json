@@ -1,3 +1,4 @@
 {
-    "todo-tree.tree.scanMode": "workspace"
+    "todo-tree.tree.scanMode": "workspace",
+    "github.copilot.chat.localeOverride": "en"
 }
