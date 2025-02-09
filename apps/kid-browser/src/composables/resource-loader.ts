@@ -1,105 +1,82 @@
-import useRomStore from '@/stores/rom'
-import { ResourceTypes, type AllRomResources, type LoadedRomResource } from '@repo/kid-util'
-import { useQuery, type UseQueryOptions } from '@tanstack/vue-query'
+import useRomStore from '@/stores/romStore'
+import { ResourceTypes, Rom, type AllRomResources } from '@repo/kid-util'
+import { useQuery } from '@tanstack/vue-query'
 import { storeToRefs } from 'pinia'
 import { computed, unref, type MaybeRef } from 'vue'
 
-type typeFilter =
-  | MaybeRef<(typeof ResourceTypes)[number] | (typeof ResourceTypes)[number][]>
-  | undefined
+// type typeFilter =
+//   | MaybeRef<(typeof ResourceTypes)[number] | (typeof ResourceTypes)[number][]>
+//   | undefined
 
-const computedFilter = (filter: typeFilter) => {
-  if (!filter) {
-    return undefined
-  }
-  const filterValue = unref(filter)
-  if (Array.isArray(filterValue)) {
-    return unref(filterValue)
-  }
-  return [unref(filterValue)]
+const getLoadedResource = (rom: Rom, address: number) => {
+  return rom.resources.getResourceLoaded(address)
 }
 
-export function useResourceLoader() {
-  const { rom, romDetails } = storeToRefs(useRomStore())
+const getResource = (rom: Rom, address: number) => {
+  return rom.resources.getResource(address)
+}
 
-  const useGetResourceQuery = (
+// const getMultipleResources = (rom: Rom, addresses: Iterable<number>) => {
+//   return rom.resources.getMultipleResources(addresses)
+// }
+
+// const getMultipleResourcesLoaded = (rom: Rom, addresses: Iterable<number>) => {
+//   return rom.resources.getMultipleResourcesLoaded(addresses)
+// }
+
+// const getReferencesResources = (rom: Rom, address: number) => {
+//   return rom.resources.getReferencesResources(address)
+// }
+
+const getReferencesResourcesLoaded = (rom: Rom, resource: number | AllRomResources) => {
+  return rom.resources.getReferencesResourcesLoaded(resource)
+}
+
+// const getResourcesAddressOfType = (rom: Rom, type: (typeof ResourceTypes)[number]) => {
+//   return rom.resources.getResourceAddressesByType(type)
+// }
+
+const getResourcesOfType = <T extends (typeof ResourceTypes)[number]>(rom: Rom, type: T | T[]) => {
+  return rom.resources.getResourcesByType<T>(type)
+}
+
+// const computedFilter = (filter: typeFilter) => {
+//   if (!filter) {
+//     return undefined
+//   }
+//   const filterValue = unref(filter)
+//   if (Array.isArray(filterValue)) {
+//     return unref(filterValue)
+//   }
+//   return [unref(filterValue)]
+// }
+
+export function useResourceLoader() {
+  const romStore = storeToRefs(useRomStore())
+  const { romDetails } = romStore
+  const rom = computed(() => romStore.rom.value as Rom | null)
+  const useGetResourceQuery = (address: MaybeRef<number>) => {
+    return useQuery({
+      queryKey: ['getResource', address, romDetails],
+      queryFn: async () => {
+        return getResource(unref(rom) as Rom, unref(address))
+      },
+    })
+  }
+
+  const useGetResourceLoadedQuery = (
     address: MaybeRef<number>,
-    load = true,
-    options: Partial<Omit<UseQueryOptions, 'queryKey'>> = {},
+    enabled: MaybeRef<boolean> = true,
   ) => {
     return useQuery({
-      queryKey: ['getResource', address, load, romDetails],
+      queryKey: ['getResourceLoaded', address, romDetails],
       queryFn: async () => {
-        if (!rom.value) {
-          throw new Error('No ROM loaded')
-        }
-        const addressValue = unref(address)
-        if (!load) {
-          return rom.value.getResource(addressValue) as AllRomResources
-        } else {
-          return rom.value.getLoadedResource(addressValue) as AllRomResources & LoadedRomResource
-        }
+        return getLoadedResource(unref(rom) as Rom, unref(address))
       },
-      ...options,
+      enabled,
     })
   }
-  const useGetRelatedResourcesQuery = (
-    resource: MaybeRef<LoadedRomResource>,
-    load = true,
-    filter?: typeFilter,
-  ) => {
-    return useQuery({
-      queryKey: ['getMultipleResources', resource, load, romDetails],
-      queryFn: async () => {
-        const romValue = unref(rom)
-        const filterValue = computedFilter(filter)
-        const loadValue = load || filterValue
-        if (!romValue) {
-          throw new Error('No ROM loaded')
-        }
-        const related = unref(resource).related
-        const results = Array.from(related).map((a) => {
-          if (!loadValue) {
-            return romValue.getResource(a) as AllRomResources
-          } else {
-            return romValue.getLoadedResource(a) as AllRomResources & LoadedRomResource
-          }
-        })
-        if (filterValue) {
-          return results.filter((r) => filterValue.includes(r.type))
-        }
-        return results
-      },
-    })
-  }
-  const useGetMultipleResourcesQuery = (
-    addresses: MaybeRef<Iterable<number>>,
-    load = true,
-    filter?: typeFilter,
-  ) => {
-    return useQuery({
-      queryKey: ['getMultipleResources', addresses, load, filter, romDetails],
-      queryFn: async () => {
-        const romValue = unref(rom)
-        if (!romValue) {
-          throw new Error('No ROM loaded')
-        }
-        const addressesValue = unref(addresses)
-        const results = Array.from(addressesValue).map((a) => {
-          if (!load) {
-            return romValue.getResource(a) as AllRomResources
-          } else {
-            return romValue.getLoadedResource(a) as AllRomResources & LoadedRomResource
-          }
-        })
-        const filterValue = computedFilter(filter)
-        if (filterValue) {
-          return results.filter((r) => filterValue.includes(r.type))
-        }
-        return results
-      },
-    })
-  }
+
   const getResourceListOfTypeQuery = (
     type: MaybeRef<(typeof ResourceTypes)[number] | (typeof ResourceTypes)[number][]>,
   ) => {
@@ -107,22 +84,37 @@ export function useResourceLoader() {
       queryKey: ['getResourcesOfType', type, romDetails],
       queryFn: async () => {
         if (!rom.value) {
-          throw new Error('No ROM loaded')
+          throw new Error('ROM not loaded')
         }
-        const typeValue = unref(type)
-        if (Array.isArray(typeValue)) {
-          return typeValue.flatMap((t) => [...rom.value!.resourcesByType[t].values()]).sort()
-        }
-        return [...rom.value.resourcesByType[typeValue].values()]
+        return getResourcesOfType(unref(rom) as Rom, unref(type) as (typeof ResourceTypes)[number])
       },
     })
   }
-  const resourceLoader = computed(() => ({
-    rom,
-    useGetResourceQuery,
-    useGetRelatedResourcesQuery,
-    useGetMultipleResourcesQuery,
-    getResourceListOfTypeQuery,
-  }))
+
+  const getReferencesResourcesLoadedQuery = (resource: MaybeRef<number | AllRomResources>) => {
+    return useQuery({
+      queryKey: ['getReferencesResourcesLoaded', resource, romDetails],
+      queryFn: async () => {
+        if (!unref(rom)) {
+          throw new Error('ROM not loaded')
+        }
+        return getReferencesResourcesLoaded(unref(rom)!, unref(resource))
+      },
+    })
+  }
+
+  const resourceLoader = computed(() => {
+    let _usingRom = false
+    if (rom.value) {
+      _usingRom = true
+    }
+    return {
+      _usingRom,
+      useGetResourceQuery,
+      useGetResourceLoadedQuery,
+      getResourceListOfTypeQuery,
+      getReferencesResourcesLoadedQuery,
+    }
+  })
   return resourceLoader
 }

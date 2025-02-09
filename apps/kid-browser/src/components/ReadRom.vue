@@ -57,7 +57,7 @@
 </template>
 
 <script setup lang="ts">
-import useRomStore from '@/stores/rom'
+import useRomStore from '@/stores/romStore'
 import ReadFile from './ReadFile.vue'
 import { storeToRefs } from 'pinia'
 import { useToast } from 'primevue/usetoast'

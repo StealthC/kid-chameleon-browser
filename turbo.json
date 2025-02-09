@@ -7,10 +7,12 @@
       "cache": false
     },
     "lint": {
-      "inputs": ["apps/*/src/**", "packages/*/src/**"]
+      "inputs": ["apps/*/src/**", "packages/*/src/**"],
+      "cache": false
     },
     "format": {
-      "inputs": ["apps/*/src/**", "packages/*/src/**"]
+      "inputs": ["apps/*/src/**", "packages/*/src/**"],
+      "cache": false
     },
     "build": {
       "dependsOn": ["^build"],

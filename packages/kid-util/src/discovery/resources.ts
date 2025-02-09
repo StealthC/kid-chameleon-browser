@@ -1,15 +1,5 @@
 import PQueue from 'p-queue'
 import type { KidDiscovery, KidDiscoveryFunction } from '~/kid-discovery'
-import {
-  type LevelHeaderRomResourceUnloaded,
-  type SheetRomResourceUnloaded,
-  type UnlinkedSpriteFrameRomResourceUnloaded,
-  type LinkedSpriteFrameRomResourceUnloaded,
-  type SpriteCollisionRomResourceUnloaded,
-  type PlaneRomResourceUnloaded,
-  AddAllRelated,
-  type PaletteRomResourceUnloaded,
-} from '~/kid-resources'
 import { ExecuteInNextTick } from '~/kid-utils'
 import {
   AssetPtrTableTypes,
@@ -50,17 +40,13 @@ function findAllLevelHeaders(kd: KidDiscovery) {
     }
     const headerOffset = kd.rom.data.getUint16(levelWordTable + wordOffset * 2, false)
     const headerAdresss = headerOffset + levelWordTableBase
-    const resource = kd.rom.createResource(
-      headerAdresss,
-      'level-header',
-    ) as LevelHeaderRomResourceUnloaded
-    resource.levelIndex = index
-    resource.wordIndex = wordOffset
+    kd.rom.resources.createResource(headerAdresss, 'level-header', {
+      levelIndex: index,
+      wordIndex: wordOffset,
+    })
     // Peek at the level theme value:
     const theme = kd.rom.data.getUint8(headerAdresss + 2) & 0x3f
     maxTheme = Math.max(maxTheme, theme)
-
-    kd.rom.addResource(resource)
     minHeader = Math.min(minHeader, headerAdresss)
     index++
   } while (index < minHeader)
@@ -88,34 +74,28 @@ function findAssetTableResources(kd: KidDiscovery) {
     kd.rom.tables.assetIndexTable.push(resourcePtr)
     const collisionPtr = kd.rom.tables.collisionIndexTable[index]
     if (type === PackedTileSheet) {
-      const resource = kd.rom.createResource(resourcePtr, 'sheet') as SheetRomResourceUnloaded
-      resource.tableIndex = index
-      resource.packed = { format: 'kid' }
-      kd.rom.addResource(resource)
+      kd.rom.resources.createResource(resourcePtr, 'sheet', {
+        tableIndex: index,
+        packed: { format: 'kid' },
+      })
     } else if (type === SpriteFrameType) {
-      const resource = kd.rom.createResource(
-        resourcePtr,
-        'unlinked-sprite-frame',
-      ) as UnlinkedSpriteFrameRomResourceUnloaded
-      resource.tableIndex = index
+      const resource = kd.rom.resources.createResource(resourcePtr, 'unlinked-sprite-frame', {
+        tableIndex: index,
+      })
       if (collisionPtr) {
-        resource.related.add(collisionPtr)
+        kd.rom.resources.addReference(resource, collisionPtr)
       }
-      kd.rom.addResource(resource)
     } else if (type === SpriteFrameWithDataType) {
-      const resource = kd.rom.createResource(
-        resourcePtr,
-        'linked-sprite-frame',
-      ) as LinkedSpriteFrameRomResourceUnloaded
-      resource.tableIndex = index
+      const resource = kd.rom.resources.createResource(resourcePtr, 'linked-sprite-frame', {
+        tableIndex: index,
+      })
       if (collisionPtr) {
-        resource.related.add(collisionPtr)
+        kd.rom.resources.addReference(resource, collisionPtr)
       }
-      kd.rom.addResource(resource)
     } else {
-      const resource = kd.rom.createResource(resourcePtr, 'unknown')
-      resource.description = `Unknown asset type ${type}, at Asset Table index ${index}`
-      kd.rom.addResource(resource)
+      kd.rom.resources.createResource(resourcePtr, 'unknown', {
+        description: `Unknown asset type ${type}`,
+      })
     }
     index++
   }
@@ -135,20 +115,10 @@ function findFrameCollisionFromTableResources(kd: KidDiscovery) {
     const dataPtr = kd.rom.data.getInt16(pos, false)
     const address = frameCollisionTable + dataPtr
     kd.rom.tables.collisionIndexTable.push(address)
-    const resource = kd.rom.createResource(
-      address,
-      'sprite-collision',
-    ) as SpriteCollisionRomResourceUnloaded
-    resource.wordIndex = index
-    if (address >= addressLimit) {
-      // Garbage pointer
-      resource.isInvalid = true
-      kd.rom.addResource(resource)
-      pos += 2
-      index++
-      continue
-    }
-    kd.rom.addResource(resource)
+    kd.rom.resources.createResource(address, 'sprite-collision', {
+      wordIndex: index,
+      isInvalid: address >= addressLimit,
+    })
     firstData = Math.min(firstData, address)
     index++
     pos += 2
@@ -159,34 +129,34 @@ function findSomeMoreResources(kd: KidDiscovery) {
   // TODO: Reimplement this
   try {
     findUntabledPackedTileSheetsDirect1(kd).map((result) => {
-      const resource = kd.rom.createResource(result.ptr, 'sheet') as SheetRomResourceUnloaded
-      resource.packed = { format: 'kid' }
-      kd.rom.addResource(resource)
+      kd.rom.resources.createResource(result.ptr, 'sheet', {
+        packed: { format: 'kid' },
+      })
     })
     findUntabledPackedTileSheetsDirect2(kd).map((result) => {
-      const resource = kd.rom.createResource(result.ptr, 'sheet') as SheetRomResourceUnloaded
-      resource.packed = { format: 'kid' }
-      kd.rom.addResource(resource)
+      kd.rom.resources.createResource(result.ptr, 'sheet', {
+        packed: { format: 'kid' },
+      })
     })
     findUntabledPackedTileSheetsRelative1(kd).map((result) => {
-      const resource = kd.rom.createResource(result.ptr, 'sheet') as SheetRomResourceUnloaded
-      resource.packed = { format: 'kid' }
-      kd.rom.addResource(resource)
+      kd.rom.resources.createResource(result.ptr, 'sheet', {
+        packed: { format: 'kid' },
+      })
     })
     findUntabledPackedTileSheetsRelative2(kd).map((result) => {
-      const resource = kd.rom.createResource(result.ptr, 'sheet') as SheetRomResourceUnloaded
-      resource.packed = { format: 'kid' }
-      kd.rom.addResource(resource)
+      kd.rom.resources.createResource(result.ptr, 'sheet', {
+        packed: { format: 'kid' },
+      })
     })
     findUntabledPackedTileSheetsWithPaletteSwap1(kd).map((result) => {
-      const resource = kd.rom.createResource(result.ptr, 'sheet') as SheetRomResourceUnloaded
-      resource.packed = { format: 'kid' }
-      kd.rom.addResource(resource)
+      kd.rom.resources.createResource(result.ptr, 'sheet', {
+        packed: { format: 'kid' },
+      })
     })
     findUntabledPackedTileSheetsWithPaletteSwap2(kd).map((result) => {
-      const resource = kd.rom.createResource(result.ptr, 'sheet') as SheetRomResourceUnloaded
-      resource.packed = { format: 'kid' }
-      kd.rom.addResource(resource)
+      kd.rom.resources.createResource(result.ptr, 'sheet', {
+        packed: { format: 'kid' },
+      })
     })
   } catch (e) {
     console.error(e)
@@ -348,48 +318,41 @@ function addThemeResources(kd: KidDiscovery) {
     // Load theme title screen GFX
     const themeTitleScreenGFXPtrTable = kd.knownAddresses.get('themeTitleScreenGFXPtrTable')
     const titleThemeRelated = new Set<number>()
+    let themeTitlePlanePtr: number | null = null
     if (themeTitleScreenGFXPtrTable) {
       const themeTitlePackedGFXPtr = kd.rom.readPtr(themeTitleScreenGFXPtrTable + theme * 4)
-      const resource = kd.rom.createResource(
-        themeTitlePackedGFXPtr,
-        'sheet',
-      ) as SheetRomResourceUnloaded
-      resource.name = `Theme ${theme} Title Screen GFX`
-      resource.packed = { format: 'kid' }
-      kd.rom.addResource(resource)
+      kd.rom.resources.createResource(themeTitlePackedGFXPtr, 'sheet', {
+        name: `Theme ${theme} Title Screen GFX`,
+        packed: { format: 'kid' },
+      })
       titleThemeRelated.add(themeTitlePackedGFXPtr)
     }
     // Load theme title screen plane
     const themeTitleScreenPlanePtrTable = kd.knownAddresses.get('themeTitleScreenPlanePtrTable')
     const themeTitleScreenSizeTable = kd.knownAddresses.get('themeTitleScreenSizeTable')
     if (themeTitleScreenPlanePtrTable) {
-      const themeTitlePlanePtr = kd.rom.readPtr(themeTitleScreenPlanePtrTable + theme * 4)
-      const resource = kd.rom.createResource(
-        themeTitlePlanePtr,
-        'plane',
-      ) as PlaneRomResourceUnloaded
-      resource.name = `Theme ${theme} Title Screen Plane`
-      resource.packed = { format: 'enigma' }
+      themeTitlePlanePtr = kd.rom.readPtr(themeTitleScreenPlanePtrTable + theme * 4)
+      const resource = kd.rom.resources.createResource(themeTitlePlanePtr, 'plane', {
+        name: `Theme ${theme} Title Screen Plane`,
+        packed: { format: 'enigma' },
+      })
       if (themeTitleScreenSizeTable) {
         const width = kd.rom.data.getUint8(themeTitleScreenSizeTable + theme * 2)
         resource.width = width
       }
-      kd.rom.addResource(resource)
-      titleThemeRelated.add(themeTitlePlanePtr)
     }
     // Load theme title screen palette
     const themeTitleScreenPalettePtrTable = kd.knownAddresses.get('themeTitleScreenPalettePtrTable')
     if (themeTitleScreenPalettePtrTable) {
       const themeTitlePalettePtr = kd.rom.readPtr(themeTitleScreenPalettePtrTable + theme * 4)
-      const resource = kd.rom.createResource(
-        themeTitlePalettePtr,
-        'palette',
-      ) as PaletteRomResourceUnloaded
-      resource.name = `Theme ${theme} Title Screen Palette`
-      resource.size = 16
-      kd.rom.addResource(resource)
+      kd.rom.resources.createResource(themeTitlePalettePtr, 'palette', {
+        name: `Theme ${theme} Title Screen Palette`,
+        size: 16,
+      })
       titleThemeRelated.add(themeTitlePalettePtr)
     }
-    AddAllRelated(kd.rom, titleThemeRelated)
+    if (themeTitlePlanePtr) {
+      kd.rom.resources.addReference(themeTitlePlanePtr, ...Array.from(titleThemeRelated))
+    }
   }
 }

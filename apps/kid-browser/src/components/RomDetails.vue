@@ -31,14 +31,16 @@
 
 <script setup lang="ts">
 import { Panel } from 'primevue'
-import useRomStore from '@/stores/rom'
+import useRomStore from '@/stores/romStore'
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { addressFormat, getByteSize } from '@/utils'
 import { ImportantValues, KnownAddressesDescriptions, type KnownAddresses } from '@repo/kid-util'
 
-const { romDetails, romKnownAddresses } = storeToRefs(useRomStore())
+const { romDetails, rom } = storeToRefs(useRomStore())
 type DetailsData = Record<string, Record<string, string>>
+
+const romKnownAddresses = computed(() => rom.value?.discovery.knownAddresses)
 
 const romKnownAddressesValues = computed(() => {
   const knownAdresses: KnownAddresses = romKnownAddresses.value ?? new Map()
