@@ -17,6 +17,7 @@ const useRomStore = defineStore('romStore', () => {
     }
   }
   function _loadRom(bytes: Uint8Array) {
+    romFullLoaded.value = false
     romLoading.value = true
     rom.value = new Rom(bytes)
   }
