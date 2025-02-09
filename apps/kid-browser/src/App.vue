@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterLink } from 'vue-router'
 import Toast from 'primevue/toast'
 import ReadRom from '@/components/ReadRom.vue'
+import RouterViewWrapper from '@/views/RouterViewWrapper.vue'
 </script>
 
 <template>
@@ -32,7 +33,7 @@ import ReadRom from '@/components/ReadRom.vue'
       </div>
     </header>
     <div class="flex-1 overflow-hidden">
-      <RouterView />
+      <RouterViewWrapper />
     </div>
     <div class="pointer-events-none h-24 bg-gradient-to-t from-cyan-900 to-transparent"></div>
   </div>

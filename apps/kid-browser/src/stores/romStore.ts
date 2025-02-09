@@ -27,7 +27,6 @@ const useRomStore = defineStore('romStore', () => {
     romFullLoaded.value = false
     romLoading.value = false
     localforage.removeItem('rom')
-    router.push('/')
   }
   async function loadRom(bytes: Uint8Array) {
     _loadRom(bytes)
@@ -48,7 +47,9 @@ const useRomStore = defineStore('romStore', () => {
       ]).then(() => {
         romFullLoaded.value = true
         romLoading.value = false
-        router.push('/rom')
+        if (router.currentRoute.value.name === 'home') {
+          router.push('/rom')
+        }
       })
     }
   })

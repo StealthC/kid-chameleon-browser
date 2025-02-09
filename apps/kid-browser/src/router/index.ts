@@ -1,7 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import AboutView from '@/views/AboutView.vue'
-import useRomStore from '@/stores/romStore'
-import { storeToRefs } from 'pinia'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -31,20 +29,6 @@ const router = createRouter({
       meta: { requiresRom: true },
     },
   ],
-})
-router.beforeEach((to, from, next) => {
-  const { romFullLoaded, romLoading } = storeToRefs(useRomStore())
-  if (to.meta.requiresRom) {
-    if (romFullLoaded.value) {
-      next()
-    } else if (!romLoading.value) {
-      next({ name: 'home' })
-    } else {
-      next(false)
-    }
-  } else {
-    next()
-  }
 })
 
 export default router

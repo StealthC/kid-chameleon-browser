@@ -25,6 +25,7 @@ const spriteFramesList = loader.value.getResourceListOfTypeQuery([
 const tileSheetList = loader.value.getResourceListOfTypeQuery('sheet')
 const planeList = loader.value.getResourceListOfTypeQuery('plane')
 const levelHeadersList = loader.value.getResourceListOfTypeQuery('level-header')
+
 const selectedKey = ref<TreeSelectionKeys | undefined>(undefined)
 
 const levelHeaders = computed(() => {
