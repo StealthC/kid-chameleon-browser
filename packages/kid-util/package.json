@@ -1,6 +1,6 @@
 {
   "name": "@repo/kid-util",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "",
   "type": "module",
   "main": "index.js",
@@ -10,6 +10,7 @@
   "exports": {
     ".": "./dist/index.js"
   },
+  "license": "MIT",
   "scripts": {
     "compile": "tsc --noEmit",
     "test": "pnpm vitest run",

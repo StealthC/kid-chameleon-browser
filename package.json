@@ -1,6 +1,6 @@
 {
   "name": "kid-chameleon-browser",
-  "version": "0.0.0-development",
+  "version": "0.2.0",
   "description": "An browser for Kid Chameleon ROM assets",
   "author": "StealthC",
   "private": true,
@@ -10,6 +10,7 @@
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "license": "MIT",
   "scripts": {
     "build": "turbo build",
     "build-packages": "turbo build --filter='./packages/*'",
