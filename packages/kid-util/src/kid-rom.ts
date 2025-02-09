@@ -1,15 +1,4 @@
-import {
-  addResource,
-  checkRelated,
-  createResource,
-  loadResource,
-  ResourceTypes,
-  type AllRomResources,
-  type BaseRomResource,
-  type LoadedRomResource,
-  type RomResourceIndex,
-  type RomResourcesByType,
-} from './kid-resources'
+import { ResourceManager } from './kid-resources'
 import { readPtr } from './kid-utils'
 import { KnownRoms, type KnowRomDetails } from './tables/known-roms'
 import { PatternFinder } from './pattern-finder'
@@ -68,9 +57,9 @@ export type RomTables = {
 
 export class Rom {
   data: DataView
-  resources: RomResourceIndex = new Map()
+  resources: ResourceManager = new ResourceManager(this)
   discovery: KidDiscovery = new KidDiscovery(this)
-  resourcesByType: RomResourcesByType
+
   // References to addresses gotten from many tables
   public tables: RomTables = {
     assetIndexTable: [],
@@ -82,11 +71,6 @@ export class Rom {
   private _resourcesLoaded = false
   constructor(public bytes: Uint8Array) {
     this.data = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
-    this.resourcesByType = Object.fromEntries(
-      ResourceTypes.map((type) => {
-        return [type, new Set()]
-      }),
-    ) as RomResourcesByType
   }
   async getRomFileDetails(): Promise<RomFileDetails> {
     if (this._details) return this._details
@@ -158,44 +142,5 @@ export class Rom {
 
   createPatternFinder(pattern: string): PatternFinder {
     return new PatternFinder(pattern, this.bytes)
-  }
-
-  async loadResources() {
-    if (this._resourcesLoaded) return this.resourcesByType
-    await this.discovery.run()
-    this._resourcesLoaded = true
-    return this.resourcesByType
-  }
-
-  createResource(
-    baseAddress: number,
-    type?: (typeof ResourceTypes)[number],
-    related: number[] = [],
-  ): BaseRomResource {
-    return createResource(baseAddress, type, related)
-  }
-
-  addResource(resource: BaseRomResource) {
-    addResource(this, resource)
-  }
-
-  checkRelated(resource: BaseRomResource) {
-    checkRelated(this, resource)
-  }
-
-  loadResource(resource: AllRomResources): LoadedRomResource {
-    return loadResource(this, resource)
-  }
-
-  getResource(address: number): BaseRomResource | undefined {
-    return this.resources.get(address)
-  }
-
-  getLoadedResource(address: number): LoadedRomResource | null {
-    const resource = this.resources.get(address)
-    if (resource) {
-      return this.loadResource(resource as AllRomResources)
-    }
-    return null
   }
 }

@@ -1,6 +1,5 @@
 import PQueue from 'p-queue'
 import type { KidDiscovery, KidDiscoveryFunction } from '~/kid-discovery'
-import type { SheetRomResourceUnloaded } from '~/kid-resources'
 import { ExecuteInNextTick } from '~/kid-utils'
 
 export const ImportantValues = [
@@ -69,19 +68,20 @@ function populateLevelMiscTable(kd: KidDiscovery) {
     'themeTileCollisionPtrTable',
     (address) => {
       // Common Blocks Packed Sheet
-      const resource = kd.rom.createResource(address, 'sheet') as SheetRomResourceUnloaded
-      resource.packed = { format: 'kid' }
-      resource.name = 'Common Blocks Graphics'
-      resource.description = 'Graphics for Common Blocks used in levels'
-      kd.rom.addResource(resource)
+      kd.rom.resources.createResource(address, 'sheet', {
+        packed: { format: 'kid' },
+        name: 'Common Blocks Graphics',
+        description: 'Graphics for Common Blocks used in levels',
+      })
     },
     'themeBackgroundPlanePtrTable',
     (address) => {
       // HUD Numbers Packed Sheet
-      const resource = kd.rom.createResource(address, 'sheet') as SheetRomResourceUnloaded
-      resource.packed = { format: 'kid' }
-      resource.name = 'HUD Numbers Graphics'
-      kd.rom.addResource(resource)
+      kd.rom.resources.createResource(address, 'sheet', {
+        packed: { format: 'kid' },
+        name: 'HUD Numbers Graphics',
+        description: 'Graphics for HUD Numbers',
+      })
     },
     'backgroundScrollingPtrTable',
     // Some Raw Sheets (with another reference)

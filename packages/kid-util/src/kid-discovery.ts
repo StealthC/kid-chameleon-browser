@@ -61,7 +61,7 @@ export class KidDiscovery {
       'Resource Discovery ended, took',
       Date.now() - startTime,
       'ms and found',
-      this.rom.resources.size,
+      this.rom.resources.resources.size,
       'resources',
     )
   }
