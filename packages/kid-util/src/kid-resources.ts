@@ -16,6 +16,8 @@ export const ResourceTypes = [
   'animation-frame',
   'plane',
   'level-header',
+  'palette',
+  'palette-map'
 ] as const
 
 export type RomResourceIndex = Map<number, BaseRomResource>
@@ -28,6 +30,8 @@ export const ResourceTypeLoaderMap: ResourceLoaderMap = {
   'linked-sprite-frame': loadLinkedSpriteFrameResource,
   'sprite-collision': loadSpriteCollisionRomResource,
   plane: loadPlaneRomResource,
+  palette: loadPaletteRomResource,
+  'palette-map': loadPaletteMapRomResource,
 }
 
 export type AllRomResources =
@@ -37,6 +41,8 @@ export type AllRomResources =
   | LinkedSpriteFrameRomResource
   | SpriteCollisionRomResource
   | PlaneRomResource
+  | PaletteRomResource
+  | PaletteMapRomResource
 
 export type LoadedResourceOfType<K extends (typeof ResourceTypes)[number]> = Extract<
   AllRomResources,
@@ -74,12 +80,53 @@ export type LoadedRomResource = BaseRomResource & {
   inputSize: number
 }
 
+export type PaletteRomResourceUnloaded = UnloadedRomResource & {
+  type: 'palette'
+  size: number
+}
+
+export type PaletteRomResourceLoaded = LoadedRomResource & {
+  type: 'palette'
+  size: number
+  colors: number[]
+}
+
+export type PaletteRomResource = PaletteRomResourceUnloaded | PaletteRomResourceLoaded
+
+export type PaletteMapRomResourceUnloaded = UnloadedRomResource & {
+  type: 'palette-map'
+  size: number
+}
+
+export type PaletteMapRomResourceLoaded = LoadedRomResource & {
+  type: 'palette-map'
+  size: number
+  map: number[]
+}
+
+export type PaletteMapRomResource = PaletteMapRomResourceUnloaded | PaletteMapRomResourceLoaded
+
+export function isRomResourceOfType<T extends (typeof ResourceTypes)[number]>(
+  resource: BaseRomResource,
+  type: T
+): resource is Extract<BaseRomResource, { type: T }> {
+  return resource.type === type;
+}
+
 export function isLoadedResource(resource: BaseRomResource): resource is LoadedRomResource {
   return (resource as LoadedRomResource).loaded
 }
 
 export function isSheetResource(resource: BaseRomResource): resource is SheetRomResource {
   return resource.type === 'sheet'
+}
+
+export function isPaletteResource(resource: BaseRomResource): resource is PaletteRomResource {
+  return resource.type === 'palette'
+}
+
+export function isPaletteMapResource(resource: BaseRomResource): resource is PaletteMapRomResource {
+  return resource.type === 'palette-map'
 }
 
 export function isSpriteFrameResource(
@@ -159,6 +206,7 @@ export type PlaneRomResourceUnloaded = PackableResource &
     type: 'plane'
     startTile?: number
     inputSize?: number
+    width?: number
   }
 
 export type PlaneRomResourceTile = {
@@ -175,6 +223,7 @@ export type PlaneRomResourceLoaded = PackableResource &
     startTile?: number
     data: Uint8Array,
     tiles: PlaneRomResourceTile[]
+    width?: number
   }
 
 export type PlaneRomResource = PlaneRomResourceUnloaded | PlaneRomResourceLoaded
@@ -439,6 +488,49 @@ export function loadUnlinkedSpriteFrameResource(
     height,
     xOffset,
     yOffset,
+  }
+}
+
+export function loadPaletteRomResource(
+  rom: Rom,
+  resource: PaletteRomResourceUnloaded,
+): PaletteRomResourceLoaded {
+  const { baseAddress, size } = resource
+  const colors = []
+  for (let i = 0; i < size; i++) {
+    colors.push(rom.data.getUint16(baseAddress + i * 2, false))
+  }
+  const inputSize = size * 2
+  const bytes = rom.bytes.subarray(baseAddress, baseAddress + inputSize)
+  const hash = crc32(bytes)
+  return {
+    ...resource,
+    loaded: true,
+    colors,
+    hash,
+    inputSize,
+  }
+}
+
+
+export function loadPaletteMapRomResource(
+  rom: Rom,
+  resource: PaletteMapRomResourceUnloaded,
+): PaletteMapRomResourceLoaded {
+  const { baseAddress, size } = resource
+  const map = []
+  for (let i = 0; i < size; i++) {
+    map.push(rom.data.getUint8(baseAddress + i))
+  }
+  const inputSize = size
+  const bytes = rom.bytes.subarray(baseAddress, baseAddress + inputSize)
+  const hash = crc32(bytes)
+  return {
+    ...resource,
+    loaded: true,
+    map,
+    hash,
+    inputSize,
   }
 }
 

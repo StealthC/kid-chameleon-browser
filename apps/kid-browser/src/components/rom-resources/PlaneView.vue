@@ -1,7 +1,7 @@
 <template>
   <div class="flex h-full w-full flex-row">
     <div class="flex flex-col items-center">
-      <InputNumber
+      <InputNumber v-if="useColumns"
         v-model="columns"
         showButtons
         buttonLayout="vertical"
@@ -28,6 +28,7 @@ import CanvasRenderer from './CanvasRenderer.vue'
 import InputNumber from 'primevue/inputnumber'
 import {
   KidImageData,
+  type PaletteRomResourceLoaded,
   type PlaneRomResourceLoaded,
   type SheetRomResourceLoaded,
 } from '@repo/kid-util'
@@ -42,24 +43,43 @@ export type Props = {
 
 const props = defineProps<Props>()
 const { resource, sheet } = toRefs(props)
+const useColumns = computed(() => !resource.value.width)
 const columns = ref(props.columns ?? 16)
+const calculatedColumns = computed(() => (useColumns.value ? columns.value : resource.value.width!))
 const loader = useResourceLoader()
-const relatedSheets = loader.value.useGetRelatedResourcesQuery(resource, true, 'sheet')
+const related = loader.value.useGetRelatedResourcesQuery(resource, true)
 
 const selectedSheet = computed(() => {
   if (sheet.value) {
     return sheet.value
   }
-  if (relatedSheets.data.value && relatedSheets.data.value.length > 0) {
-    return relatedSheets.data.value[0] as SheetRomResourceLoaded
+  if (related.data.value) {
+    const relatedSheet = related.data.value.find((r) => r.type === 'sheet')
+    if (!relatedSheet) {
+      return null
+    }
+    return relatedSheet as SheetRomResourceLoaded
   } else {
     return null
   }
 })
 
+const selectedPalette = computed(() => {
+  if (related.data.value) {
+    const relatedPalette = related.data.value.find((r) => r.type === 'palette')
+    if (!relatedPalette) {
+      return undefined
+    }
+    return relatedPalette as PaletteRomResourceLoaded
+  } else {
+    return undefined
+  }
+})
+
 const computedValues = computed(() => {
-  const width = columns.value * 8
-  const height = (resource.value.tiles.length / columns.value) * 8
+
+  const width = calculatedColumns.value * 8
+  const height = (resource.value.tiles.length / calculatedColumns.value) * 8
   return {
     plane: resource.value,
     sheet: selectedSheet.value,
@@ -73,7 +93,7 @@ const draw = async (ctx: CanvasRenderingContext2D) => {
     return
   }
   const bitmap = await bitmapFromKidImageData(
-    KidImageData.fromPlane(resource.value, selectedSheet.value, columns.value),
+    KidImageData.fromPlane(resource.value, selectedSheet.value, calculatedColumns.value), selectedPalette.value
   )
   ctx.drawImage(bitmap, 0, 0)
   return

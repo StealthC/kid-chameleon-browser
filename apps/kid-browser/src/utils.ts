@@ -1,4 +1,4 @@
-import type { KidImageData, ResourceTypes } from '@repo/kid-util'
+import type { KidImageData, Palette, ResourceTypes } from '@repo/kid-util'
 import byteSize from 'byte-size'
 
 export function addressFormat(address: number): string {
@@ -40,6 +40,6 @@ export function getNameForType(type: (typeof ResourceTypes)[number]): string {
   return nameForType[type] || type
 }
 
-export async function bitmapFromKidImageData(image: KidImageData) {
-  return createImageBitmap(new ImageData(image.getRGBAData(), image.width, image.height))
+export async function bitmapFromKidImageData(image: KidImageData, palette?: Palette) {
+  return createImageBitmap(new ImageData(image.getRGBAData(palette), image.width, image.height))
 }

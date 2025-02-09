@@ -23,6 +23,8 @@ export const ImportantValues = [
   'backgroundScrollingPtrTable',
   'themeTitleScreenGFXPtrTable',
   'themeTitleScreenPlanePtrTable',
+  'themeTitleScreenPalettePtrTable',
+  'themeTitleScreenSizeTable',
   'numberOfThemes',
   'numberOfLevels',
 ] as const
@@ -38,7 +40,9 @@ export async function findAllKnownAddresses(kd: KidDiscovery) {
     findPlatformAddresses,
     findlevelMiscPtrTable,
     findThemeTitleScreenGFXPtrTable,
-    findThemeTitleScreenPlanePtrTable
+    findThemeTitleScreenPlanePtrTable,
+    findThemeTitleScreenPalettePtrTable,
+    findThemeTitleScreenSizeTable
   ]
   const queue = new PQueue({ concurrency: 4 })
   for (const fn of fns) {
@@ -208,6 +212,62 @@ function findThemeTitleScreenPlanePtrTable(kd: KidDiscovery) {
   const address = PC + offset
   kd.knownAddresses.set('themeTitleScreenPlanePtrTable', address)
 }
+
+function findThemeTitleScreenPalettePtrTable(kd: KidDiscovery) {
+  /*
+                                     LAB_00019b6a                                    XREF[1]:     00019b6c (j)
+        00019b6a 3c  81           move.w              D1w ,(A6 )=> VDP_DATA                              = ??
+        00019b6c 51  c8  ff       dbf                 D0w ,LAB_00019b6a
+                 fc
+        00019b70 41  fa  b4       lea                 (-0x4bc4 ,PC )=> LevelTitleBackgroundPalettes ,A0
+                 3c
+        00019b74 20  70  70       movea.l             (0x0 ,A0 ,D7w *offset  LevelTitleBackgroundPalette
+                 00
+        00019b78 43  f9  ff       lea                 (CRAMPalettes ).l,A1
+                 ff  4e  58
+
+
+*/
+
+  const pattern =
+    '3c 81 51 c8 ff fc 41 fa ?? ?? 20 70 70 00 43 f9 ff ff 4e 58'
+  const ptr = kd.rom.findPattern(pattern)
+  const offset = kd.rom.data.getInt16(ptr + 8, false)
+  const PC = ptr + 8
+  const address = PC + offset
+  kd.knownAddresses.set('themeTitleScreenPalettePtrTable', address)
+}
+
+
+function findThemeTitleScreenSizeTable(kd: KidDiscovery) {
+  /*
+                              LAB_00019b80                                    XREF[1]:     00019b82 (j)
+        00019b80 32  d8           move.w              (A0 )+,(A1 )+=> CRAMPalettes
+        00019b82 51  c8  ff       dbf                 D0w ,LAB_00019b80
+                 fc
+        00019b86 2d  7c  40       move.l              #0x40000000 ,(offset  VDP_CTRL ,A6 )               = ??
+                 00  00  00
+                 00  04
+        00019b8e 41  f9  ff       lea                 (TempDataGFX ).l,A0
+                 ff  77  b2
+        00019b94 49  f9  00       lea                 (ThemeTitleBackgroundSizePos ).l,A4
+                 01  9c  32
+        00019b9a dc  46           add.w               D6w ,D6w
+        00019b9c 10  34  60       move.b              (0x0 ,A4 ,D6w *offset  ThemeTitleBackgroundSizePos
+                 00
+        00019ba0 48  80           ext.w               D0w
+        00019ba2 12  34  60       move.b              (offset  ThemeTitleBackgroundSizePos.height  ,A4
+                 01
+
+*/
+
+  const pattern =
+    '32 d8 51 c8 ff fc 2d 7c 40 00 00 00 00 04 41 f9 ff ff 77 b2 49 f9 ?? ?? ?? ?? dc 46 10 34 60 00 48 80 12 34 60 01'
+  const ptr = kd.rom.findPattern(pattern)
+  const address = kd.rom.readPtr(ptr + 22)
+  kd.knownAddresses.set('themeTitleScreenSizeTable', address)
+}
+
 
 function findFrameCollisionFrameTable(kd: KidDiscovery) {
   const pattern = 'e2 40 49 f9 ?? ?? ?? ?? d8 f4 00 00'

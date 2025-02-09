@@ -1,4 +1,4 @@
-import type { PlaneRomResourceLoaded, SheetRomResourceLoaded } from './kid-resources'
+import type { PaletteRomResourceLoaded, PlaneRomResourceLoaded, SheetRomResourceLoaded } from './kid-resources'
 
 export type RGBA = [number, number, number, number]
 
@@ -6,7 +6,7 @@ export type RGBA = [number, number, number, number]
  * A palette can be an array of RGBA colors or a function that returns the RGBA color given an
  * index.
  */
-export type Palette = RGBA[] | ((n: number) => RGBA)
+export type Palette = RGBA[] | ((n: number) => RGBA) | PaletteRomResourceLoaded
 
 /**
  * Default palette: generates a color from an index (just a simple example).
@@ -31,7 +31,7 @@ function normalizedPalette(color: number): RGBA {
 function usePalette(palette: Palette): (n: number) => RGBA {
   if (typeof palette === 'function') {
     return palette
-  } else {
+  } else if (Array.isArray(palette)) {
     return (n: number) => {
       const color = palette[n]
       if (!color) {
@@ -39,7 +39,22 @@ function usePalette(palette: Palette): (n: number) => RGBA {
       }
       return color
     }
+  } else {
+    return (n: number) => {
+      const color = palette.colors[n]
+      if (!color) {
+        return [0, 0, 0, 255]
+      }
+      return MDColorToRGBA(color)
+    }
   }
+}
+
+function MDColorToRGBA(byte: number): RGBA {
+  const r = (byte & 0x0f)
+  const g = (byte >> 4) & 0x0f
+  const b = (byte >> 8) & 0x0f
+  return [r * 17, g * 17, b * 17, 255]
 }
 
 /**

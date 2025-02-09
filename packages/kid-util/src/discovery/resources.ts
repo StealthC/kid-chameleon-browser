@@ -8,6 +8,7 @@ import {
   type SpriteCollisionRomResourceUnloaded,
   type PlaneRomResourceUnloaded,
   AddAllRelated,
+  type PaletteRomResourceUnloaded,
 } from '~/kid-resources'
 import { ExecuteInNextTick } from '~/kid-utils'
 import {
@@ -346,25 +347,40 @@ function addThemeResources(kd: KidDiscovery) {
   for (let theme = 1; theme <= numberOfThemes; theme++) {
     // Load theme title screen GFX
     const themeTitleScreenGFXPtrTable = kd.knownAddresses.get('themeTitleScreenGFXPtrTable')
-    const related = new Set<number>()
+    const titleThemeRelated = new Set<number>()
     if (themeTitleScreenGFXPtrTable) {
       const themeTitlePackedGFXPtr = kd.rom.readPtr(themeTitleScreenGFXPtrTable + theme * 4)
       const resource = kd.rom.createResource(themeTitlePackedGFXPtr, 'sheet') as SheetRomResourceUnloaded
       resource.name = `Theme ${theme} Title Screen GFX`
       resource.packed = { format: 'kid' }
       kd.rom.addResource(resource)
-      related.add(themeTitlePackedGFXPtr)
+      titleThemeRelated.add(themeTitlePackedGFXPtr)
     }
     // Load theme title screen plane
     const themeTitleScreenPlanePtrTable = kd.knownAddresses.get('themeTitleScreenPlanePtrTable')
+    const themeTitleScreenSizeTable = kd.knownAddresses.get('themeTitleScreenSizeTable')
     if (themeTitleScreenPlanePtrTable) {
       const themeTitlePlanePtr = kd.rom.readPtr(themeTitleScreenPlanePtrTable + theme * 4)
       const resource = kd.rom.createResource(themeTitlePlanePtr, 'plane') as PlaneRomResourceUnloaded
       resource.name = `Theme ${theme} Title Screen Plane`
       resource.packed = { format: 'enigma' }
+      if (themeTitleScreenSizeTable) {
+        const width = kd.rom.data.getUint8(themeTitleScreenSizeTable + theme * 2)
+        resource.width = width
+      }
       kd.rom.addResource(resource)
-      related.add(themeTitlePlanePtr)
+      titleThemeRelated.add(themeTitlePlanePtr)
     }
-    AddAllRelated(kd.rom, related)
+    // Load theme title screen palette
+    const themeTitleScreenPalettePtrTable = kd.knownAddresses.get('themeTitleScreenPalettePtrTable')
+    if (themeTitleScreenPalettePtrTable) {
+      const themeTitlePalettePtr = kd.rom.readPtr(themeTitleScreenPalettePtrTable + theme * 4)
+      const resource = kd.rom.createResource(themeTitlePalettePtr, 'palette') as PaletteRomResourceUnloaded
+      resource.name = `Theme ${theme} Title Screen Palette`
+      resource.size = 16
+      kd.rom.addResource(resource)
+      titleThemeRelated.add(themeTitlePalettePtr)
+    }
+    AddAllRelated(kd.rom, titleThemeRelated)
   }
 }
