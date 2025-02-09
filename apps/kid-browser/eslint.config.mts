@@ -17,7 +17,22 @@ export default defineConfigWithVueTs(
     name: 'app/files-to-ignore',
     ignores: ['**/dist/**', '**/dist-ssr/**', '**/coverage/**'],
   },
+  {
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "primevue",
+              message: "Evite importar diretamente de 'primevue'. Utilize 'primevue/componente' (ex: 'primevue/button').",
+            },
+          ],
+        },
+      ],
+    },
 
+  },
   pluginVue.configs['flat/essential'],
   vueTsConfigs.recommended,
   skipFormatting

@@ -39,7 +39,9 @@ import { storeToRefs } from 'pinia'
 import { computed, defineAsyncComponent, toRefs } from 'vue'
 import HexView from './HexView.vue'
 import { addressFormat, getNameForType } from '@/utils'
-import { Panel, ProgressSpinner, Message } from 'primevue'
+import Panel from 'primevue/panel'
+import ProgressSpinner from 'primevue/progressspinner'
+import Message from 'primevue/message'
 
 interface Props {
   resourceAddress: number

@@ -14,7 +14,7 @@
 
 <script setup lang="ts">
 import { computed, toRefs } from 'vue'
-import { Panel } from 'primevue'
+import Panel from 'primevue/panel'
 
 export type Props = {
   title?: string
