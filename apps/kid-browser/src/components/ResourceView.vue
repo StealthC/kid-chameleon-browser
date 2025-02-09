@@ -28,7 +28,7 @@
 
 <script setup lang="ts">
 import { useResourceLoader } from '@/composables/resource-loader'
-import useRomStore from '@/stores/rom'
+import useRomStore from '@/stores/romStore'
 import {
   isLoadedResource,
   isPlaneResource,
@@ -48,7 +48,7 @@ const props = defineProps<Props>()
 const { resourceAddress } = toRefs(props)
 const { rom } = storeToRefs(useRomStore())
 const resourceLoader = useResourceLoader()
-const resource = resourceLoader.value.useGetResourceQuery(resourceAddress, true)
+const resource = resourceLoader.value.useGetResourceLoadedQuery(resourceAddress)
 const { isError, isPending } = resource
 
 const title = computed(() => {

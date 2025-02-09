@@ -67,7 +67,6 @@ export class Rom {
     levelIndexTable: [],
   }
   private _details: RomFileDetails | null = null
-
   private _resourcesLoaded = false
   constructor(public bytes: Uint8Array) {
     this.data = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
@@ -142,5 +141,13 @@ export class Rom {
 
   createPatternFinder(pattern: string): PatternFinder {
     return new PatternFinder(pattern, this.bytes)
+  }
+
+  async loadResources() {
+    if (this._resourcesLoaded)
+      return
+    await this.discovery.run()
+    this._resourcesLoaded = true
+    return
   }
 }

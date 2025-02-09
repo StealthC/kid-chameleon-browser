@@ -39,7 +39,7 @@ import { computed, ref, toRefs, type Ref } from 'vue'
 import Panel from 'primevue/panel'
 import Select from 'primevue/select'
 import SpriteRenderer from './SpriteRenderer.vue'
-import { addressFormat } from '@/utils'
+import { addressFormat, getNormalizedName } from '@/utils'
 import { useResourceLoader } from '@/composables/resource-loader'
 
 interface Props {
@@ -52,14 +52,13 @@ const sheet = ref<number | null>(null)
 const resourceLoader = useResourceLoader()
 const sheetList = resourceLoader.value.getResourceListOfTypeQuery('sheet')
 const isSheetSelected = computed(() => sheet.value !== null)
-const loadedSheet = resourceLoader.value.useGetResourceQuery(sheet as Ref<number>, true, {
-  enabled: isSheetSelected,
-})
+const loadedSheet = resourceLoader.value.useGetResourceLoadedQuery(sheet as Ref<number>, isSheetSelected)
 const sheets = computed(() => {
   if (sheetList.data.value) {
     return sheetList.data.value.map((sheet) => ({
-      name: addressFormat(sheet),
-      value: sheet,
+      key: sheet.baseAddress,
+      name: getNormalizedName(sheet),
+      value: sheet.baseAddress,
     }))
   }
   return []

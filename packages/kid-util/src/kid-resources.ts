@@ -20,7 +20,7 @@ export const ResourceTypes = [
   'palette-map',
 ] as const
 
-export type RomResourceIndex = Map<number, BaseRomResource>
+export type RomResourceIndex = Map<number, AllRomResources>
 export type RomResourcesByType = Map<(typeof ResourceTypes)[number], Set<number>>
 
 export const ResourceTypeLoaderMap: ResourceLoaderMap = {
@@ -639,7 +639,7 @@ export class ResourceManager {
     ...args: object extends CreateResourceExtraProps<T>
       ? [extra?: CreateResourceExtraProps<T>]
       : [extra: CreateResourceExtraProps<T>]
-  ): Extract<AllRomResourcesUnloaded, { type: T }> {
+  ): AllRomResources & { type: T } {
     const extra = args[0] ?? ({} as CreateResourceExtraProps<T>)
     const resource = {
       baseAddress,
@@ -647,10 +647,10 @@ export class ResourceManager {
       loaded: false,
       ...extra,
     } as Extract<AllRomResourcesUnloaded, { type: T }>
-    return this.#addResource(resource) as Extract<AllRomResourcesUnloaded, { type: T }>
+    return this.addResource(resource) as AllRomResources & { type: T }
   }
 
-  #addResource(resource: AllRomResources): AllRomResources {
+  private addResource(resource: AllRomResources): AllRomResources {
     // First, if the resource not already exists, add it to the resources map
     const existingResource = this.resources.get(resource.baseAddress)
     if (!existingResource) {
@@ -725,18 +725,75 @@ export class ResourceManager {
     }
   }
 
-  getAllRelated(resource: BaseRomResource): number[] {
-    const referenced = this.referencesMap.get(resource.baseAddress) ?? []
-    const referencedBy = this.referencedByMap.get(resource.baseAddress) ?? []
+  getAllRelated(resource: AllRomResources | number): number[] {
+    const address = typeof resource === 'number' ? resource : resource.baseAddress
+    const referenced = this.referencesMap.get(address) ?? []
+    const referencedBy = this.referencedByMap.get(address) ?? []
     return Array.from(new Set([...referenced, ...referencedBy]))
   }
 
-  getResourcesByType<T extends (typeof ResourceTypes)[number]>(type: T): Set<number> {
-    return this.resourcesByType.get(type)!
+  getReferences(resource: AllRomResources | number): number[] {
+    const address = typeof resource === 'number' ? resource : resource.baseAddress
+    return Array.from(this.referencesMap.get(address) ?? [])
+  }
+
+  getReferencedBy(resource: AllRomResources | number): number[] {
+    const address = typeof resource === 'number' ? resource : resource.baseAddress
+    return Array.from(this.referencedByMap.get(address) ?? [])
+  }
+
+  getMultipleResources(resources: Iterable<number>): AllRomResources[] {
+    return Array.from(resources).map((address) => this.resources.get(address)!)
+  }
+
+  async getMultipleResourcesLoaded(resources: Iterable<number>): Promise<AllRomResourcesLoaded[]> {
+    return Promise.all(
+      Array.from(resources).map((address) => this.loadResource(this.resources.get(address) as AllRomResourcesUnloaded)),
+    ) as Promise<AllRomResourcesLoaded[]>
+  }
+
+  getReferencesResources(resource: AllRomResources | number): AllRomResources[] {
+    return this.getMultipleResources(this.getReferences(resource))
+  }
+
+  getReferencesResourcesLoaded(resource: AllRomResources | number): Promise<AllRomResourcesLoaded[]> {
+    return this.getMultipleResourcesLoaded(this.getReferences(resource))
+  }
+
+  getReferencesResourcesOfType<T extends (typeof ResourceTypes)[number]>(resource: AllRomResources | number, type: T): Extract<AllRomResources, { type: T }>[] {
+    return this.getReferencesResources(resource).filter((resource) => resource.type === type) as Extract<AllRomResources, { type: T }>[]
+  }
+
+  async getReferencesResourcesOfTypeLoaded<T extends (typeof ResourceTypes)[number]>(resource: AllRomResources | number, type: T): Promise<(AllRomResourcesLoaded & { type: T })[]> {
+    return this.getReferencesResourcesLoaded(resource).then((resources) => resources.filter((resource) => resource.type === type) as (AllRomResourcesLoaded & { type: T })[])
+  }
+
+  getResource<T extends (typeof ResourceTypes)[number]>(address: number): (AllRomResources & { type: T }) | undefined {
+    return this.resources.get(address) as (AllRomResources & { type: T }) | undefined
+  }
+
+  async getResourceLoaded<T extends (typeof ResourceTypes)[number]>(address: number): Promise<(AllRomResourcesLoaded & { type: T }) | undefined> {
+    const returnResource = this.resources.get(address)
+    if (!returnResource) {
+      return undefined
+    }
+    return await this.loadResource(returnResource as AllRomResourcesUnloaded) as (AllRomResourcesLoaded & { type: T })
+  }
+
+  getResourceAddressesByType<T extends (typeof ResourceTypes)[number]>(type: T | T[]): number[] {
+    // Get the merged types of one or more types
+    if (typeof type === "string") {
+      return Array.from(this.resourcesByType.get(type)!)
+    } else {
+      return type.flatMap((t) => Array.from(this.resourcesByType.get(t)!))
+    }
+  }
+  getResourcesByType<T extends (typeof ResourceTypes)[number]>(type: T | T[]): (AllRomResources & { type: T })[] {
+    const returns = Array.from((this.getResourceAddressesByType(type)).values().map((address) => this.resources.get(address) as AllRomResources & { type: T }))
+    return returns
   }
 
   async loadResource<T extends (typeof ResourceTypes)[number]>(
-    rom: Rom,
     resource: AllRomResources & { type: T },
   ): Promise<AllRomResourcesLoaded & { type: T }> {
     if (isLoadedResource(resource)) {
@@ -750,10 +807,10 @@ export class ResourceManager {
       throw new Error(`No loader found for resource type ${(resource as BaseRomResource).type}`)
     }
     const loaded = (await loader(
-      rom,
+      this.rom,
       resource as UnloadedResourceOfType<T>,
     )) as AllRomResourcesLoaded & { type: T }
-    this.#addResource(loaded)
+    this.addResource(loaded)
     return loaded
   }
 }

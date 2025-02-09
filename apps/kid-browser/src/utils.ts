@@ -1,4 +1,4 @@
-import type { KidImageData, Palette, ResourceTypes } from '@repo/kid-util'
+import type { AllRomResources, KidImageData, Palette, ResourceTypes } from '@repo/kid-util'
 import byteSize from 'byte-size'
 
 export function addressFormat(address: number): string {
@@ -28,6 +28,17 @@ export function getAddressNumber(address: string | number): number {
     address = parseInt(cleanAddress, 16)
   }
   return address
+}
+
+export function getNormalizedName(resource: AllRomResources|number): string {
+  if (typeof resource === 'number') {
+    return addressFormat(resource)
+  }
+  let name = `${addressFormat(resource.baseAddress)} - ${getNameForType(resource.type)}`
+  if (resource.name) {
+    name += `: ${resource.name}`
+  }
+  return name
 }
 
 const nameForType: Partial<Record<(typeof ResourceTypes)[number], string>> = {

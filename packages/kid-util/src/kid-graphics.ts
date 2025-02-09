@@ -1,4 +1,8 @@
-import type { PlaneRomResourceLoaded, SheetRomResourceLoaded } from './kid-resources'
+import type {
+  PaletteRomResourceLoaded,
+  PlaneRomResourceLoaded,
+  SheetRomResourceLoaded,
+} from './kid-resources'
 
 export type RGBA = [number, number, number, number]
 
@@ -6,7 +10,7 @@ export type RGBA = [number, number, number, number]
  * A palette can be an array of RGBA colors or a function that returns the RGBA color given an
  * index.
  */
-export type Palette = RGBA[] | ((n: number) => RGBA)
+export type Palette = RGBA[] | ((n: number) => RGBA) | PaletteRomResourceLoaded
 
 /**
  * Default palette: generates a color from an index (just a simple example).
@@ -31,7 +35,7 @@ function normalizedPalette(color: number): RGBA {
 function usePalette(palette: Palette): (n: number) => RGBA {
   if (typeof palette === 'function') {
     return palette
-  } else {
+  } else if (Array.isArray(palette)) {
     return (n: number) => {
       const color = palette[n]
       if (!color) {
@@ -39,7 +43,22 @@ function usePalette(palette: Palette): (n: number) => RGBA {
       }
       return color
     }
+  } else {
+    return (n: number) => {
+      const color = palette.colors[n]
+      if (!color) {
+        return [0, 0, 0, 255]
+      }
+      return MDColorToRGBA(color)
+    }
   }
+}
+
+function MDColorToRGBA(byte: number): RGBA {
+  const r = byte & 0x0f
+  const g = (byte >> 4) & 0x0f
+  const b = (byte >> 8) & 0x0f
+  return [r * 17, g * 17, b * 17, 255]
 }
 
 /**
@@ -371,38 +390,38 @@ export class KidImageData {
     const newImage = KidImageData.create(this.width, this.height, this.format)
 
     if (this.format === 'Indexed4') {
-      // Cada pixel ocupa meio byte (um nibble)
+      // Each pixel occupies half a byte (a nibble)
       for (let y = 0; y < this.height; y++) {
         for (let x = 0; x < this.width; x++) {
-          // Calcula o índice do pixel na linha
+          // Calculate the pixel index in the row
           const srcPixelIndex = y * this.width + x
-          // Cada byte armazena 2 pixels:
+          // Each byte stores 2 pixels:
           const srcByteIndex = Math.floor(srcPixelIndex / 2)
           const isSrcHighNibble = srcPixelIndex % 2 === 0
           const srcByte = this.imageData[srcByteIndex]!
-          // Extrai o nibble correspondente
+          // Extract the corresponding nibble
           const pixelValue = isSrcHighNibble ? srcByte >> 4 : srcByte & 0x0f
 
-          // Posição horizontal invertida
+          // Inverted horizontal position
           const newX = this.width - 1 - x
           const dstPixelIndex = y * this.width + newX
           const dstByteIndex = Math.floor(dstPixelIndex / 2)
           const isDstHighNibble = dstPixelIndex % 2 === 0
 
-          // Insere o pixel no byte de destino, mantendo o outro nibble intacto
+          // Insert the pixel into the destination byte, keeping the other nibble intact
           if (isDstHighNibble) {
-            // Escreve no nibble alto
+            // Write to the high nibble
             newImage.imageData[dstByteIndex] =
               (pixelValue << 4) | (newImage.imageData[dstByteIndex]! & 0x0f)
           } else {
-            // Escreve no nibble baixo
+            // Write to the low nibble
             newImage.imageData[dstByteIndex] =
               (newImage.imageData[dstByteIndex]! & 0xf0) | (pixelValue & 0x0f)
           }
         }
       }
     } else {
-      // Para os formatos que possuem um número inteiro de bytes por pixel (RGBA, Indexed8)
+      // For formats that have an integer number of bytes per pixel (RGBA, Indexed8)
       const bytesPerPixel = FormatBytesPerPixel[this.format]
       for (let y = 0; y < this.height; y++) {
         for (let x = 0; x < this.width; x++) {
