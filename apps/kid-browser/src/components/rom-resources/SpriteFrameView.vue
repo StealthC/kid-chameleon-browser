@@ -52,7 +52,10 @@ const sheet = ref<number | null>(null)
 const resourceLoader = useResourceLoader()
 const sheetList = resourceLoader.value.getResourceListOfTypeQuery('sheet')
 const isSheetSelected = computed(() => sheet.value !== null)
-const loadedSheet = resourceLoader.value.useGetResourceLoadedQuery(sheet as Ref<number>, isSheetSelected)
+const loadedSheet = resourceLoader.value.useGetResourceLoadedQuery(
+  sheet as Ref<number>,
+  isSheetSelected,
+)
 const sheets = computed(() => {
   if (sheetList.data.value) {
     return sheetList.data.value.map((sheet) => ({

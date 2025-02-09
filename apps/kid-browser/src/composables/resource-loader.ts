@@ -28,7 +28,7 @@ const getResource = (rom: Rom, address: number) => {
 //   return rom.resources.getReferencesResources(address)
 // }
 
-const getReferencesResourcesLoaded = (rom: Rom, resource: number|AllRomResources) => {
+const getReferencesResourcesLoaded = (rom: Rom, resource: number | AllRomResources) => {
   return rom.resources.getReferencesResourcesLoaded(resource)
 }
 
@@ -39,8 +39,6 @@ const getReferencesResourcesLoaded = (rom: Rom, resource: number|AllRomResources
 const getResourcesOfType = <T extends (typeof ResourceTypes)[number]>(rom: Rom, type: T | T[]) => {
   return rom.resources.getResourcesByType<T>(type)
 }
-
-
 
 // const computedFilter = (filter: typeFilter) => {
 //   if (!filter) {
@@ -57,9 +55,7 @@ export function useResourceLoader() {
   const romStore = storeToRefs(useRomStore())
   const { romDetails } = romStore
   const rom = computed(() => romStore.rom.value as Rom | null)
-  const useGetResourceQuery = (
-    address: MaybeRef<number>,
-  ) => {
+  const useGetResourceQuery = (address: MaybeRef<number>) => {
     return useQuery({
       queryKey: ['getResource', address, romDetails],
       queryFn: async () => {
@@ -95,10 +91,7 @@ export function useResourceLoader() {
     })
   }
 
-  const getReferencesResourcesLoadedQuery = (
-    resource: MaybeRef<number|AllRomResources>,
-  ) => {
-
+  const getReferencesResourcesLoadedQuery = (resource: MaybeRef<number | AllRomResources>) => {
     return useQuery({
       queryKey: ['getReferencesResourcesLoaded', resource, romDetails],
       queryFn: async () => {

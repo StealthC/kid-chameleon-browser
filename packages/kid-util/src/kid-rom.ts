@@ -144,8 +144,7 @@ export class Rom {
   }
 
   async loadResources() {
-    if (this._resourcesLoaded)
-      return
+    if (this._resourcesLoaded) return
     await this.discovery.run()
     this._resourcesLoaded = true
     return

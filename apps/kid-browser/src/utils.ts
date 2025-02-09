@@ -30,7 +30,7 @@ export function getAddressNumber(address: string | number): number {
   return address
 }
 
-export function getNormalizedName(resource: AllRomResources|number): string {
+export function getNormalizedName(resource: AllRomResources | number): string {
   if (typeof resource === 'number') {
     return addressFormat(resource)
   }
