@@ -5,9 +5,12 @@
         <ProgressSpinner />
       </div>
       <div v-else-if="isError">
-        <Message severity="error" text="Error loading resource" />
+        <Message severity="error">
+          Error loading resource:
+          <div class="font-mono text-white">{{ resource.error.value?.message }}</div>
+        </Message>
       </div>
-      <div v-else>
+      <div v-else class="flex flex-col gap-2">
         <component
           v-if="componentValues"
           :is="componentValues.viewerComponent"
@@ -20,6 +23,37 @@
             :data="hexData.inputData"
             :address="hexData.inputAddress"
           />
+          <div class="flex flex-col gap-2">
+            <Panel header="References:">
+              <ul>
+                <li v-for="ref in references" :key="ref.baseAddress">
+                  <RouterLink
+                    :to="{
+                      name: 'resourceByAddress',
+                      params: { address: addressFormat(ref.baseAddress) },
+                    }"
+                  >
+                    {{ getNormalizedName(ref) }}
+                  </RouterLink>
+                </li>
+              </ul>
+            </Panel>
+            <Panel header="Referenced By:">
+              <ul>
+                <li v-for="ref in references" :key="ref.baseAddress">
+                  <!--  TODO: Fix this, add referenced by -->
+                  <RouterLink
+                    :to="{
+                      name: 'resourceByAddress',
+                      params: { address: addressFormat(ref.baseAddress) },
+                    }"
+                  >
+                    {{ getNormalizedName(ref) }}
+                  </RouterLink>
+                </li>
+              </ul>
+            </Panel>
+          </div>
         </div>
       </div>
     </Panel>
@@ -38,7 +72,7 @@ import {
 import { storeToRefs } from 'pinia'
 import { computed, defineAsyncComponent, toRefs } from 'vue'
 import HexView from './HexView.vue'
-import { addressFormat, getNameForType } from '@/utils'
+import { addressFormat, getNameForType, getNormalizedName } from '@/utils'
 import Panel from 'primevue/panel'
 import ProgressSpinner from 'primevue/progressspinner'
 import Message from 'primevue/message'
@@ -51,6 +85,8 @@ const { resourceAddress } = toRefs(props)
 const { rom } = storeToRefs(useRomStore())
 const resourceLoader = useResourceLoader()
 const resource = resourceLoader.value.useGetResourceLoadedQuery(resourceAddress)
+const referencesQuery = resourceLoader.value.getReferencesResourcesQuery(resourceAddress)
+const references = computed(() => (referencesQuery.data.value ? referencesQuery.data.value : []))
 const { isError, isPending } = resource
 
 const title = computed(() => {
