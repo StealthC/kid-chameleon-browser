@@ -13,19 +13,19 @@ import RouterViewWrapper from '@/views/RouterViewWrapper.vue'
         <nav class="flex justify-center space-x-4">
           <RouterLink
             active-class="bg-primary text-black"
-            class="rounded-lg border border-primary p-2 px-4 hover:bg-primary-900"
+            class="border-primary hover:bg-primary-900 rounded-lg border p-2 px-4"
             to="/"
             >Home</RouterLink
           >
           <RouterLink
             active-class="bg-primary text-black"
-            class="rounded-lg border border-primary p-2 px-4 hover:bg-primary-900"
+            class="border-primary hover:bg-primary-900 rounded-lg border p-2 px-4"
             to="/rom"
             >ROM Info</RouterLink
           >
           <RouterLink
             active-class="bg-primary text-black"
-            class="rounded-lg border border-primary p-2 px-4 hover:bg-primary-900"
+            class="border-primary hover:bg-primary-900 rounded-lg border p-2 px-4"
             to="/resources"
             >Resources</RouterLink
           >
