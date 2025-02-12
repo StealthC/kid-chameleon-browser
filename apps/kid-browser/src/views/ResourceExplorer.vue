@@ -2,6 +2,7 @@
 import ResourceTree from '@/components/ResourceTree.vue'
 import { ref } from 'vue'
 import ResourceView from '@/components/ResourceView.vue'
+import ResourceList from '@/components/ResourceList.vue';
 
 const selectedResource = ref<number | null>(null)
 
@@ -13,6 +14,7 @@ const loadResource = (resource: number) => {
   <main class="flex h-full w-full flex-row px-2 sm:px-0">
     <div class="w-80 overflow-y-auto">
       <ResourceTree @selected="loadResource" />
+      <ResourceList />
     </div>
     <div class="h-full flex-grow overflow-auto">
       <ResourceView v-if="selectedResource != null" :resource-address="selectedResource" />

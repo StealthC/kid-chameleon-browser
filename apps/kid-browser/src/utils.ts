@@ -45,6 +45,12 @@ const nameForType: Partial<Record<(typeof ResourceTypes)[number], string>> = {
   sheet: 'Tile Sheet',
   'linked-sprite-frame': 'Sprite Frame (with graphics)',
   'unlinked-sprite-frame': 'Sprite Frame',
+  'plane': 'Plane',
+  'unknown': 'Unknown',
+  'palette': 'Palette',
+  'level-header': 'Level Header',
+  'level-tiles': 'Level Tiles',
+  'sprite-collision': 'Sprite Collision',
 }
 
 export function getNameForType(type: (typeof ResourceTypes)[number]): string {
