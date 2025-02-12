@@ -15,7 +15,7 @@ import RouterViewWrapper from '@/views/RouterViewWrapper.vue'
         >
           <RouterLink
             active-class="active"
-            class="flex items-center px-2 font-mono font-extrabold text-white hover:underline select-none"
+            class="flex items-center px-2 font-mono font-extrabold text-white select-none hover:underline"
             to="/"
             ><div class="flex flex-row items-center gap-2">
               <div class="bullet h-2 w-3 border-2"></div>
@@ -24,7 +24,7 @@ import RouterViewWrapper from '@/views/RouterViewWrapper.vue'
           >
           <RouterLink
             active-class="active"
-            class="flex items-center px-2 font-mono font-extrabold text-white hover:underline select-none"
+            class="flex items-center px-2 font-mono font-extrabold text-white select-none hover:underline"
             to="/resources"
             ><div class="flex flex-row items-center gap-2">
               <div class="bullet h-2 w-3 border-2"></div>
@@ -33,7 +33,7 @@ import RouterViewWrapper from '@/views/RouterViewWrapper.vue'
           >
           <RouterLink
             active-class="active"
-            class="flex items-center px-2 font-mono font-extrabold text-white hover:underline select-none"
+            class="flex items-center px-2 font-mono font-extrabold text-white select-none hover:underline"
             to="/about"
             ><div class="flex flex-row items-center gap-2">
               <div class="bullet h-2 w-3 border-2"></div>
@@ -62,6 +62,6 @@ import RouterViewWrapper from '@/views/RouterViewWrapper.vue'
   }
 }
 .bullet {
-    opacity: 0%;
+  opacity: 0%;
 }
 </style>
