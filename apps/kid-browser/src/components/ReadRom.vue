@@ -62,9 +62,10 @@ import { storeToRefs } from 'pinia'
 import { ref } from 'vue'
 import MegaDriveCart from './MegaDriveCart.vue'
 
-const inserted = ref<boolean>(false)
-const { rom, romDetails } = storeToRefs(useRomStore())
+
+const { rom, romDetails, romFullLoaded, romLoading } = storeToRefs(useRomStore())
 const { loadRom, unloadRom } = useRomStore()
+const inserted = ref<boolean>(!romFullLoaded.value && !romLoading.value)
 
 const onFileRead = (bytes: ArrayBuffer) => {
   try {

@@ -5,13 +5,13 @@ const router = createRouter({
   history: createWebHashHistory(),
   routes: [
     {
-      path: '/',
-      name: 'home',
+      path: '/about',
+      name: 'about',
       component: AboutView,
       meta: { requiresRom: false },
     },
     {
-      path: '/rom',
+      path: '/',
       name: 'rom',
       component: () => import('../views/RomView.vue'),
       meta: { requiresRom: true },

@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full overflow-auto">
+  <div class="h-full overflow-auto px-2 sm:px-0">
     <div class="mx-auto flex max-w-3xl flex-col gap-4">
       <GlassPanel class="prose dark:prose-invert max-w-none">
         <h2 class="m-0 pb-4">About this tool</h2>

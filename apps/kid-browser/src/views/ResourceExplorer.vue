@@ -10,7 +10,7 @@ const loadResource = (resource: number) => {
 }
 </script>
 <template>
-  <main class="flex h-full w-full flex-row">
+  <main class="flex h-full w-full flex-row px-2 sm:px-0">
     <div class="w-80 overflow-y-auto">
       <ResourceTree @selected="loadResource" />
     </div>

@@ -1,8 +1,10 @@
 <template>
   <RequiresRomWrapper :requireRom="requireRom">
-    <transition name="fade" mode="out-in" :duration="500" appear>
-      <router-view />
-    </transition>
+    <router-view v-slot="{ Component }">
+      <transition name="fade" mode="out-in" :duration="250" appear>
+        <component :is="Component" />
+      </transition>
+    </router-view>
   </RequiresRomWrapper>
 </template>
 
@@ -18,7 +20,7 @@ const requireRom = computed(() => !!route.meta.requiresRom)
 <style>
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.5s;
+  transition: opacity 0.25s;
 }
 .fade-enter-from,
 .fade-leave-to {
