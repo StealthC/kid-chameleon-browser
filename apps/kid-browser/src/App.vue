@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
-import Toast from 'primevue/toast'
 import ReadRom from '@/components/ReadRom.vue'
+import VRBackDrop from '@/components/VRBackDrop.vue'
 import RouterViewWrapper from '@/views/RouterViewWrapper.vue'
 </script>
 
 <template>
-  <Toast />
+  <VRBackDrop />
   <div class="flex h-screen w-screen flex-col overflow-hidden">
     <header class="flex items-center justify-center p-2">
       <div class="text-primary">

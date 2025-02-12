@@ -1,5 +1,5 @@
 <template>
-  <MegaDriveCart :inserted="minimized">
+  <MegaDriveCart v-model:inserted="inserted">
     <template #header>
       <div v-if="romDetails" class="items-center justify-center text-center select-none">
         <div class="flex flex-col truncate">
@@ -62,14 +62,14 @@ import { storeToRefs } from 'pinia'
 import { ref } from 'vue'
 import MegaDriveCart from './MegaDriveCart.vue'
 
-const minimized = ref(true)
+const inserted = ref<boolean>(false)
 const { rom, romDetails } = storeToRefs(useRomStore())
 const { loadRom, unloadRom } = useRomStore()
 
 const onFileRead = (bytes: ArrayBuffer) => {
   try {
     loadRom(new Uint8Array(bytes))
-    minimized.value = true
+    inserted.value = true
   } catch (e) {
     console.error(e)
   }

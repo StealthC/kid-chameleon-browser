@@ -7,8 +7,8 @@
     </div>
     <div
       :class="{
-        'max-h-0': insertedRef,
-        'max-h-72': !insertedRef,
+        'max-h-0': inserted,
+        'max-h-72': !inserted,
       }"
       class="overflow-hidden transition-[max-height] duration-500"
     >
@@ -31,18 +31,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-
 type Props = {
   header?: string
-  inserted?: boolean
 }
 
-const { header, inserted } = defineProps<Props>()
-const insertedRef = ref(inserted ?? false)
+const props = defineProps<Props>()
+const { header } = props
+const inserted = defineModel('inserted', { type: Boolean, default: false })
 
 const onToggle = () => {
-  insertedRef.value = !insertedRef.value
+  inserted.value = !inserted.value
 }
 </script>
 
