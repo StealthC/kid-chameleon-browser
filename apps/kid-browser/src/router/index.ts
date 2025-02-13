@@ -25,7 +25,7 @@ const router = createRouter({
     {
       path: '/resources/:address',
       name: 'resourceByAddress',
-      component: () => import('../views/ResourceViewPage.vue'),
+      component: () => import('../views/ResourceExplorer.vue'),
       meta: { requiresRom: true },
     },
   ],

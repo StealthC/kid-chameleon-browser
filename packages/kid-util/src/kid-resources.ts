@@ -23,6 +23,7 @@ export const ResourceTypes = [
   'palette-map',
 ] as const
 
+export type ResourceType = (typeof ResourceTypes)[number]
 export type RomResourceIndex = Map<number, AllRomResources>
 export type RomResourcesByType = Map<(typeof ResourceTypes)[number], Set<number>>
 

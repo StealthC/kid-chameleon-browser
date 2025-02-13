@@ -1,9 +1,18 @@
 <template>
-  <div class="rounded-lg border-2 border-white bg-blue-900/90 p-4">
-    <slot class="@container"></slot>
+  <div :class="['rounded-lg border-2 border-white bg-blue-900/90 p-4 pt-2', $attrs.class]">
+    <slot name="header">
+      <div class="text-xl font-bold" v-if="header">{{ header }}</div>
+    </slot>
+    <slot></slot>
   </div>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+type Props = {
+  header?: string
+}
+
+const { header } = defineProps<Props>()
+</script>
 
 <style scoped></style>

@@ -1,6 +1,6 @@
 <template>
   <div class="h-full overflow-auto">
-    <Panel :header="title">
+    <GlassPanel :header="title">
       <div class="w-full text-center" v-if="isPending">
         <ProgressSpinner />
       </div>
@@ -24,7 +24,7 @@
             :address="hexData.inputAddress"
           />
           <div class="flex flex-col gap-2">
-            <Panel header="References:">
+            <GlassPanel header="References:">
               <ul>
                 <li v-for="ref in references" :key="ref.baseAddress">
                   <RouterLink
@@ -37,8 +37,8 @@
                   </RouterLink>
                 </li>
               </ul>
-            </Panel>
-            <Panel header="Referenced By:">
+            </GlassPanel>
+            <GlassPanel header="Referenced By:">
               <ul>
                 <li v-for="ref in references" :key="ref.baseAddress">
                   <!--  TODO: Fix this, add referenced by -->
@@ -52,11 +52,11 @@
                   </RouterLink>
                 </li>
               </ul>
-            </Panel>
+            </GlassPanel>
           </div>
         </div>
       </div>
-    </Panel>
+    </GlassPanel>
   </div>
 </template>
 
@@ -73,7 +73,7 @@ import { storeToRefs } from 'pinia'
 import { computed, defineAsyncComponent, toRefs } from 'vue'
 import HexView from './HexView.vue'
 import { addressFormat, getNameForType, getNormalizedName } from '@/utils'
-import Panel from 'primevue/panel'
+import GlassPanel from './GlassPanel.vue'
 import ProgressSpinner from 'primevue/progressspinner'
 import Message from 'primevue/message'
 

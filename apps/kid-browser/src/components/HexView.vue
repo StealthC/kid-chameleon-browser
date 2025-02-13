@@ -1,5 +1,5 @@
 <template>
-  <Panel :header="title" class="p-m-2 font-mono text-xs">
+  <GlassPanel :header="title" class="p-m-2 font-mono text-xs">
     <div class="pb-2 text-center">Start: {{ start }} End: {{ end }} Size: {{ size }}</div>
     <div class="max-h-80 overflow-auto">
       <div class="flex flex-col items-center" v-if="stringData.length > 0">
@@ -9,12 +9,12 @@
         <p>No data</p>
       </div>
     </div>
-  </Panel>
+  </GlassPanel>
 </template>
 
 <script setup lang="ts">
 import { computed, toRefs } from 'vue'
-import Panel from 'primevue/panel'
+import GlassPanel from './GlassPanel.vue'
 
 export type Props = {
   title?: string
