@@ -1,7 +1,7 @@
 <template>
-  <GlassPanel :header="title" class="p-m-2 font-mono text-xs">
+  <GlassPanel :header="title" class="p-m-2 flex flex-col overflow-hidden font-mono text-xs">
     <div class="pb-2 text-center">Start: {{ start }} End: {{ end }} Size: {{ size }}</div>
-    <div class="max-h-80 overflow-auto">
+    <div class="max-h-20 flex-1 overflow-auto sm:max-h-40 md:max-h-80">
       <div class="flex flex-col items-center" v-if="stringData.length > 0">
         <pre>{{ stringData }}</pre>
       </div>

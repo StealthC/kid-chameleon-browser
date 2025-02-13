@@ -1,6 +1,11 @@
 <template>
-  <div :class="['rounded-lg border-2 border-white bg-blue-900/90 p-4 pt-2', $attrs.class]">
-    <slot name="header">
+  <div
+    :class="[
+      'flex flex-col rounded-lg border-2 border-white bg-blue-900/90 p-4 pt-2',
+      $attrs.class,
+    ]"
+  >
+    <slot name="header shrink">
       <div class="text-xl font-bold" v-if="header">{{ header }}</div>
     </slot>
     <slot></slot>

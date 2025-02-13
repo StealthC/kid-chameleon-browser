@@ -1,22 +1,24 @@
 <template>
-  <div class="h-full overflow-auto">
-    <GlassPanel :header="title">
-      <div class="w-full text-center" v-if="isPending">
+  <div class="h-full overflow-hidden">
+    <GlassPanel class="h-full" :header="title">
+      <div class="flex h-full w-full items-center justify-center text-center" v-if="isPending">
         <ProgressSpinner />
       </div>
-      <div v-else-if="isError">
+      <div v-else-if="isError" class="h-full">
         <Message severity="error">
           Error loading resource:
           <div class="font-mono text-white">{{ resource.error.value?.message }}</div>
         </Message>
       </div>
-      <div v-else class="flex flex-col gap-2">
-        <component
-          v-if="componentValues"
-          :is="componentValues.viewerComponent"
-          v-bind="componentValues.props"
-        />
-        <div class="grid gap-2 lg:grid-cols-2">
+      <div v-else class="flex h-full flex-col gap-2">
+        <div class="h-full flex-1">
+          <component
+            v-if="componentValues"
+            :is="componentValues.viewerComponent"
+            v-bind="componentValues.props"
+          />
+        </div>
+        <div class="grid shrink gap-2 overflow-y-auto lg:grid-cols-2">
           <HexView
             v-if="hexData"
             title="input Data"
@@ -28,8 +30,9 @@
               <ul>
                 <li v-for="ref in references" :key="ref.baseAddress">
                   <RouterLink
+                    class="hover:bg-white/10 hover:text-yellow-400"
                     :to="{
-                      name: 'resourceByAddress',
+                      name: 'resources',
                       params: { address: addressFormat(ref.baseAddress) },
                     }"
                   >
@@ -43,8 +46,9 @@
                 <li v-for="ref in references" :key="ref.baseAddress">
                   <!--  TODO: Fix this, add referenced by -->
                   <RouterLink
+                    class="hover:bg-white/10 hover:text-yellow-400"
                     :to="{
-                      name: 'resourceByAddress',
+                      name: 'resources',
                       params: { address: addressFormat(ref.baseAddress) },
                     }"
                   >

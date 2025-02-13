@@ -12,19 +12,13 @@ const router = createRouter({
     },
     {
       path: '/',
-      name: 'rom',
+      name: 'home',
       component: () => import('../views/RomView.vue'),
       meta: { requiresRom: true },
     },
     {
-      path: '/resources',
+      path: '/resources/:address?',
       name: 'resources',
-      component: () => import('../views/ResourceExplorer.vue'),
-      meta: { requiresRom: true },
-    },
-    {
-      path: '/resources/:address',
-      name: 'resourceByAddress',
       component: () => import('../views/ResourceExplorer.vue'),
       meta: { requiresRom: true },
     },

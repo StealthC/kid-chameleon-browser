@@ -16,16 +16,16 @@ import RouterViewWrapper from '@/views/RouterViewWrapper.vue'
           <RouterLink
             active-class="active"
             class="flex items-center px-2 font-mono font-extrabold text-white uppercase select-none hover:underline"
-            to="/"
+            :to="{ name: 'home' }"
             ><div class="flex flex-row items-center gap-2">
               <div class="bullet h-2 w-3 border-2"></div>
-              <div>ROM</div>
+              <div>HOME</div>
             </div></RouterLink
           >
           <RouterLink
             active-class="active"
             class="flex items-center px-2 font-mono font-extrabold text-white uppercase select-none hover:underline"
-            to="/resources"
+            :to="{ name: 'resources' }"
             ><div class="flex flex-row items-center gap-2">
               <div class="bullet h-2 w-3 border-2"></div>
               <div>Resources</div>
@@ -34,7 +34,7 @@ import RouterViewWrapper from '@/views/RouterViewWrapper.vue'
           <RouterLink
             active-class="active"
             class="flex items-center px-2 font-mono font-extrabold text-white uppercase select-none hover:underline"
-            to="/about"
+            :to="{ name: 'about' }"
             ><div class="flex flex-row items-center gap-2">
               <div class="bullet h-2 w-3 border-2"></div>
               <div>About</div>

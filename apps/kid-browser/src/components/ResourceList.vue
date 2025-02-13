@@ -32,7 +32,10 @@
             <RouterLink
               v-for="resource in resourcesForType"
               :key="resource.address"
-              :to="`/resources/${addressFormat(resource.address)}`"
+              :to="{
+                name: 'resources',
+                params: { address: addressFormat(resource.address) },
+              }"
               class="group flex cursor-pointer flex-row justify-between gap-2 p-2 select-none hover:bg-white/10"
             >
               <p class="text-md font-bold group-hover:text-yellow-400">
