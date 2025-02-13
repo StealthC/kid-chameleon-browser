@@ -1,23 +1,29 @@
 <template>
-  <component :is="wrapper">
-    <router-view />
-  </component>
+  <RequiresRomWrapper :requireRom="requireRom">
+    <router-view v-slot="{ Component }">
+      <transition name="fade" mode="out-in" :duration="250" appear>
+        <component :is="Component" />
+      </transition>
+    </router-view>
+  </RequiresRomWrapper>
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent } from 'vue'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import RequiresRomWrapper from '@/views/RequiresRomWrapper.vue'
 
-const DefaultWrapper = defineAsyncComponent(() => import('@/views/DefaultWrapper.vue'))
-const RequiresRomWrapper = defineAsyncComponent(() => import('@/views/RequiresRomWrapper.vue'))
 const route = useRoute()
-
-const wrapper = computed(() => {
-  if (route.meta.requiresRom) {
-    return RequiresRomWrapper
-  }
-  return DefaultWrapper
-})
+const requireRom = computed(() => !!route.meta.requiresRom)
 </script>
 
-<style scoped></style>
+<style>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

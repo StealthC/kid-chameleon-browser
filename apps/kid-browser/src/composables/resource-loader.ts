@@ -24,9 +24,9 @@ const getResource = (rom: Rom, address: number) => {
 //   return rom.resources.getMultipleResourcesLoaded(addresses)
 // }
 
-// const getReferencesResources = (rom: Rom, address: number) => {
-//   return rom.resources.getReferencesResources(address)
-// }
+const getReferencesResources = (rom: Rom, resource: number | AllRomResources) => {
+  return rom.resources.getReferencesResources(resource)
+}
 
 const getReferencesResourcesLoaded = (rom: Rom, resource: number | AllRomResources) => {
   return rom.resources.getReferencesResourcesLoaded(resource)
@@ -53,11 +53,10 @@ const getResourcesOfType = <T extends (typeof ResourceTypes)[number]>(rom: Rom, 
 
 export function useResourceLoader() {
   const romStore = storeToRefs(useRomStore())
-  const { romDetails } = romStore
   const rom = computed(() => romStore.rom.value as Rom | null)
   const useGetResourceQuery = (address: MaybeRef<number>) => {
     return useQuery({
-      queryKey: ['getResource', address, romDetails],
+      queryKey: ['getResource', address],
       queryFn: async () => {
         return getResource(unref(rom) as Rom, unref(address))
       },
@@ -69,7 +68,7 @@ export function useResourceLoader() {
     enabled: MaybeRef<boolean> = true,
   ) => {
     return useQuery({
-      queryKey: ['getResourceLoaded', address, romDetails],
+      queryKey: ['getResourceLoaded', address],
       queryFn: async () => {
         return getLoadedResource(unref(rom) as Rom, unref(address))
       },
@@ -81,7 +80,7 @@ export function useResourceLoader() {
     type: MaybeRef<(typeof ResourceTypes)[number] | (typeof ResourceTypes)[number][]>,
   ) => {
     return useQuery({
-      queryKey: ['getResourcesOfType', type, romDetails],
+      queryKey: ['getResourcesOfType', type],
       queryFn: async () => {
         if (!rom.value) {
           throw new Error('ROM not loaded')
@@ -91,9 +90,21 @@ export function useResourceLoader() {
     })
   }
 
+  const getReferencesResourcesQuery = (resource: MaybeRef<number | AllRomResources>) => {
+    return useQuery({
+      queryKey: ['getReferencesResources', resource],
+      queryFn: async () => {
+        if (!unref(rom)) {
+          throw new Error('ROM not loaded')
+        }
+        return getReferencesResources(unref(rom)!, unref(resource))
+      },
+    })
+  }
+
   const getReferencesResourcesLoadedQuery = (resource: MaybeRef<number | AllRomResources>) => {
     return useQuery({
-      queryKey: ['getReferencesResourcesLoaded', resource, romDetails],
+      queryKey: ['getReferencesResourcesLoaded', resource],
       queryFn: async () => {
         if (!unref(rom)) {
           throw new Error('ROM not loaded')
@@ -113,6 +124,7 @@ export function useResourceLoader() {
       useGetResourceQuery,
       useGetResourceLoadedQuery,
       getResourceListOfTypeQuery,
+      getReferencesResourcesQuery,
       getReferencesResourcesLoadedQuery,
     }
   })

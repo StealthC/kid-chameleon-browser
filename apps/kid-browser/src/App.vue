@@ -1,33 +1,44 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
-import Toast from 'primevue/toast'
 import ReadRom from '@/components/ReadRom.vue'
+import VRBackDrop from '@/components/VRBackDrop.vue'
 import RouterViewWrapper from '@/views/RouterViewWrapper.vue'
 </script>
 
 <template>
-  <Toast />
+  <VRBackDrop />
   <div class="flex h-screen w-screen flex-col overflow-hidden">
-    <header class="flex items-center justify-center p-2">
-      <div class="text-primary">
-        <nav class="flex justify-center space-x-4">
+    <header class="flex items-center justify-center bg-slate-900/80">
+      <div class="mx-auto w-full sm:w-fit">
+        <nav
+          class="m-1 flex justify-center space-x-4 border-4 border-double border-white bg-black p-2"
+        >
           <RouterLink
-            active-class="bg-primary text-black"
-            class="rounded-lg border border-primary p-2 px-4 hover:bg-primary-900"
+            active-class="active"
+            class="flex items-center px-2 font-mono font-extrabold text-white uppercase select-none hover:underline"
             to="/"
-            >Home</RouterLink
+            ><div class="flex flex-row items-center gap-2">
+              <div class="bullet h-2 w-3 border-2"></div>
+              <div>ROM</div>
+            </div></RouterLink
           >
           <RouterLink
-            active-class="bg-primary text-black"
-            class="rounded-lg border border-primary p-2 px-4 hover:bg-primary-900"
-            to="/rom"
-            >ROM Info</RouterLink
-          >
-          <RouterLink
-            active-class="bg-primary text-black"
-            class="rounded-lg border border-primary p-2 px-4 hover:bg-primary-900"
+            active-class="active"
+            class="flex items-center px-2 font-mono font-extrabold text-white uppercase select-none hover:underline"
             to="/resources"
-            >Resources</RouterLink
+            ><div class="flex flex-row items-center gap-2">
+              <div class="bullet h-2 w-3 border-2"></div>
+              <div>Resources</div>
+            </div></RouterLink
+          >
+          <RouterLink
+            active-class="active"
+            class="flex items-center px-2 font-mono font-extrabold text-white uppercase select-none hover:underline"
+            to="/about"
+            ><div class="flex flex-row items-center gap-2">
+              <div class="bullet h-2 w-3 border-2"></div>
+              <div>About</div>
+            </div></RouterLink
           >
         </nav>
       </div>
@@ -44,4 +55,13 @@ import RouterViewWrapper from '@/views/RouterViewWrapper.vue'
   </footer>
 </template>
 
-<style scoped></style>
+<style scoped lang="scss">
+.active {
+  .bullet {
+    opacity: 100%;
+  }
+}
+.bullet {
+  opacity: 0%;
+}
+</style>

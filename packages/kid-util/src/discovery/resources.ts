@@ -23,7 +23,7 @@ export async function findAllResouces(kd: KidDiscovery) {
   await queue.onIdle()
 }
 
-function findAllLevelHeaders(kd: KidDiscovery) {
+async function findAllLevelHeaders(kd: KidDiscovery) {
   const levelWordTable = kd.knownAddresses.get('levelWordTable')
   const levelWordTableBase = kd.knownAddresses.get('levelWordTableBase')
   const levelIndexesTable = kd.knownAddresses.get('levelIndexesTable')
@@ -44,6 +44,20 @@ function findAllLevelHeaders(kd: KidDiscovery) {
       levelIndex: index,
       wordIndex: wordOffset,
     })
+    const loadedLevelHeader =
+      await kd.rom.resources.getResourceLoaded<'level-header'>(headerAdresss)
+    if (loadedLevelHeader) {
+      kd.rom.resources.addReference(headerAdresss, loadedLevelHeader.tilesDataPtr)
+      kd.rom.resources.addReference(headerAdresss, loadedLevelHeader.backgroundDataPtr)
+      kd.rom.resources.addReference(headerAdresss, loadedLevelHeader.blocksDataPtr)
+      kd.rom.resources.addReference(headerAdresss, loadedLevelHeader.levelObjectsHeaderPtr)
+      // Create resource for the level tiles
+      const levelTilesPtr = loadedLevelHeader.tilesDataPtr
+      kd.rom.resources.createResource(levelTilesPtr, 'level-tiles', {
+        packed: { format: 'kid' },
+      })
+    }
+
     // Peek at the level theme value:
     const theme = kd.rom.data.getUint8(headerAdresss + 2) & 0x3f
     maxTheme = Math.max(maxTheme, theme)

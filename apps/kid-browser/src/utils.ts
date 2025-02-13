@@ -30,11 +30,14 @@ export function getAddressNumber(address: string | number): number {
   return address
 }
 
-export function getNormalizedName(resource: AllRomResources | number): string {
+export function getNormalizedName(resource: AllRomResources | number, short = false): string {
   if (typeof resource === 'number') {
     return addressFormat(resource)
   }
-  let name = `${addressFormat(resource.baseAddress)} - ${getNameForType(resource.type)}`
+  let name = `${addressFormat(resource.baseAddress)}`
+  if (!short) {
+    name += ` - ${getNameForType(resource.type)}`
+  }
   if (resource.name) {
     name += `: ${resource.name}`
   }
@@ -45,6 +48,12 @@ const nameForType: Partial<Record<(typeof ResourceTypes)[number], string>> = {
   sheet: 'Tile Sheet',
   'linked-sprite-frame': 'Sprite Frame (with graphics)',
   'unlinked-sprite-frame': 'Sprite Frame',
+  plane: 'Plane',
+  unknown: 'Unknown',
+  palette: 'Palette',
+  'level-header': 'Level Header',
+  'level-tiles': 'Level Tiles',
+  'sprite-collision': 'Sprite Collision',
 }
 
 export function getNameForType(type: (typeof ResourceTypes)[number]): string {

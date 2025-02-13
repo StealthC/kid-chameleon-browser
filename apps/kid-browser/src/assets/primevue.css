@@ -1,9 +1,13 @@
+.p-fileupload input[type='file'] {
+  @apply hidden;
+}
+
 .p-progressspinner {
   @apply relative mx-auto my-0 inline-block h-[100px] w-[100px] before:block before:pt-[100%];
 }
 
 .p-progressspinner-spin {
-  @apply absolute bottom-0 end-0 start-0 top-0 m-auto h-full w-full origin-center;
+  @apply absolute start-0 end-0 top-0 bottom-0 m-auto h-full w-full origin-center;
 }
 
 .p-progressspinner-spin {

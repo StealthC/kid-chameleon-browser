@@ -14,7 +14,8 @@
 				"EditorConfig.EditorConfig",
 				"aaron-bond.better-comments",
 				"Gruntfuggly.todo-tree",
-				"github.vscode-github-actions"
+				"github.vscode-github-actions",
+				"anseki.vscode-color"
 			],
 			"settings": {
 				"editor.defaultFormatter": "esbenp.prettier-vscode",

@@ -1,7 +1,7 @@
 <template>
   <div class="font-mono text-xs">
     <div v-if="romDetails" class="flex flex-col gap-4">
-      <Panel v-for="category in Object.keys(details)" :key="category" :header="category">
+      <GlassPanel v-for="category in Object.keys(details)" :key="category" :header="category">
         <ul>
           <li
             v-for="[key, value] in Object.entries(details[category])"
@@ -12,8 +12,8 @@
             <span class="overflow-hidden text-ellipsis">{{ value }}</span>
           </li>
         </ul>
-      </Panel>
-      <Panel header="Discovered Addresses">
+      </GlassPanel>
+      <GlassPanel header="Discovered Addresses">
         <table class="w-full">
           <tr v-for="row in romKnownAddressesValues" :key="row[0]">
             <td v-for="cell in row" :key="cell" class="border border-gray-600 p-1">
@@ -21,7 +21,7 @@
             </td>
           </tr>
         </table>
-      </Panel>
+      </GlassPanel>
     </div>
     <div v-else>
       <p>No ROM loaded</p>
@@ -30,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import Panel from 'primevue/panel'
+import GlassPanel from '@/components/GlassPanel.vue'
 import useRomStore from '@/stores/romStore'
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'

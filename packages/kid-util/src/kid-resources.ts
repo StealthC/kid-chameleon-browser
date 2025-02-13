@@ -16,10 +16,14 @@ export const ResourceTypes = [
   'animation-frame',
   'plane',
   'level-header',
+  'level-tiles',
+  'level-blocks',
+  'level-objects-header',
   'palette',
   'palette-map',
 ] as const
 
+export type ResourceType = (typeof ResourceTypes)[number]
 export type RomResourceIndex = Map<number, AllRomResources>
 export type RomResourcesByType = Map<(typeof ResourceTypes)[number], Set<number>>
 
@@ -32,6 +36,7 @@ export const ResourceTypeLoaderMap: ResourceLoaderMap = {
   plane: loadPlaneRomResource,
   palette: loadPaletteRomResource,
   'palette-map': loadPaletteMapRomResource,
+  'level-tiles': loadLevelTilesRomResource,
 }
 
 export type AllRomResources = AllRomResourcesLoaded | AllRomResourcesUnloaded
@@ -46,6 +51,7 @@ export type AllRomResourcesUnloaded =
   | PaletteRomResourceUnloaded
   | PaletteMapRomResourceUnloaded
   | UnknownRomResourceUnloaded
+  | LevelTilesRomResourceUnloaded
 
 export type AllRomResourcesLoaded =
   | LevelHeaderRomResourceLoaded
@@ -56,6 +62,7 @@ export type AllRomResourcesLoaded =
   | PlaneRomResourceLoaded
   | PaletteRomResourceLoaded
   | PaletteMapRomResourceLoaded
+  | LevelTilesRomResourceLoaded
 
 export type UnknownRomResourceUnloaded = UnloadedRomResource & {
   type: 'unknown'
@@ -95,6 +102,20 @@ export type LoadedRomResource = BaseRomResource & {
   hash: number
   inputSize: number
 }
+
+export type LevelTilesRomResourceUnloaded = PackableResource &
+  UnloadedRomResource & {
+    type: 'level-tiles'
+    inputSize?: number
+  }
+
+export type LevelTilesRomResourceLoaded = PackableResource &
+  LoadedRomResource & {
+    type: 'level-tiles'
+    data: Uint8Array
+  }
+
+export type LevelTilesRomResource = LevelTilesRomResourceUnloaded | LevelTilesRomResourceLoaded
 
 export type PaletteRomResourceUnloaded = UnloadedRomResource & {
   type: 'palette'
@@ -393,6 +414,41 @@ export function loadLevelHeaderRomResource(
   }
 }
 
+export function loadLevelTilesRomResource(
+  rom: Rom,
+  resource: LevelTilesRomResourceUnloaded,
+): LevelTilesRomResourceLoaded {
+  const { baseAddress, inputSize, packed } = resource
+  let data: Uint8Array
+  let rInputSize: number = inputSize ?? 0
+  if (packed) {
+    if (packed.format === 'kid') {
+      const packedData = rom.bytes.subarray(baseAddress)
+      const unpacked = unpackKidFormat(packedData)
+      data = unpacked.output
+      rInputSize = unpacked.results.sizePacked
+    } else {
+      throw new Error(`Unsupported packed format for plane: ${packed.format}`)
+    }
+  } else {
+    if (!rInputSize || rInputSize === 0) {
+      throw new Error('Resource input size needs to be defined when the resource is not packed')
+    }
+    data = rom.bytes.subarray(baseAddress, baseAddress + rInputSize)
+  }
+
+  const bytes = rom.bytes.subarray(baseAddress, baseAddress + rInputSize)
+  const hash = crc32(bytes)
+
+  return {
+    ...resource,
+    loaded: true,
+    hash,
+    inputSize: rInputSize,
+    data,
+  }
+}
+
 export function loadPlaneRomResource(
   rom: Rom,
   resource: PlaneRomResourceUnloaded,
@@ -679,6 +735,7 @@ export class ResourceManager {
         this.resourcesByType.get(existingResource.type)!.delete(resource.baseAddress)
         this.resourcesByType.get(newResource.type)!.add(resource.baseAddress)
         this.resources.set(resource.baseAddress, newResource)
+        return newResource
       }
       throw new Error(
         `Resource at address ${resource.baseAddress} already exists and is of type ${existingResource.type}`,
@@ -694,6 +751,10 @@ export class ResourceManager {
       this.referencesMap.set(resourceAddress, currentReferences)
     }
     for (const address of addresses) {
+      const resource = this.resources.get(address)
+      if (!resource) {
+        this.createResource(address, 'unknown')
+      }
       currentReferences.add(address)
       let currentReferencedBy = this.referencedByMap.get(address)
       if (!currentReferencedBy) {

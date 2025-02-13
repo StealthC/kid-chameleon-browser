@@ -1,7 +1,7 @@
 <template>
-  <div class="h-full overflow-auto">
+  <div class="h-full overflow-auto px-2 sm:px-0">
     <div class="mx-auto flex max-w-3xl flex-col gap-4">
-      <Panel class="prose max-w-none dark:prose-invert">
+      <GlassPanel class="prose dark:prose-invert max-w-none">
         <h2 class="m-0 pb-4">About this tool</h2>
         <p>This is a WIP project, so many features are not yet available and may never be.</p>
         <p>
@@ -23,8 +23,8 @@
         <p>This tool is made with typescript and its GUI is made with vue.js</p>
 
         <p>Author: StealthC</p>
-      </Panel>
-      <Panel class="prose mx-auto max-w-none dark:prose-invert">
+      </GlassPanel>
+      <GlassPanel class="prose dark:prose-invert mx-auto max-w-none">
         <h2 class="m-0 pb-4">Credits and References</h2>
         <p>
           This project can't never be done without the help of the following resources and all the
@@ -60,13 +60,13 @@
             >
           </li>
         </ul>
-      </Panel>
+      </GlassPanel>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Panel from 'primevue/panel'
+import GlassPanel from '@/components/GlassPanel.vue'
 </script>
 
 <style scoped></style>

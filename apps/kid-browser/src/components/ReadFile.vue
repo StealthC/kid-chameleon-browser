@@ -1,17 +1,12 @@
 <template>
-  <div>
-    <label class="rom-reader">
-      <FileUpload
-        mode="basic"
-        @select="loadFile"
-        customUpload
-        auto
-        severity="secondary"
-        choose-label="Select ROM File"
-        class="p-button-outlined"
-      />
-    </label>
-  </div>
+  <FileUpload
+    mode="basic"
+    @select="loadFile"
+    customUpload
+    auto
+    choose-label="Select ROM File"
+    class="hidden-file border-primary text-primary hover:bg-primary-900 box-content cursor-pointer rounded-lg border p-2"
+  />
 </template>
 
 <script setup lang="ts">

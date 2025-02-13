@@ -48,8 +48,8 @@ const useRomStore = defineStore('romStore', () => {
       ]).then(() => {
         romFullLoaded.value = true
         romLoading.value = false
-        if (router.currentRoute.value.name === 'home') {
-          router.push('/rom')
+        if (router.currentRoute.value.name === 'about') {
+          router.push({ name: 'rom' })
         }
       })
     }
