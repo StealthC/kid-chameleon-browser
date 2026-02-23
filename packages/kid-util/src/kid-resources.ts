@@ -846,6 +846,7 @@ export class ResourceManager {
   resourcesByType: RomResourcesByType = new Map()
   referencesMap: Map<number, Set<number>> = new Map()
   referencedByMap: Map<number, Set<number>> = new Map()
+  softReferenceKeys: Set<string> = new Set()
 
   constructor(public rom: Rom) {
     for (const type of ResourceTypes) {
@@ -928,12 +929,67 @@ export class ResourceManager {
         this.createResource(address, 'unknown')
       }
       currentReferences.add(address)
+      this.softReferenceKeys.delete(`${resourceAddress}:${address}`)
       let currentReferencedBy = this.referencedByMap.get(address)
       if (!currentReferencedBy) {
         currentReferencedBy = new Set()
         this.referencedByMap.set(address, currentReferencedBy)
       }
       currentReferencedBy.add(resourceAddress)
+    }
+  }
+
+  addSoftReference(resource: AllRomResources | number, ...addresses: number[]) {
+    const resourceAddress = typeof resource === 'number' ? resource : resource.baseAddress
+    let currentReferences = this.referencesMap.get(resourceAddress)
+    if (!currentReferences) {
+      currentReferences = new Set()
+      this.referencesMap.set(resourceAddress, currentReferences)
+    }
+    for (const address of addresses) {
+      const existing = this.resources.get(address)
+      if (!existing) {
+        this.createResource(address, 'unknown')
+      }
+
+      const key = `${resourceAddress}:${address}`
+      if (!currentReferences.has(address)) {
+        currentReferences.add(address)
+        this.softReferenceKeys.add(key)
+      }
+
+      let currentReferencedBy = this.referencedByMap.get(address)
+      if (!currentReferencedBy) {
+        currentReferencedBy = new Set()
+        this.referencedByMap.set(address, currentReferencedBy)
+      }
+      currentReferencedBy.add(resourceAddress)
+    }
+  }
+
+  inferReferencesByCommonParents() {
+    for (const [sourceAddress, refs] of this.referencesMap.entries()) {
+      const sourceResource = this.resources.get(sourceAddress)
+      if (!sourceResource) {
+        continue
+      }
+
+      const referencedResources = Array.from(refs)
+        .map((address) => this.resources.get(address))
+        .filter((resource): resource is AllRomResources => !!resource)
+
+      const palettes = referencedResources.filter((resource) => resource.type === 'palette')
+      const sheets = referencedResources.filter((resource) => resource.type === 'sheet')
+      if (palettes.length === 0 || sheets.length === 0) {
+        continue
+      }
+
+      for (const sheet of sheets) {
+        this.addSoftReference(
+          sheet,
+          ...palettes.map((palette) => palette.baseAddress),
+        )
+      }
     }
   }
 
@@ -944,6 +1000,7 @@ export class ResourceManager {
       return
     }
     for (const address of addresses) {
+      this.softReferenceKeys.delete(`${resourceAddress}:${address}`)
       currentReferences.delete(address)
       const currentReferencedBy = this.referencedByMap.get(address)
       if (currentReferencedBy) {
@@ -973,6 +1030,25 @@ export class ResourceManager {
   getReferencedBy(resource: AllRomResources | number): number[] {
     const address = typeof resource === 'number' ? resource : resource.baseAddress
     return Array.from(this.referencedByMap.get(address) ?? [])
+  }
+
+  isSoftReference(source: AllRomResources | number, target: AllRomResources | number): boolean {
+    const sourceAddress = typeof source === 'number' ? source : source.baseAddress
+    const targetAddress = typeof target === 'number' ? target : target.baseAddress
+    return this.softReferenceKeys.has(`${sourceAddress}:${targetAddress}`)
+  }
+
+  getReferenceKind(
+    source: AllRomResources | number,
+    target: AllRomResources | number,
+  ): 'hard' | 'soft' | null {
+    const sourceAddress = typeof source === 'number' ? source : source.baseAddress
+    const targetAddress = typeof target === 'number' ? target : target.baseAddress
+    const refs = this.referencesMap.get(sourceAddress)
+    if (!refs || !refs.has(targetAddress)) {
+      return null
+    }
+    return this.isSoftReference(sourceAddress, targetAddress) ? 'soft' : 'hard'
   }
 
   getMultipleResources(resources: Iterable<number>): AllRomResources[] {

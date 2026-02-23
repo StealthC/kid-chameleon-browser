@@ -146,6 +146,7 @@ export class Rom {
   async loadResources() {
     if (this._resourcesLoaded) return
     await this.discovery.run()
+    this.resources.inferReferencesByCommonParents()
     this._resourcesLoaded = true
     return
   }

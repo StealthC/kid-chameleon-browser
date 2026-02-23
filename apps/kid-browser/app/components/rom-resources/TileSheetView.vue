@@ -36,9 +36,15 @@
 
 <script setup lang="ts">
 import { computed, ref, toRefs } from 'vue'
-import { KidImageData, type SheetRomResourceLoaded } from '@repo/kid-util'
+import {
+  KidImageData,
+  isLoadedResource,
+  isPaletteResource,
+  type SheetRomResourceLoaded,
+} from '@repo/kid-util'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
+import { useResourceLoader } from '~/composables/useResourceLoader'
 import { bitmapFromKidImageData } from '~/utils/index'
 
 interface Props {
@@ -52,6 +58,15 @@ const { resource } = toRefs(props)
 const value = ref(props.value ?? 16)
 const useColumns = ref(props.mode === 'columns')
 const valueMode = computed(() => (useColumns.value ? 'columns' : 'rows'))
+const loader = useResourceLoader()
+const references = loader.getReferencesResourcesLoadedQuery(computed(() => resource.value.baseAddress))
+
+const sheetPalette = computed(() => {
+  const related = references.data.value ?? []
+  return related.find(
+    (candidate) => isLoadedResource(candidate) && isPaletteResource(candidate),
+  )
+})
 
 const values = computed(() => {
   if (!resource.value) return null
@@ -64,7 +79,7 @@ const values = computed(() => {
 const draw = async (ctx: CanvasRenderingContext2D) => {
   if (!values.value) return
   const sheetImage = KidImageData.fromSheet(resource.value, valueMode.value, value.value)
-  const bitmap = await bitmapFromKidImageData(sheetImage)
+  const bitmap = await bitmapFromKidImageData(sheetImage, sheetPalette.value)
   ctx.drawImage(bitmap, 0, 0)
 }
 </script>

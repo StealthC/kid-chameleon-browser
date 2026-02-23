@@ -56,15 +56,31 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import useRomStore from '~/stores/romStore'
 
 const { rom, romDetails, romFullLoaded, romLoading, status } = storeToRefs(useRomStore())
 const { loadRom, unloadRom } = useRomStore()
-const inserted = ref<boolean>(!romFullLoaded.value && !romLoading.value)
+const inserted = ref<boolean>(!!rom.value)
 const isBusy = computed(() => status.value === 'loading' || status.value === 'restoring')
+
+watch(
+  romFullLoaded,
+  (loaded, previousLoaded) => {
+    if (loaded && !previousLoaded) {
+      inserted.value = true
+    }
+  },
+  { immediate: true },
+)
+
+watch(rom, (value, previousValue) => {
+  if (!value && previousValue) {
+    inserted.value = false
+  }
+})
 
 const onFileRead = async (bytes: ArrayBuffer) => {
   try {

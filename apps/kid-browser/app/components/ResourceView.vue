@@ -50,18 +50,26 @@
                   <ScrollArea class="h-full pe-3">
                     <ul class="space-y-1">
                       <li
-                        v-for="ref in references"
-                        :key="ref.baseAddress"
+                        v-for="ref in referencesWithKind"
+                        :key="`${ref.resource.baseAddress}-${ref.kind}`"
                         class="hover:bg-accent rounded-md px-2 py-1"
                       >
-                        <NuxtLink
-                          class="block text-sm"
-                          :to="getResourceRoute(ref.baseAddress)"
-                        >
-                          {{ getNormalizedName(ref) }}
-                        </NuxtLink>
+                        <div class="flex items-center justify-between gap-2">
+                          <NuxtLink
+                            class="block min-w-0 truncate text-sm"
+                            :to="getResourceRoute(ref.resource.baseAddress)"
+                          >
+                            {{ getNormalizedName(ref.resource) }}
+                          </NuxtLink>
+                          <Badge
+                            variant="outline"
+                            class="px-1.5 py-0 text-[10px] uppercase tracking-wide"
+                          >
+                            {{ ref.kind }}
+                          </Badge>
+                        </div>
                       </li>
-                      <li v-if="references.length === 0" class="text-muted-foreground text-sm">
+                      <li v-if="referencesWithKind.length === 0" class="text-muted-foreground text-sm">
                         No references mapped.
                       </li>
                     </ul>
@@ -71,18 +79,26 @@
                   <ScrollArea class="h-full pe-3">
                     <ul class="space-y-1">
                       <li
-                        v-for="ref in referencedBy"
-                        :key="ref.baseAddress"
+                        v-for="ref in referencedByWithKind"
+                        :key="`${ref.resource.baseAddress}-${ref.kind}`"
                         class="hover:bg-accent rounded-md px-2 py-1"
                       >
-                        <NuxtLink
-                          class="block text-sm"
-                          :to="getResourceRoute(ref.baseAddress)"
-                        >
-                          {{ getNormalizedName(ref) }}
-                        </NuxtLink>
+                        <div class="flex items-center justify-between gap-2">
+                          <NuxtLink
+                            class="block min-w-0 truncate text-sm"
+                            :to="getResourceRoute(ref.resource.baseAddress)"
+                          >
+                            {{ getNormalizedName(ref.resource) }}
+                          </NuxtLink>
+                          <Badge
+                            variant="outline"
+                            class="px-1.5 py-0 text-[10px] uppercase tracking-wide"
+                          >
+                            {{ ref.kind }}
+                          </Badge>
+                        </div>
                       </li>
-                      <li v-if="referencedBy.length === 0" class="text-muted-foreground text-sm">
+                      <li v-if="referencedByWithKind.length === 0" class="text-muted-foreground text-sm">
                         No resources point to this address.
                       </li>
                     </ul>
@@ -105,6 +121,7 @@ import {
   isAnimationResource,
   isAnimationStepResource,
   isLoadedResource,
+  isPaletteResource,
   isPlaneResource,
   isSheetResource,
   isSpriteFrameResource,
@@ -117,7 +134,7 @@ interface Props {
 }
 const props = defineProps<Props>()
 const { resourceAddress } = toRefs(props)
-const { resource, references, referencedBy, isError, isPending, title, hexData } =
+const { resource, referencesWithKind, referencedByWithKind, isError, isPending, title, hexData } =
   useResourceDetails(resourceAddress)
 
 const tileSheetComponent = defineAsyncComponent(
@@ -135,6 +152,9 @@ const animationComponent = defineAsyncComponent(
 const animationStepComponent = defineAsyncComponent(
   () => import('~/components/rom-resources/AnimationStepView.vue'),
 )
+const paletteComponent = defineAsyncComponent(
+  () => import('~/components/rom-resources/PaletteView.vue'),
+)
 
 const componentValues = computed(() => {
   if (!resource.data.value || !isLoadedResource(resource.data.value)) return null
@@ -148,6 +168,8 @@ const componentValues = computed(() => {
     return { viewerComponent: animationComponent, props: { resource: resource.data.value } }
   } else if (isAnimationStepResource(resource.data.value)) {
     return { viewerComponent: animationStepComponent, props: { resource: resource.data.value } }
+  } else if (isPaletteResource(resource.data.value)) {
+    return { viewerComponent: paletteComponent, props: { resource: resource.data.value } }
   }
   return null
 })

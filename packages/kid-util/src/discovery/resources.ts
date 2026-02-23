@@ -14,6 +14,7 @@ export async function findAllResouces(kd: KidDiscovery) {
     findFrameCollisionFromTableResources,
     findAssetTableResources,
     findAllLevelHeaders,
+    findThemePaletteResources,
     findHudAnimationFrameResources,
     findAnimationScriptResources,
     findSomeMoreResources,
@@ -468,15 +469,108 @@ function findSomeMoreResources(kd: KidDiscovery) {
       kd.rom.resources.createResource(result.ptr, 'sheet', {
         packed: { format: 'kid' },
       })
+      if (isLikelyPaletteMap(kd, result.palPtr, 16)) {
+        kd.rom.resources.createResource(result.palPtr, 'palette-map', {
+          size: 16,
+          name: `Palette Map @ ${result.palPtr.toString(16)}`,
+        })
+        kd.rom.resources.addReference(result.ptr, result.palPtr)
+      }
     })
     findUntabledPackedTileSheetsWithPaletteSwap2(kd).map((result) => {
       kd.rom.resources.createResource(result.ptr, 'sheet', {
         packed: { format: 'kid' },
       })
+      if (isLikelyPaletteMap(kd, result.palPtr, 16)) {
+        kd.rom.resources.createResource(result.palPtr, 'palette-map', {
+          size: 16,
+          name: `Palette Map @ ${result.palPtr.toString(16)}`,
+        })
+        kd.rom.resources.addReference(result.ptr, result.palPtr)
+      }
     })
   } catch (e) {
     console.error(e)
   }
+}
+
+function isLikelyPaletteMap(kd: KidDiscovery, baseAddress: number, size: number): boolean {
+  if (baseAddress < 0 || baseAddress + size > kd.rom.bytes.length) {
+    return false
+  }
+
+  let hasNonIdentityValue = false
+  for (let i = 0; i < size; i++) {
+    const value = kd.rom.data.getUint8(baseAddress + i)
+    if (value > 0x0f) {
+      return false
+    }
+    if (value !== i) {
+      hasNonIdentityValue = true
+    }
+  }
+
+  return hasNonIdentityValue
+}
+
+function findThemePaletteResources(kd: KidDiscovery) {
+  const numberOfThemes = kd.knownAddresses.get('numberOfThemes')
+  const levelMiscPtrTable = kd.knownAddresses.get('levelMiscPtrTable')
+  const themePaletteWordTable = kd.knownAddresses.get('themePaletteWordTable')
+  const themeBackgroundPaletteWordTable = kd.knownAddresses.get('themeBackgroundPaletteWordTable')
+  if (!numberOfThemes || !levelMiscPtrTable || !themePaletteWordTable || !themeBackgroundPaletteWordTable) {
+    return
+  }
+
+  for (let theme = 1; theme <= numberOfThemes; theme++) {
+    const foregroundPalette = resolveThemePalettePointer(
+      kd,
+      levelMiscPtrTable,
+      themePaletteWordTable,
+      theme,
+    )
+    if (foregroundPalette) {
+      kd.rom.resources.createResource(foregroundPalette.paletteAddress, 'palette', {
+        size: 15,
+        name: `Theme ${theme} Foreground Palette`,
+        addressOffset: foregroundPalette.wordOffset,
+      })
+      kd.rom.resources.addReference(themePaletteWordTable, foregroundPalette.paletteAddress)
+    }
+
+    const backgroundPalette = resolveThemePalettePointer(
+      kd,
+      levelMiscPtrTable,
+      themeBackgroundPaletteWordTable,
+      theme,
+    )
+    if (backgroundPalette) {
+      kd.rom.resources.createResource(backgroundPalette.paletteAddress, 'palette', {
+        size: 8,
+        name: `Theme ${theme} Background Palette`,
+        addressOffset: backgroundPalette.wordOffset,
+      })
+      kd.rom.resources.addReference(themeBackgroundPaletteWordTable, backgroundPalette.paletteAddress)
+    }
+  }
+}
+
+function resolveThemePalettePointer(
+  kd: KidDiscovery,
+  levelMiscPtrTable: number,
+  wordTableAddress: number,
+  themeIndex: number,
+): { wordOffset: number; paletteAddress: number } | null {
+  const wordOffset = kd.rom.data.getUint16(wordTableAddress + themeIndex * 2, false)
+  const pointerSlotAddress = levelMiscPtrTable + wordOffset
+  if (pointerSlotAddress < 0 || pointerSlotAddress + 4 > kd.rom.bytes.length) {
+    return null
+  }
+  const paletteAddress = kd.rom.readPtr(pointerSlotAddress)
+  if (paletteAddress <= 0 || paletteAddress >= kd.rom.bytes.length) {
+    return null
+  }
+  return { wordOffset, paletteAddress }
 }
 
 function findUntabledPackedTileSheetsDirect1(kd: KidDiscovery) {

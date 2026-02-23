@@ -27,6 +27,7 @@
         :tile-id="tileId"
         :width="resource.width"
         :height="resource.height"
+        :palette="palette"
       />
       <p v-else class="text-muted-foreground text-sm">
         Select a sheet to preview this sprite frame.
@@ -50,7 +51,9 @@
 import {
   isLinkedSpriteFrameResource,
   isLoadedResource,
+  isPaletteResource,
   isSheetResource,
+  type PaletteRomResourceLoaded,
   type SpriteFrameRomResourceLoaded,
 } from '@repo/kid-util'
 import { computed, ref, toRefs } from 'vue'
@@ -83,6 +86,10 @@ const resourceLoader = useResourceLoader()
 const sheetList = resourceLoader.getResourceListOfTypeQuery('sheet')
 const isSheetSelected = computed(() => sheet.value !== null)
 const loadedSheet = resourceLoader.useGetResourceLoadedQuery(sheet, isSheetSelected)
+const selectedSheetReferences = resourceLoader.getReferencesResourcesLoadedQuery(sheet, isSheetSelected)
+const spriteReferences = resourceLoader.getReferencesResourcesLoadedQuery(
+  computed(() => resource.value.baseAddress),
+)
 
 const sheets = computed(() => {
   if (!sheetList.data.value) return []
@@ -108,6 +115,24 @@ const bytes = computed(() => {
   ) {
     return loadedSheet.data.value.data
   }
+  return null
+})
+
+const palette = computed<PaletteRomResourceLoaded | null>(() => {
+  const fromSheet = selectedSheetReferences.data.value?.find(
+    (candidate) => isLoadedResource(candidate) && isPaletteResource(candidate),
+  )
+  if (fromSheet && isLoadedResource(fromSheet) && isPaletteResource(fromSheet)) {
+    return fromSheet
+  }
+
+  const fromSprite = spriteReferences.data.value?.find(
+    (candidate) => isLoadedResource(candidate) && isPaletteResource(candidate),
+  )
+  if (fromSprite && isLoadedResource(fromSprite) && isPaletteResource(fromSprite)) {
+    return fromSprite
+  }
+
   return null
 })
 

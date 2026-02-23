@@ -9,7 +9,7 @@
 </template>
 
 <script setup lang="ts">
-import { KidImageData } from '@repo/kid-util'
+import { KidImageData, type PaletteRomResourceLoaded } from '@repo/kid-util'
 import { computed, toRefs } from 'vue'
 import { bitmapFromKidImageData } from '~/utils/index'
 
@@ -18,10 +18,11 @@ export type Props = {
   width: number
   height: number
   tileId?: number
+  palette?: PaletteRomResourceLoaded | null
 }
 
 const props = defineProps<Props>()
-const { bytes, width, height } = toRefs(props)
+const { bytes, width, height, palette } = toRefs(props)
 const tileId = computed(() => props.tileId ?? 0)
 
 const computedValues = computed(() => {
@@ -45,7 +46,10 @@ const computedValues = computed(() => {
 const draw = async (ctx: CanvasRenderingContext2D) => {
   if (!computedValues.value) return
   const { tileId, width, height, bytes } = computedValues.value
-  const bitmap = await bitmapFromKidImageData(KidImageData.fromSprite(bytes, width, height, tileId))
+  const bitmap = await bitmapFromKidImageData(
+    KidImageData.fromSprite(bytes, width, height, tileId),
+    palette.value ?? undefined,
+  )
   ctx.drawImage(bitmap, 0, 0)
 }
 </script>

@@ -63,6 +63,26 @@ describe('Rom checks', () => {
     expect(loadedAnimation?.frameCount).toBeGreaterThan(0)
     expect(loadedAnimation?.stepAddresses.length).toBeGreaterThan(0)
 
+    const themePalette = rom.resources.getResource<'palette'>(0x7b6a2)
+    expect(themePalette?.type).toBe('palette')
+    const loadedThemePalette = await rom.resources.getResourceLoaded<'palette'>(0x7b6a2)
+    expect(loadedThemePalette?.colors.length).toBe(15)
+    expect(loadedThemePalette?.inputSize).toBe(30)
+
+    const paletteMaps = rom.resources.getResourcesByType('palette-map')
+    expect(paletteMaps.length).toBeGreaterThan(0)
+
+    const themeTitleSheet = rom.resources
+      .getResourcesByType('sheet')
+      .find((resource) => resource.name?.includes('Theme 1 Title Screen GFX'))
+    expect(themeTitleSheet).toBeTruthy()
+    if (themeTitleSheet) {
+      const paletteRefs = rom.resources
+        .getReferencesResources(themeTitleSheet.baseAddress)
+        .filter((resource) => resource.type === 'palette')
+      expect(paletteRefs.length).toBeGreaterThan(0)
+    }
+
     const firstStepAddress = loadedAnimation?.stepAddresses.find((address) => address !== 0x8bb4)
     expect(firstStepAddress).toBeDefined()
     if (firstStepAddress !== undefined) {
