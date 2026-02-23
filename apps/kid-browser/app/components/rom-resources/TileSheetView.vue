@@ -18,11 +18,11 @@
     </template>
 
     <template #sidebar>
-      <p class="text-xs uppercase tracking-wider text-slate-400">Inspector</p>
-      <p class="font-mono text-xs text-emerald-300">{{ selectedTileText }}</p>
+      <ViewerSidebarSection title="Inspector">
+        <p class="font-mono text-xs text-emerald-300">{{ selectedTileText }}</p>
+      </ViewerSidebarSection>
 
-      <div class="space-y-2">
-        <p class="text-xs uppercase tracking-wider text-slate-400">Layers</p>
+      <ViewerSidebarSection title="Layers">
         <label class="flex items-center gap-2 text-xs">
           <input v-model="showGrid" type="checkbox" />
           <span>Grid</span>
@@ -31,10 +31,9 @@
           <input v-model="showSelection" type="checkbox" />
           <span>Selection</span>
         </label>
-      </div>
+      </ViewerSidebarSection>
 
-      <div class="space-y-2">
-        <p class="text-xs uppercase tracking-wider text-slate-400">Layout</p>
+      <ViewerSidebarSection title="Layout">
         <div class="gap-2 items-stretch flex flex-col">
           <Button variant="outline" size="sm" @click="useColumns = !useColumns">
             <Icon name="heroicons:adjustments-horizontal-solid" class="size-4" />
@@ -50,10 +49,9 @@
             </Button>
           </div>
         </div>
-      </div>
+      </ViewerSidebarSection>
 
-      <div class="space-y-2" v-if="paletteOptions.length > 1">
-        <p class="text-xs uppercase tracking-wider text-slate-400">Palette</p>
+      <ViewerSidebarSection v-if="paletteOptions.length > 1" title="Palette">
         <Select v-model="selectedPaletteKey">
           <SelectTrigger class="w-full">
             <SelectValue placeholder="Select palette" />
@@ -64,7 +62,7 @@
             </SelectItem>
           </SelectContent>
         </Select>
-      </div>
+      </ViewerSidebarSection>
     </template>
   </ExpandableViewerLayout>
 </template>

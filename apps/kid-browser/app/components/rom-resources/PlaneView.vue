@@ -19,11 +19,11 @@
     </template>
 
     <template #sidebar>
-      <p class="text-xs uppercase tracking-wider text-slate-400">Inspector</p>
-      <p class="font-mono text-xs text-emerald-300">{{ selectedTileText }}</p>
+      <ViewerSidebarSection title="Inspector">
+        <p class="font-mono text-xs text-emerald-300">{{ selectedTileText }}</p>
+      </ViewerSidebarSection>
 
-      <div class="space-y-2">
-        <p class="text-xs uppercase tracking-wider text-slate-400">Layers</p>
+      <ViewerSidebarSection title="Layers">
         <label class="flex items-center gap-2 text-xs">
           <input v-model="showGrid" type="checkbox" />
           <span>Grid</span>
@@ -32,10 +32,9 @@
           <input v-model="showSelection" type="checkbox" />
           <span>Selection</span>
         </label>
-      </div>
+      </ViewerSidebarSection>
 
-      <div class="space-y-2">
-        <p class="text-xs uppercase tracking-wider text-slate-400">Options</p>
+      <ViewerSidebarSection title="Options">
         <template v-if="useColumns">
           <div class="flex items-center gap-2">
             <Input type="number" v-model.number="columns" class="w-24 text-center" :min="1" :max="255" />
@@ -58,7 +57,7 @@
             </SelectItem>
           </SelectContent>
         </Select>
-      </div>
+      </ViewerSidebarSection>
     </template>
   </ExpandableViewerLayout>
 </template>

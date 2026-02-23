@@ -26,10 +26,11 @@
         <Badge variant="outline">{{ needSheet ? 'Needs sheet' : 'Embedded' }}</Badge>
       </div>
 
-      <p class="font-mono text-xs text-emerald-300">{{ selectedCellText }}</p>
+      <ViewerSidebarSection title="Inspector">
+        <p class="font-mono text-xs text-emerald-300">{{ selectedCellText }}</p>
+      </ViewerSidebarSection>
 
-      <div class="space-y-2">
-        <p class="text-xs uppercase tracking-wider text-slate-400">Layers</p>
+      <ViewerSidebarSection title="Layers">
         <label class="flex items-center gap-2 text-xs">
           <input v-model="showGrid" type="checkbox" />
           <span>Grid</span>
@@ -38,7 +39,7 @@
           <input v-model="showSelection" type="checkbox" />
           <span>Selection</span>
         </label>
-      </div>
+      </ViewerSidebarSection>
 
       <Select v-if="needSheet" v-model="sheetString">
         <SelectTrigger>

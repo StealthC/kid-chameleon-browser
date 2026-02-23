@@ -14,7 +14,7 @@
         </GlassPanel>
         <div class="flex-1 flex items-center justify-center">
           <GlassPanel>
-            <nav class="grid grid-cols-4 gap-2">
+            <nav class="grid grid-cols-3 gap-2">
               <NuxtLink v-for="item in navItems" :key="item.to" :to="item.to" custom>
                 <template #default="{ navigate, href, isActive }">
                   <Button :variant="isActive ? 'secondary' : 'ghost'" size="sm" as-child>
@@ -57,7 +57,6 @@ const { rom } = storeToRefs(useRomStore())
 const navItems = [
   { to: '/', label: 'Home', icon: 'heroicons:home-solid' },
   { to: '/resources', label: 'Resources', icon: 'heroicons:squares-2x2-solid' },
-  { to: '/pixi-lab', label: 'Pixi Lab', icon: 'heroicons:arrows-pointing-out-solid' },
   { to: '/about', label: 'About', icon: 'heroicons:information-circle-solid' },
 ]
 </script>
