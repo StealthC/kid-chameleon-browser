@@ -26,6 +26,10 @@ describe('Rom checks', () => {
 
     await rom.loadResources()
 
+    expect(rom.discovery.knownAddresses.get('levelTitleHeaderTable')).toBe(0x1a842)
+    expect(rom.discovery.knownAddresses.get('levelTitleElsewhereIndex')).toBe(0x49)
+    expect(rom.discovery.knownAddresses.get('levelTitleElsewhereHeader')).toBe(0x1ab1c)
+
     const animationFrames = rom.resources.getResourcesByType('animation-frame')
     expect(animationFrames.length).toBeGreaterThan(0)
 
@@ -181,6 +185,10 @@ describe('Rom checks', () => {
     }
 
     await hackRom.loadResources()
+
+    expect(hackRom.discovery.knownAddresses.get('levelTitleHeaderTable')).toBeGreaterThan(0)
+    expect(hackRom.discovery.knownAddresses.get('levelTitleElsewhereIndex')).toBeGreaterThan(0)
+    expect(hackRom.discovery.knownAddresses.get('levelTitleElsewhereHeader')).toBeGreaterThan(0)
 
     const levelHeaders = hackRom.resources.getResourcesByType('level-header')
     const namedLevels = levelHeaders.filter((resource) => !!resource.name)

@@ -189,6 +189,24 @@ export const KnownAddressesDescriptions: Partial<
     type: 'table',
     description: 'Start of theme title screen graphics pointer table',
   },
+  levelTitleHeaderTable: {
+    name: 'Level Title Header Table',
+    addressInJUE: 0x1a842,
+    type: 'table',
+    description: 'Table of level title header entries (text ptr, position ptr, act)',
+  },
+  levelTitleElsewhereIndex: {
+    name: 'Level Title Elsewhere Index',
+    addressInJUE: 0x49,
+    type: 'value',
+    description: 'Level index clamp used by LevelTitleText for Elsewhere fallback titles',
+  },
+  levelTitleElsewhereHeader: {
+    name: 'Level Title Elsewhere Header',
+    addressInJUE: 0x1ab1c,
+    type: 'table',
+    description: 'Elsewhere title-card header entry used after clamp index',
+  },
   numberOfThemes: {
     name: 'Number of Themes',
     addressInJUE: 10,

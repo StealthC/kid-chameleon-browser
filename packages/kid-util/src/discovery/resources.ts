@@ -441,8 +441,10 @@ function createAnimationResourcesFromParsed(
 
 async function findAllLevelHeaders(kd: KidDiscovery) {
   const levelTitleHeaderStride = 10
-  const levelTitleMaxIndex = 0x49
-  const levelTitleHeaderBaseAddr = discoverLevelTitleHeaderBaseAddress(kd, levelTitleHeaderStride)
+  const levelTitleMaxIndex = kd.knownAddresses.get('levelTitleElsewhereIndex') ?? 0x49
+  const levelTitleHeaderBaseAddr =
+    kd.knownAddresses.get('levelTitleHeaderTable') ??
+    discoverLevelTitleHeaderBaseAddress(kd, levelTitleHeaderStride)
   const levelWordTable = kd.knownAddresses.get('levelWordTable')
   const levelWordTableBase = kd.knownAddresses.get('levelWordTableBase')
   const levelIndexesTable = kd.knownAddresses.get('levelIndexesTable')
@@ -544,6 +546,11 @@ async function findAllLevelHeaders(kd: KidDiscovery) {
   kd.log('There is a max of', maxTheme, 'themes used in the levels')
   if (levelTitleHeaderBaseAddr !== undefined) {
     kd.log('Level title card table found at', `0x${levelTitleHeaderBaseAddr.toString(16)}`)
+    kd.log('Elsewhere clamp level index is', levelTitleMaxIndex)
+    const elsewhereHeader = kd.knownAddresses.get('levelTitleElsewhereHeader')
+    if (elsewhereHeader !== undefined) {
+      kd.log('Elsewhere title card header at', `0x${elsewhereHeader.toString(16)}`)
+    }
   } else {
     kd.log('Level title card table not found by discovery heuristics')
   }

@@ -24,6 +24,9 @@ export const ImportantValues = [
   'themeTitleScreenPlanePtrTable',
   'themeTitleScreenPalettePtrTable',
   'themeTitleScreenSizeTable',
+  'levelTitleHeaderTable',
+  'levelTitleElsewhereIndex',
+  'levelTitleElsewhereHeader',
   'numberOfThemes',
   'numberOfLevels',
 ] as const
@@ -42,6 +45,7 @@ export async function findAllKnownAddresses(kd: KidDiscovery) {
     findThemeTitleScreenPlanePtrTable,
     findThemeTitleScreenPalettePtrTable,
     findThemeTitleScreenSizeTable,
+    findLevelTitleCardTableAndElsewhere,
   ]
   const queue = new PQueue({ concurrency: 4 })
   for (const fn of fns) {
@@ -264,6 +268,20 @@ function findThemeTitleScreenSizeTable(kd: KidDiscovery) {
   const ptr = kd.rom.findPattern(pattern)
   const address = kd.rom.readPtr(ptr + 22)
   kd.knownAddresses.set('themeTitleScreenSizeTable', address)
+}
+
+function findLevelTitleCardTableAndElsewhere(kd: KidDiscovery) {
+  const pattern =
+    '0c 47 ?? ?? 6d 02 7e ?? ce fc 00 0a 49 fa ?? ?? 24 74 70 00 26 74 70 04 30 34 70 08'
+  const ptr = kd.rom.findPattern(pattern)
+  const elsewhereIndex = kd.rom.data.getUint16(ptr + 2, false)
+  const tableOffset = kd.rom.data.getInt16(ptr + 14, false)
+  const tableBase = ptr + 14 + tableOffset
+  const elsewhereHeader = tableBase + elsewhereIndex * 10
+
+  kd.knownAddresses.set('levelTitleHeaderTable', tableBase)
+  kd.knownAddresses.set('levelTitleElsewhereIndex', elsewhereIndex)
+  kd.knownAddresses.set('levelTitleElsewhereHeader', elsewhereHeader)
 }
 
 function findFrameCollisionFrameTable(kd: KidDiscovery) {
