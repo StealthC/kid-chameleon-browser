@@ -449,6 +449,9 @@ async function findAllLevelHeaders(kd: KidDiscovery) {
   let index = 0
   let minHeader: number = Infinity
   let maxTheme: number = 0
+  const levelBlocksPointers = new Set<number>()
+  const levelObjectsHeaderPointers = new Set<number>()
+  const levelEnemyLayoutPointers = new Set<number>()
   do {
     const wordOffset = kd.rom.data.getUint8(levelIndexesTable + index)
     if (wordOffset === 0xff) {
@@ -472,6 +475,31 @@ async function findAllLevelHeaders(kd: KidDiscovery) {
       kd.rom.resources.createResource(levelTilesPtr, 'level-tiles', {
         packed: { format: 'kid' },
       })
+      kd.rom.resources.createResource(loadedLevelHeader.backgroundDataPtr, 'level-background-layout', {
+        backgroundType: loadedLevelHeader.backgroundType,
+        isPacked: loadedLevelHeader.backgroundIsPacked,
+        name: `Level ${index} Background Layout`,
+      })
+      kd.rom.resources.createResource(loadedLevelHeader.blocksDataPtr, 'level-blocks', {
+        name: `Level ${index} Blocks`,
+      })
+      kd.rom.resources.createResource(loadedLevelHeader.levelObjectsHeaderPtr, 'level-objects-header', {
+        inputSize: 0x10,
+        name: `Level ${index} Objects Header`,
+      })
+      levelBlocksPointers.add(loadedLevelHeader.blocksDataPtr)
+      levelObjectsHeaderPointers.add(loadedLevelHeader.levelObjectsHeaderPtr)
+
+      const backgroundLayout =
+        await kd.rom.resources.getResourceLoaded<'level-background-layout'>(
+          loadedLevelHeader.backgroundDataPtr,
+        )
+      if (backgroundLayout?.indirect?.referenceAddress) {
+        kd.rom.resources.addReference(
+          loadedLevelHeader.backgroundDataPtr,
+          backgroundLayout.indirect.referenceAddress,
+        )
+      }
     }
 
     // Peek at the level theme value:
@@ -484,6 +512,63 @@ async function findAllLevelHeaders(kd: KidDiscovery) {
   kd.log('There is a max of', maxTheme, 'themes used in the levels')
   kd.knownAddresses.set('numberOfLevels', index)
   kd.knownAddresses.set('numberOfThemes', maxTheme)
+
+  const inferredBlockSizes = inferPointerTableSizes(levelBlocksPointers)
+  for (const [address, size] of inferredBlockSizes) {
+    const existing = kd.rom.resources.getResource<'level-blocks'>(address)
+    if (!existing || existing.type !== 'level-blocks') {
+      continue
+    }
+    kd.rom.resources.createResource(address, 'level-blocks', {
+      ...existing,
+      inputSize: size,
+    })
+  }
+
+  for (const address of levelObjectsHeaderPointers) {
+    const h1Pointer = kd.rom.data.getUint32(address, false)
+    if (h1Pointer > 0 && h1Pointer < kd.rom.bytes.length) {
+      kd.rom.resources.addReference(address, h1Pointer)
+      const objectCount = kd.rom.data.getUint8(h1Pointer + 1)
+      const inputSize = 2 + objectCount * 8
+      kd.rom.resources.createResource(h1Pointer, 'level-enemy-layout', {
+        objectCount,
+        inputSize,
+        name: `Enemy Layout @ ${h1Pointer.toString(16)}`,
+      })
+      levelEnemyLayoutPointers.add(h1Pointer)
+    }
+  }
+
+  const inferredEnemyLayoutSizes = inferPointerTableSizes(levelEnemyLayoutPointers)
+  for (const [address, size] of inferredEnemyLayoutSizes) {
+    const existing = kd.rom.resources.getResource<'level-enemy-layout'>(address)
+    if (!existing || existing.type !== 'level-enemy-layout') {
+      continue
+    }
+    const objectCount = Math.max(0, Math.floor((size - 2) / 8))
+    kd.rom.resources.createResource(address, 'level-enemy-layout', {
+      ...existing,
+      inputSize: size,
+      objectCount,
+    })
+  }
+}
+
+function inferPointerTableSizes(pointers: Set<number>): Map<number, number> {
+  const sorted = Array.from(pointers)
+    .filter((address) => address > 0)
+    .sort((a, b) => a - b)
+  const sizes = new Map<number, number>()
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const current = sorted[i]
+    const next = sorted[i + 1]
+    const delta = next - current
+    if (delta > 0) {
+      sizes.set(current, delta)
+    }
+  }
+  return sizes
 }
 
 function findAssetTableResources(kd: KidDiscovery) {

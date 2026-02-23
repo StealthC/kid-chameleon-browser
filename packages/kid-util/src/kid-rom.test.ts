@@ -87,6 +87,41 @@ describe('Rom checks', () => {
       expect(paletteRefs.length).toBeGreaterThan(0)
     }
 
+    const firstLevelHeader = rom.resources.getResourcesByType('level-header')[0]
+    expect(firstLevelHeader).toBeTruthy()
+    if (firstLevelHeader) {
+      const loadedHeader = await rom.resources.getResourceLoaded<'level-header'>(firstLevelHeader.baseAddress)
+      expect(loadedHeader).toBeTruthy()
+      if (loadedHeader) {
+        expect(rom.resources.getResource(loadedHeader.blocksDataPtr)?.type).toBe('level-blocks')
+        expect(rom.resources.getResource(loadedHeader.levelObjectsHeaderPtr)?.type).toBe(
+          'level-objects-header',
+        )
+        expect(rom.resources.getResource(loadedHeader.backgroundDataPtr)?.type).toBe(
+          'level-background-layout',
+        )
+
+        const backgroundLayout = await rom.resources.getResourceLoaded<'level-background-layout'>(
+          loadedHeader.backgroundDataPtr,
+        )
+        expect(backgroundLayout?.type).toBe('level-background-layout')
+        expect(backgroundLayout?.format).toBeTruthy()
+
+        const objectsHeader = await rom.resources.getResourceLoaded<'level-objects-header'>(
+          loadedHeader.levelObjectsHeaderPtr,
+        )
+        expect(objectsHeader?.h1Pointer).toBeGreaterThan(0)
+
+        if (objectsHeader?.h1Pointer) {
+          const enemyLayout = await rom.resources.getResourceLoaded<'level-enemy-layout'>(
+            objectsHeader.h1Pointer,
+          )
+          expect(enemyLayout?.type).toBe('level-enemy-layout')
+          expect(enemyLayout?.objectCount).toBeGreaterThanOrEqual(0)
+        }
+      }
+    }
+
     const firstStepAddress = loadedAnimation?.stepAddresses.find((address) => address !== 0x8bb4)
     expect(firstStepAddress).toBeDefined()
     if (firstStepAddress !== undefined) {
@@ -115,5 +150,8 @@ describe('Rom checks', () => {
 
     const hasSharedFrameStep = Array.from(frameStepOwners.values()).some((owners) => owners > 1)
     expect(hasSharedFrameStep).toBe(false)
+
+    const unknownCount = rom.resources.getResourcesByType('unknown').length
+    expect(unknownCount).toBeLessThan(220)
   })
 })

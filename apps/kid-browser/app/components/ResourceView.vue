@@ -129,6 +129,8 @@ import { ScrollArea } from '~/components/ui/scroll-area'
 import {
   isAnimationResource,
   isAnimationStepResource,
+  isLevelBackgroundLayoutResource,
+  isLevelEnemyLayoutResource,
   isLoadedResource,
   isPaletteResource,
   isPlaneResource,
@@ -167,6 +169,12 @@ const paletteComponent = defineAsyncComponent(
 const unknownComponent = defineAsyncComponent(
   () => import('~/components/rom-resources/UnknownView.vue'),
 )
+const levelEnemyLayoutComponent = defineAsyncComponent(
+  () => import('~/components/rom-resources/LevelEnemyLayoutView.vue'),
+)
+const levelBackgroundLayoutComponent = defineAsyncComponent(
+  () => import('~/components/rom-resources/LevelBackgroundLayoutView.vue'),
+)
 
 const componentValues = computed(() => {
   if (!resource.value) return null
@@ -186,6 +194,10 @@ const componentValues = computed(() => {
     return { viewerComponent: animationStepComponent, props: { resource: resource.value } }
   } else if (isPaletteResource(resource.value)) {
     return { viewerComponent: paletteComponent, props: { resource: resource.value } }
+  } else if (isLevelBackgroundLayoutResource(resource.value)) {
+    return { viewerComponent: levelBackgroundLayoutComponent, props: { resource: resource.value } }
+  } else if (isLevelEnemyLayoutResource(resource.value)) {
+    return { viewerComponent: levelEnemyLayoutComponent, props: { resource: resource.value } }
   }
   return null
 })

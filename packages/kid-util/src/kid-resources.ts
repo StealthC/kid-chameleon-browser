@@ -21,6 +21,8 @@ export const ResourceTypes = [
   'level-tiles',
   'level-blocks',
   'level-objects-header',
+  'level-background-layout',
+  'level-enemy-layout',
   'palette',
   'palette-map',
 ] as const
@@ -31,6 +33,10 @@ export type RomResourcesByType = Map<(typeof ResourceTypes)[number], Set<number>
 
 export const ResourceTypeLoaderMap: ResourceLoaderMap = {
   'level-header': loadLevelHeaderRomResource,
+  'level-blocks': loadLevelBlocksRomResource,
+  'level-objects-header': loadLevelObjectsHeaderRomResource,
+  'level-background-layout': loadLevelBackgroundLayoutRomResource,
+  'level-enemy-layout': loadLevelEnemyLayoutRomResource,
   sheet: loadSheetRomResource,
   'unlinked-sprite-frame': loadUnlinkedSpriteFrameResource,
   'linked-sprite-frame': loadLinkedSpriteFrameResource,
@@ -48,6 +54,9 @@ export type AllRomResources = AllRomResourcesLoaded | AllRomResourcesUnloaded
 
 export type AllRomResourcesUnloaded =
   | LevelHeaderRomResourceUnloaded
+  | LevelBlocksRomResourceUnloaded
+  | LevelObjectsHeaderRomResourceUnloaded
+  | LevelEnemyLayoutRomResourceUnloaded
   | SheetRomResourceUnloaded
   | UnlinkedSpriteFrameRomResourceUnloaded
   | LinkedSpriteFrameRomResourceUnloaded
@@ -60,9 +69,13 @@ export type AllRomResourcesUnloaded =
   | PaletteMapRomResourceUnloaded
   | UnknownRomResourceUnloaded
   | LevelTilesRomResourceUnloaded
+  | LevelBackgroundLayoutRomResourceUnloaded
 
 export type AllRomResourcesLoaded =
   | LevelHeaderRomResourceLoaded
+  | LevelBlocksRomResourceLoaded
+  | LevelObjectsHeaderRomResourceLoaded
+  | LevelEnemyLayoutRomResourceLoaded
   | SheetRomResourceLoaded
   | UnlinkedSpriteFrameRomResourceLoaded
   | LinkedSpriteFrameRomResourceLoaded
@@ -74,6 +87,7 @@ export type AllRomResourcesLoaded =
   | PaletteRomResourceLoaded
   | PaletteMapRomResourceLoaded
   | LevelTilesRomResourceLoaded
+  | LevelBackgroundLayoutRomResourceLoaded
 
 export type UnknownRomResourceUnloaded = UnloadedRomResource & {
   type: 'unknown'
@@ -130,6 +144,99 @@ export type LevelTilesRomResourceLoaded = PackableResource &
   }
 
 export type LevelTilesRomResource = LevelTilesRomResourceUnloaded | LevelTilesRomResourceLoaded
+
+export type LevelBlocksRomResourceUnloaded = UnloadedRomResource & {
+  type: 'level-blocks'
+  inputSize?: number
+}
+
+export type LevelBlocksRomResourceLoaded = LoadedRomResource & {
+  type: 'level-blocks'
+  data: Uint8Array
+}
+
+export type LevelBlocksRomResource = LevelBlocksRomResourceUnloaded | LevelBlocksRomResourceLoaded
+
+export type LevelObjectsHeaderRomResourceUnloaded = UnloadedRomResource & {
+  type: 'level-objects-header'
+  inputSize?: number
+}
+
+export type LevelObjectsHeaderRomResourceLoaded = LoadedRomResource & {
+  type: 'level-objects-header'
+  h1Pointer: number
+  axisSelector: number
+  unknownField: number
+  enemySlot1: number
+  enemySlot2: number
+  enemySlot3: number
+  cameraThreshold: number
+  h1UnknownByte?: number
+  h1ObjectCountRaw?: number
+}
+
+export type LevelObjectsHeaderRomResource =
+  | LevelObjectsHeaderRomResourceUnloaded
+  | LevelObjectsHeaderRomResourceLoaded
+
+export type LevelEnemyLayoutObject = {
+  index: number
+  enemyTypeOrKind: number
+  behaviorFlags: number
+  hitPointsPlusOne: number
+  xPosition: number
+  yPosition: number
+}
+
+export type LevelEnemyLayoutRomResourceUnloaded = UnloadedRomResource & {
+  type: 'level-enemy-layout'
+  objectCount?: number
+  inputSize?: number
+}
+
+export type LevelEnemyLayoutRomResourceLoaded = LoadedRomResource & {
+  type: 'level-enemy-layout'
+  h1UnknownByte: number
+  h1ObjectCountRaw: number
+  objectCount: number
+  objects: LevelEnemyLayoutObject[]
+}
+
+export type LevelEnemyLayoutRomResource =
+  | LevelEnemyLayoutRomResourceUnloaded
+  | LevelEnemyLayoutRomResourceLoaded
+
+export type LevelBackgroundPlacement = {
+  chunkIndexRaw: number
+  xRaw: number
+  yRaw: number
+}
+
+export type LevelBackgroundIndirectRef = {
+  xShiftRaw: number
+  yShiftRaw: number
+  referenceAddress: number
+}
+
+export type LevelBackgroundLayoutRomResourceUnloaded = UnloadedRomResource & {
+  type: 'level-background-layout'
+  backgroundType?: number
+  isPacked?: boolean
+  inputSize?: number
+}
+
+export type LevelBackgroundLayoutRomResourceLoaded = LoadedRomResource & {
+  type: 'level-background-layout'
+  backgroundType: number
+  isPacked: boolean
+  format: 'chunked' | 'layered'
+  indirect?: LevelBackgroundIndirectRef
+  placements: LevelBackgroundPlacement[]
+}
+
+export type LevelBackgroundLayoutRomResource =
+  | LevelBackgroundLayoutRomResourceUnloaded
+  | LevelBackgroundLayoutRomResourceLoaded
 
 export type PaletteRomResourceUnloaded = UnloadedRomResource & {
   type: 'palette'
@@ -200,6 +307,18 @@ export function isAnimationFrameResource(
   resource: BaseRomResource,
 ): resource is AnimationFrameRomResource {
   return resource.type === 'animation-frame'
+}
+
+export function isLevelEnemyLayoutResource(
+  resource: BaseRomResource,
+): resource is LevelEnemyLayoutRomResource {
+  return resource.type === 'level-enemy-layout'
+}
+
+export function isLevelBackgroundLayoutResource(
+  resource: BaseRomResource,
+): resource is LevelBackgroundLayoutRomResource {
+  return resource.type === 'level-background-layout'
 }
 
 export function isUnlinkedSpriteFrameResource(
@@ -539,6 +658,176 @@ export function loadLevelTilesRomResource(
     hash,
     inputSize: rInputSize,
     data,
+  }
+}
+
+export function loadLevelBlocksRomResource(
+  rom: Rom,
+  resource: LevelBlocksRomResourceUnloaded,
+): LevelBlocksRomResourceLoaded {
+  const { baseAddress, inputSize = 0 } = resource
+  if (!inputSize || inputSize <= 0) {
+    throw new Error('Level blocks input size could not be inferred')
+  }
+  const data = rom.bytes.subarray(baseAddress, baseAddress + inputSize)
+  const hash = crc32(data)
+  return {
+    ...resource,
+    loaded: true,
+    data,
+    hash,
+    inputSize,
+  }
+}
+
+export function loadLevelObjectsHeaderRomResource(
+  rom: Rom,
+  resource: LevelObjectsHeaderRomResourceUnloaded,
+): LevelObjectsHeaderRomResourceLoaded {
+  const { baseAddress, inputSize = 0x10 } = resource
+  const h1Pointer = rom.data.getUint32(baseAddress, false)
+  const axisSelector = rom.data.getUint16(baseAddress + 4, false)
+  const unknownField = rom.data.getUint16(baseAddress + 6, false)
+  const enemySlot1 = rom.data.getUint16(baseAddress + 8, false)
+  const enemySlot2 = rom.data.getUint16(baseAddress + 0xa, false)
+  const enemySlot3 = rom.data.getUint16(baseAddress + 0xc, false)
+  const cameraThreshold = rom.data.getUint16(baseAddress + 0xe, false)
+
+  let h1UnknownByte: number | undefined
+  let h1ObjectCountRaw: number | undefined
+  if (h1Pointer > 0 && h1Pointer + 1 < rom.bytes.length) {
+    h1UnknownByte = rom.data.getUint8(h1Pointer)
+    h1ObjectCountRaw = rom.data.getUint8(h1Pointer + 1)
+  }
+
+  const bytes = rom.bytes.subarray(baseAddress, baseAddress + inputSize)
+  const hash = crc32(bytes)
+
+  return {
+    ...resource,
+    loaded: true,
+    hash,
+    inputSize,
+    h1Pointer,
+    axisSelector,
+    unknownField,
+    enemySlot1,
+    enemySlot2,
+    enemySlot3,
+    cameraThreshold,
+    h1UnknownByte,
+    h1ObjectCountRaw,
+  }
+}
+
+export function loadLevelEnemyLayoutRomResource(
+  rom: Rom,
+  resource: LevelEnemyLayoutRomResourceUnloaded,
+): LevelEnemyLayoutRomResourceLoaded {
+  const { baseAddress } = resource
+  const h1UnknownByte = rom.data.getUint8(baseAddress)
+  const h1ObjectCountRaw = rom.data.getUint8(baseAddress + 1)
+  const objectCount = resource.objectCount ?? h1ObjectCountRaw
+  const objects: LevelEnemyLayoutObject[] = []
+  const objectStart = baseAddress + 2
+
+  for (let i = 0; i < objectCount; i++) {
+    const offset = objectStart + i * 8
+    if (offset + 8 > rom.bytes.length) {
+      break
+    }
+    objects.push({
+      index: i,
+      enemyTypeOrKind: rom.data.getUint8(offset),
+      behaviorFlags: rom.data.getUint8(offset + 1),
+      hitPointsPlusOne: rom.data.getUint16(offset + 2, false),
+      xPosition: rom.data.getUint16(offset + 4, false),
+      yPosition: rom.data.getUint16(offset + 6, false),
+    })
+  }
+
+  const inputSize = resource.inputSize ?? 2 + objects.length * 8
+  const bytes = rom.bytes.subarray(baseAddress, baseAddress + inputSize)
+  const hash = crc32(bytes)
+
+  return {
+    ...resource,
+    loaded: true,
+    hash,
+    inputSize,
+    h1UnknownByte,
+    h1ObjectCountRaw,
+    objectCount: objects.length,
+    objects,
+  }
+}
+
+export function loadLevelBackgroundLayoutRomResource(
+  rom: Rom,
+  resource: LevelBackgroundLayoutRomResourceUnloaded,
+): LevelBackgroundLayoutRomResourceLoaded {
+  const { baseAddress } = resource
+  const backgroundType = resource.backgroundType ?? 0
+  const isPacked = resource.isPacked ?? ((((1 << backgroundType) & 0x02a8) !== 0))
+
+  if (isPacked) {
+    const inputSize = resource.inputSize ?? 0
+    const bytes = rom.bytes.subarray(baseAddress, baseAddress + inputSize)
+    const hash = crc32(bytes)
+    return {
+      ...resource,
+      loaded: true,
+      hash,
+      inputSize,
+      backgroundType,
+      isPacked,
+      format: 'chunked',
+      placements: [],
+    }
+  }
+
+  let cursor = baseAddress
+  let indirect: LevelBackgroundIndirectRef | undefined
+  const firstWord = rom.data.getUint16(cursor, false)
+  if (firstWord === 0x8000) {
+    const xShiftRaw = rom.data.getUint16(cursor + 2, false)
+    const yShiftRaw = rom.data.getUint16(cursor + 4, false)
+    const referenceAddress = rom.data.getUint32(cursor + 6, false)
+    indirect = { xShiftRaw, yShiftRaw, referenceAddress }
+    cursor = referenceAddress
+  }
+
+  const placements: LevelBackgroundPlacement[] = []
+  const maxPlacements = 4096
+  for (let i = 0; i < maxPlacements; i++) {
+    if (cursor + 6 > rom.bytes.length) {
+      break
+    }
+    const chunkIndexRaw = rom.data.getUint16(cursor, false)
+    if ((chunkIndexRaw & 0x8000) !== 0) {
+      break
+    }
+    const xRaw = rom.data.getUint16(cursor + 2, false)
+    const yRaw = rom.data.getUint16(cursor + 4, false)
+    placements.push({ chunkIndexRaw, xRaw, yRaw })
+    cursor += 6
+  }
+
+  const endAddress = cursor + 2
+  const inputSize = resource.inputSize ?? Math.max(0, endAddress - baseAddress)
+  const bytes = rom.bytes.subarray(baseAddress, baseAddress + inputSize)
+  const hash = crc32(bytes)
+
+  return {
+    ...resource,
+    loaded: true,
+    hash,
+    inputSize,
+    backgroundType,
+    isPacked,
+    format: 'layered',
+    indirect,
+    placements,
   }
 }
 
