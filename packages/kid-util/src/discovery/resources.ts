@@ -440,9 +440,9 @@ function createAnimationResourcesFromParsed(
 }
 
 async function findAllLevelHeaders(kd: KidDiscovery) {
-  const levelTitleHeaderBaseAddr = 0x1a842
   const levelTitleHeaderStride = 10
   const levelTitleMaxIndex = 0x49
+  const levelTitleHeaderBaseAddr = discoverLevelTitleHeaderBaseAddress(kd, levelTitleHeaderStride)
   const levelWordTable = kd.knownAddresses.get('levelWordTable')
   const levelWordTableBase = kd.knownAddresses.get('levelWordTableBase')
   const levelIndexesTable = kd.knownAddresses.get('levelIndexesTable')
@@ -463,57 +463,74 @@ async function findAllLevelHeaders(kd: KidDiscovery) {
     const headerOffset = kd.rom.data.getUint16(levelWordTable + wordOffset * 2, false)
     const headerAdresss = headerOffset + levelWordTableBase
 
-    const effectiveLevelIndex = Math.min(index, levelTitleMaxIndex)
-    const titleCardAddress = levelTitleHeaderBaseAddr + effectiveLevelIndex * levelTitleHeaderStride
-    kd.rom.resources.createResource(titleCardAddress, 'level-title-card', {
-      levelIndex: index,
-      effectiveLevelIndex,
-    })
-    kd.rom.resources.addReference(headerAdresss, titleCardAddress)
-
-    const loadedTitleCard = await kd.rom.resources.getResourceLoaded<'level-title-card'>(titleCardAddress)
+    let loadedTitleCardName: string | undefined
+    if (levelTitleHeaderBaseAddr !== undefined) {
+      const effectiveLevelIndex = Math.min(index, levelTitleMaxIndex)
+      const titleCardAddress = levelTitleHeaderBaseAddr + effectiveLevelIndex * levelTitleHeaderStride
+      kd.rom.resources.createResource(titleCardAddress, 'level-title-card', {
+        levelIndex: index,
+        effectiveLevelIndex,
+      })
+      kd.rom.resources.addReference(headerAdresss, titleCardAddress)
+      const loadedTitleCard = await kd.rom.resources.getResourceLoaded<'level-title-card'>(
+        titleCardAddress,
+      )
+      loadedTitleCardName = loadedTitleCard?.titleText
+    }
 
     kd.rom.resources.createResource(headerAdresss, 'level-header', {
       levelIndex: index,
       wordIndex: wordOffset,
-      name: loadedTitleCard?.titleText,
+      name: loadedTitleCardName,
     })
     const loadedLevelHeader =
       await kd.rom.resources.getResourceLoaded<'level-header'>(headerAdresss)
     if (loadedLevelHeader) {
-      kd.rom.resources.addReference(headerAdresss, loadedLevelHeader.tilesDataPtr)
-      kd.rom.resources.addReference(headerAdresss, loadedLevelHeader.backgroundDataPtr)
-      kd.rom.resources.addReference(headerAdresss, loadedLevelHeader.blocksDataPtr)
-      kd.rom.resources.addReference(headerAdresss, loadedLevelHeader.levelObjectsHeaderPtr)
-      // Create resource for the level tiles
-      const levelTilesPtr = loadedLevelHeader.tilesDataPtr
-      kd.rom.resources.createResource(levelTilesPtr, 'level-tiles', {
-        packed: { format: 'kid' },
-      })
-      kd.rom.resources.createResource(loadedLevelHeader.backgroundDataPtr, 'level-background-layout', {
-        backgroundType: loadedLevelHeader.backgroundType,
-        isPacked: loadedLevelHeader.backgroundIsPacked,
-        name: `Level ${index} Background Layout`,
-      })
-      kd.rom.resources.createResource(loadedLevelHeader.blocksDataPtr, 'level-blocks', {
-        name: `Level ${index} Blocks`,
-      })
-      kd.rom.resources.createResource(loadedLevelHeader.levelObjectsHeaderPtr, 'level-objects-header', {
-        inputSize: 0x10,
-        name: `Level ${index} Objects Header`,
-      })
-      levelBlocksPointers.add(loadedLevelHeader.blocksDataPtr)
-      levelObjectsHeaderPointers.add(loadedLevelHeader.levelObjectsHeaderPtr)
+      const tilesDataPtr = loadedLevelHeader.tilesDataPtr
+      const backgroundDataPtr = loadedLevelHeader.backgroundDataPtr
+      const blocksDataPtr = loadedLevelHeader.blocksDataPtr
+      const levelObjectsHeaderPtr = loadedLevelHeader.levelObjectsHeaderPtr
 
-      const backgroundLayout =
-        await kd.rom.resources.getResourceLoaded<'level-background-layout'>(
-          loadedLevelHeader.backgroundDataPtr,
-        )
-      if (backgroundLayout?.indirect?.referenceAddress) {
-        kd.rom.resources.addReference(
-          loadedLevelHeader.backgroundDataPtr,
-          backgroundLayout.indirect.referenceAddress,
-        )
+      if (isValidRomPointer(tilesDataPtr, kd.rom.bytes.length)) {
+        kd.rom.resources.addReference(headerAdresss, tilesDataPtr)
+        kd.rom.resources.createResource(tilesDataPtr, 'level-tiles', {
+          packed: { format: 'kid' },
+        })
+      }
+
+      if (isValidRomPointer(backgroundDataPtr, kd.rom.bytes.length)) {
+        kd.rom.resources.addReference(headerAdresss, backgroundDataPtr)
+        kd.rom.resources.createResource(backgroundDataPtr, 'level-background-layout', {
+          backgroundType: loadedLevelHeader.backgroundType,
+          isPacked: loadedLevelHeader.backgroundIsPacked,
+          name: `Level ${index} Background Layout`,
+        })
+
+        const backgroundLayout =
+          await kd.rom.resources.getResourceLoaded<'level-background-layout'>(backgroundDataPtr)
+        if (
+          backgroundLayout?.indirect?.referenceAddress &&
+          isValidRomPointer(backgroundLayout.indirect.referenceAddress, kd.rom.bytes.length)
+        ) {
+          kd.rom.resources.addReference(backgroundDataPtr, backgroundLayout.indirect.referenceAddress)
+        }
+      }
+
+      if (isValidRomPointer(blocksDataPtr, kd.rom.bytes.length)) {
+        kd.rom.resources.addReference(headerAdresss, blocksDataPtr)
+        kd.rom.resources.createResource(blocksDataPtr, 'level-blocks', {
+          name: `Level ${index} Blocks`,
+        })
+        levelBlocksPointers.add(blocksDataPtr)
+      }
+
+      if (isValidRomPointer(levelObjectsHeaderPtr, kd.rom.bytes.length)) {
+        kd.rom.resources.addReference(headerAdresss, levelObjectsHeaderPtr)
+        kd.rom.resources.createResource(levelObjectsHeaderPtr, 'level-objects-header', {
+          inputSize: 0x10,
+          name: `Level ${index} Objects Header`,
+        })
+        levelObjectsHeaderPointers.add(levelObjectsHeaderPtr)
       }
     }
 
@@ -525,6 +542,11 @@ async function findAllLevelHeaders(kd: KidDiscovery) {
   } while (index < minHeader)
   kd.log('Discovered', index, 'level headers')
   kd.log('There is a max of', maxTheme, 'themes used in the levels')
+  if (levelTitleHeaderBaseAddr !== undefined) {
+    kd.log('Level title card table found at', `0x${levelTitleHeaderBaseAddr.toString(16)}`)
+  } else {
+    kd.log('Level title card table not found by discovery heuristics')
+  }
   kd.knownAddresses.set('numberOfLevels', index)
   kd.knownAddresses.set('numberOfThemes', maxTheme)
 
@@ -568,6 +590,101 @@ async function findAllLevelHeaders(kd: KidDiscovery) {
       objectCount,
     })
   }
+}
+
+const levelTitleGlyphCodes = new Set<number>([
+  0x00, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6a, 0x6b, 0x6c, 0x6d, 0x6e,
+  0x6f, 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7a, 0x7b, 0x7c, 0x7d,
+  0x7e, 0x7f, 0x80, 0x81, 0x82, 0x83, 0x84, 0xff,
+])
+
+function discoverLevelTitleHeaderBaseAddress(
+  kd: KidDiscovery,
+  stride: number,
+): number | undefined {
+  const romSize = kd.rom.bytes.length
+  const maxEffectiveLevelIndex = 0x49
+  const sampleIndexes = [0, 1, 2, 3, 4, 8, 12, 16, 24, 32, 40, 50, 60, 73]
+
+  let bestAddress: number | undefined
+  let bestScore = -1
+
+  for (let candidate = 0; candidate < romSize - (maxEffectiveLevelIndex + 1) * stride; candidate += 2) {
+    const firstTextAddress = kd.rom.data.getUint32(candidate, false)
+    const firstLayoutAddress = kd.rom.data.getUint32(candidate + 4, false)
+    const firstAct = kd.rom.data.getUint16(candidate + 8, false)
+
+    if (!isValidRomPointer(firstTextAddress, romSize) || !isValidRomPointer(firstLayoutAddress, romSize)) {
+      continue
+    }
+    if (firstAct > 10) {
+      continue
+    }
+    if (!looksLikeTitleTextAddress(kd, firstTextAddress)) {
+      continue
+    }
+
+    let score = 0
+    let validEntries = 0
+    for (const sampleIndex of sampleIndexes) {
+      const entryAddress = candidate + sampleIndex * stride
+      const textAddress = kd.rom.data.getUint32(entryAddress, false)
+      const layoutAddress = kd.rom.data.getUint32(entryAddress + 4, false)
+      const act = kd.rom.data.getUint16(entryAddress + 8, false)
+
+      if (!isValidRomPointer(textAddress, romSize) || !isValidRomPointer(layoutAddress, romSize)) {
+        continue
+      }
+      if (act > 10) {
+        continue
+      }
+      if (!looksLikeTitleTextAddress(kd, textAddress)) {
+        continue
+      }
+
+      validEntries++
+      score++
+    }
+
+    if (validEntries >= 10 && score > bestScore) {
+      bestScore = score
+      bestAddress = candidate
+    }
+  }
+
+  return bestAddress
+}
+
+function isValidRomPointer(address: number, romSize: number): boolean {
+  return address > 0 && address < romSize
+}
+
+function looksLikeTitleTextAddress(kd: KidDiscovery, address: number): boolean {
+  const romSize = kd.rom.bytes.length
+  if (address < 0 || address >= romSize) {
+    return false
+  }
+
+  const maxScan = Math.min(96, romSize - address)
+  if (maxScan <= 0) {
+    return false
+  }
+
+  let hasGlyph = false
+  for (let i = 0; i < maxScan; i++) {
+    const code = kd.rom.data.getUint8(address + i)
+    if (!levelTitleGlyphCodes.has(code)) {
+      return false
+    }
+    if (code === 0xff) {
+      return hasGlyph
+    }
+    if (code >= 0x61 && code <= 0x84) {
+      hasGlyph = true
+    }
+  }
+
+  return false
 }
 
 function inferPointerTableSizes(pointers: Set<number>): Map<number, number> {

@@ -169,4 +169,29 @@ describe('Rom checks', () => {
     const unknownCount = rom.resources.getResourcesByType('unknown').length
     expect(unknownCount).toBeLessThan(220)
   })
+
+  test('resolve level titles on kid_sound hack ROM', async () => {
+    const hackRom = await loadTestRom({
+      path: 'rom/hacks/kid_sound.bin',
+      context: 'kid_sound hack ROM test',
+    })
+    if (!hackRom) {
+      console.warn('Skipping test: kid_sound hack ROM file not found.')
+      return
+    }
+
+    await hackRom.loadResources()
+
+    const levelHeaders = hackRom.resources.getResourcesByType('level-header')
+    const namedLevels = levelHeaders.filter((resource) => !!resource.name)
+    expect(namedLevels.length).toBe(levelHeaders.length)
+    expect(namedLevels.length).toBeGreaterThan(0)
+
+    const firstLevelName = namedLevels[0]?.name ?? ''
+    expect(firstLevelName).toContain('BLUE LAKE WOODS')
+    expect(firstLevelName).toBe(firstLevelName.toUpperCase())
+
+    const unknownCount = hackRom.resources.getResourcesByType('unknown').length
+    expect(unknownCount).toBe(0)
+  })
 })
