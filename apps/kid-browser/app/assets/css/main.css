@@ -61,7 +61,7 @@
   html,
   body,
   #__nuxt {
-    @apply h-full;
+    @apply h-full w-full overflow-hidden;
   }
 
   body {
