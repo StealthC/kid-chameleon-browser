@@ -1,31 +1,8 @@
 <template>
-  <div
-    :class="
-      isExpanded
-        ? 'fixed inset-4 z-50 rounded-xl border border-white/20 bg-slate-950/95 p-3 shadow-2xl'
-        : 'h-full w-full'
-    "
-  >
-    <div class="flex h-full min-h-90 w-full gap-3 flex-col md:flex-row">
-    <div
-      class="border-border/60 relative min-h-0 rounded-md border bg-slate-950/60 p-2 flex-1"
-    >
-      <Button
-        size="icon-sm"
-        variant="secondary"
-        class="absolute top-3 right-3 z-20"
-        :title="isExpanded ? 'Restore' : 'Expand'"
-        @click="isExpanded = !isExpanded"
-      >
-        <Icon
-          :name="
-            isExpanded ? 'heroicons:arrows-pointing-in-solid' : 'heroicons:arrows-pointing-out-solid'
-          "
-          class="size-4"
-        />
-      </Button>
+  <ExpandableViewerLayout v-model:expanded="isExpanded">
+    <template #viewer="{ expanded }">
       <PixiPlaneRenderer
-        :key="`${resource.baseAddress}-${isExpanded ? 'expanded' : 'normal'}`"
+        :key="`${resource.baseAddress}-${expanded ? 'expanded' : 'normal'}`"
         v-if="selectedSheet"
         :plane="resource"
         :sheet="selectedSheet"
@@ -34,13 +11,14 @@
         :show-grid="showGrid"
         :show-selection="showSelection"
         @tile-select="onTileSelect"
+        @clear-selection="onClearSelection"
       />
       <div v-else class="flex h-full min-h-[280px] items-center justify-center text-xs text-slate-300">
         Plane has no related sheet to render.
       </div>
-    </div>
+    </template>
 
-    <div class="flex min-h-0 flex-col gap-3 overflow-auto rounded-md border border-white/15 bg-black/20 p-3 text-sm text-slate-200">
+    <template #sidebar>
       <p class="text-xs uppercase tracking-wider text-slate-400">Inspector</p>
       <p class="font-mono text-xs text-emerald-300">{{ selectedTileText }}</p>
 
@@ -81,9 +59,8 @@
           </SelectContent>
         </Select>
       </div>
-    </div>
-  </div>
-  </div>
+    </template>
+  </ExpandableViewerLayout>
 </template>
 
 <script setup lang="ts">
@@ -209,5 +186,9 @@ const selectedTileText = computed(() => {
 
 const onTileSelect = (payload: { x: number; y: number; index: number; tile: PlaneRomResourceTile }) => {
   selectedTile.value = payload
+}
+
+const onClearSelection = () => {
+  selectedTile.value = null
 }
 </script>

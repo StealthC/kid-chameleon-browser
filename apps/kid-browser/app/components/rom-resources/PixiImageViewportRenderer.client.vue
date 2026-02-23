@@ -7,32 +7,31 @@ import 'pixi.js/events'
 
 import { Application, Container, Graphics, Rectangle, SCALE_MODES, Sprite, Texture } from 'pixi.js'
 import { Viewport } from 'pixi-viewport'
-import {
-  KidImageData,
-  type Palette,
-  type PaletteRomResourceLoaded,
-  type PlaneRomResourceLoaded,
-  type PlaneRomResourceTile,
-  type SheetRomResourceLoaded,
-} from '@repo/kid-util'
+import { type KidImageData, type Palette } from '@repo/kid-util'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 type Props = {
-  plane: PlaneRomResourceLoaded
-  sheet: SheetRomResourceLoaded | null
-  palette?: PaletteRomResourceLoaded
-  columns: number
+  image: KidImageData | null
+  palette?: Palette
   showGrid?: boolean
   showSelection?: boolean
+  cellSize?: number
+  columns?: number
+  selectableCount?: number
+  resetKey?: string | number
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  showGrid: true,
-  showSelection: true,
+  showGrid: false,
+  showSelection: false,
+  cellSize: 8,
+  columns: 0,
+  selectableCount: 0,
+  resetKey: '',
 })
 
 const emit = defineEmits<{
-  tileSelect: [payload: { x: number; y: number; index: number; tile: PlaneRomResourceTile }]
+  cellSelect: [payload: { x: number; y: number; index: number }]
   clearSelection: []
 }>()
 
@@ -52,11 +51,10 @@ let worldWidth = 256
 let worldHeight = 256
 let previousWorldWidth = 0
 let previousWorldHeight = 0
-let selection: { x: number; y: number; tileSize: number; columns: number } | null = null
+let selection: { x: number; y: number; cellSize: number; columns: number } | null = null
 
 const MIN_SCALE = 1
 const MAX_SCALE = 16
-const TILE_SIZE = 8
 
 function clearWorld() {
   world?.removeChildren().forEach((child) => child.destroy({ children: true }))
@@ -79,7 +77,7 @@ function buildImageLayer(image: KidImageData, palette?: Palette): Container {
   fullCanvas.height = image.height
   const fullContext = fullCanvas.getContext('2d')
   if (!fullContext) {
-    throw new Error('Could not create 2D context for Pixi plane rendering')
+    throw new Error('Could not create 2D context for Pixi image rendering')
   }
 
   fullContext.putImageData(new ImageData(image.getRGBAData(palette), image.width, image.height), 0, 0)
@@ -108,19 +106,22 @@ function buildImageLayer(image: KidImageData, palette?: Palette): Container {
   return layer
 }
 
-function drawGrid(columns: number, rows: number) {
+function drawGrid() {
   if (!gridLayer) return
   gridLayer.clear()
-  if (!props.showGrid) return
+  const columns = props.columns
+  const cellSize = props.cellSize
+  if (!props.showGrid || !columns || cellSize <= 0) return
+  const rows = Math.max(1, Math.ceil((props.selectableCount || columns) / columns))
   for (let x = 0; x <= columns; x++) {
-    const px = x * TILE_SIZE
+    const px = x * cellSize
     gridLayer.moveTo(px, 0)
-    gridLayer.lineTo(px, rows * TILE_SIZE)
+    gridLayer.lineTo(px, rows * cellSize)
   }
   for (let y = 0; y <= rows; y++) {
-    const py = y * TILE_SIZE
+    const py = y * cellSize
     gridLayer.moveTo(0, py)
-    gridLayer.lineTo(columns * TILE_SIZE, py)
+    gridLayer.lineTo(columns * cellSize, py)
   }
   gridLayer.stroke({ color: 0x60a5fa, width: 1, alpha: 0.22 })
 }
@@ -129,32 +130,25 @@ function drawSelection() {
   if (!selectionLayer) return
   selectionLayer.clear()
   if (!props.showSelection || !selection) return
-  selectionLayer.rect(selection.x * selection.tileSize, selection.y * selection.tileSize, selection.tileSize, selection.tileSize)
+  selectionLayer.rect(
+    selection.x * selection.cellSize,
+    selection.y * selection.cellSize,
+    selection.cellSize,
+    selection.cellSize,
+  )
   selectionLayer.stroke({ color: 0xffd166, width: 1, alpha: 0.95 })
 }
 
 function fitViewportToWorld() {
-  if (!viewport) {
-    return
-  }
+  if (!viewport) return
   viewport.moveCenter(worldWidth / 2, worldHeight / 2)
   viewport.fitWorld(true)
   viewport.setZoom(Math.max(MIN_SCALE, viewport.scale.x), true)
-  const margin = 128
-  viewport.clamp({
-    left: -margin,
-    top: -margin,
-    right: worldWidth + margin,
-    bottom: worldHeight + margin,
-    underflow: 'center',
-  })
-  viewport.clampZoom({ minScale: MIN_SCALE, maxScale: MAX_SCALE })
+  applyViewportBounds()
 }
 
 function applyViewportBounds() {
-  if (!viewport) {
-    return
-  }
+  if (!viewport) return
   const margin = 128
   viewport.clamp({
     left: -margin,
@@ -167,9 +161,7 @@ function applyViewportBounds() {
 }
 
 function resizeRendererToHost() {
-  if (!app || !viewport || !host.value) {
-    return
-  }
+  if (!app || !viewport || !host.value) return
   const width = Math.max(1, host.value.clientWidth)
   const height = Math.max(1, host.value.clientHeight)
   app.renderer.resize(width, height)
@@ -179,12 +171,14 @@ function resizeRendererToHost() {
   applyViewportBounds()
 }
 
-async function renderPlane(options?: { preserveView?: boolean; preserveSelection?: boolean }) {
+async function renderImage(options?: { preserveView?: boolean; preserveSelection?: boolean; forceFit?: boolean }) {
   const token = ++renderToken
-  if (!host.value || !viewport || !world || !props.sheet) return
+  if (!host.value || !viewport || !world || !props.image) return
 
   const preserveView = options?.preserveView ?? true
   const preserveSelection = options?.preserveSelection ?? true
+  const forceFit = options?.forceFit ?? false
+
   const previousView = preserveView
     ? {
         x: viewport.position.x,
@@ -195,34 +189,27 @@ async function renderPlane(options?: { preserveView?: boolean; preserveSelection
     : null
   const previousSelection = preserveSelection && selection ? { x: selection.x, y: selection.y } : null
 
-  const image = KidImageData.fromPlane(props.plane, props.sheet, props.columns)
+  const image = props.image
   if (token !== renderToken) return
 
   clearWorld()
-
   imageLayer = buildImageLayer(image, props.palette)
   world.addChild(imageLayer)
 
-  const rows = Math.max(1, Math.ceil(props.plane.tiles.length / props.columns))
   worldWidth = image.width
   worldHeight = image.height
 
   gridLayer = new Graphics()
   world.addChild(gridLayer)
-  drawGrid(props.columns, rows)
+  drawGrid()
 
   selectionLayer = new Graphics()
   world.addChild(selectionLayer)
-
-  if (previousSelection) {
-    const selectionX = Math.min(previousSelection.x, props.columns - 1)
-    const selectionY = Math.min(previousSelection.y, rows - 1)
-    selection = {
-      x: Math.max(0, selectionX),
-      y: Math.max(0, selectionY),
-      tileSize: TILE_SIZE,
-      columns: props.columns,
-    }
+  if (props.columns > 0 && props.cellSize > 0 && previousSelection) {
+    const rows = Math.max(1, Math.ceil((props.selectableCount || props.columns) / props.columns))
+    const x = Math.min(previousSelection.x, props.columns - 1)
+    const y = Math.min(previousSelection.y, rows - 1)
+    selection = { x: Math.max(0, x), y: Math.max(0, y), cellSize: props.cellSize, columns: props.columns }
   } else {
     selection = null
   }
@@ -231,10 +218,12 @@ async function renderPlane(options?: { preserveView?: boolean; preserveSelection
   viewport.resize(host.value.clientWidth || 1, host.value.clientHeight || 1, worldWidth, worldHeight)
   viewport.hitArea = new Rectangle(0, 0, worldWidth, worldHeight)
   const worldSizeChanged = worldWidth !== previousWorldWidth || worldHeight !== previousWorldHeight
+
   if (
     preserveView &&
     previousView &&
     !worldSizeChanged &&
+    !forceFit &&
     Number.isFinite(previousView.scaleX) &&
     Number.isFinite(previousView.scaleY)
   ) {
@@ -273,37 +262,30 @@ async function initPixi() {
     .clampZoom({ minScale: MIN_SCALE, maxScale: MAX_SCALE })
 
   viewport.on('pointertap', (event) => {
-    if (!props.showSelection || props.columns <= 0) return
+    if (!props.showSelection || props.columns <= 0 || props.cellSize <= 0) return
     const worldPoint = viewport!.toWorld(event.global)
-    const tileX = Math.floor(worldPoint.x / TILE_SIZE)
-    const tileY = Math.floor(worldPoint.y / TILE_SIZE)
-    if (tileX < 0 || tileY < 0 || tileX >= props.columns) {
+    const x = Math.floor(worldPoint.x / props.cellSize)
+    const y = Math.floor(worldPoint.y / props.cellSize)
+    if (x < 0 || y < 0 || x >= props.columns) {
       selection = null
       drawSelection()
       emit('clearSelection')
       return
     }
-    const index = tileY * props.columns + tileX
-    if (index < 0 || index >= props.plane.tiles.length) {
-      selection = null
-      drawSelection()
-      emit('clearSelection')
-      return
-    }
-    const tile = props.plane.tiles[index]
-    if (!tile) {
+    const index = y * props.columns + x
+    if (props.selectableCount > 0 && index >= props.selectableCount) {
       selection = null
       drawSelection()
       emit('clearSelection')
       return
     }
     if (!selection) {
-      selection = { x: tileX, y: tileY, tileSize: TILE_SIZE, columns: props.columns }
+      selection = { x, y, cellSize: props.cellSize, columns: props.columns }
     }
-    selection.x = tileX
-    selection.y = tileY
+    selection.x = x
+    selection.y = y
     drawSelection()
-    emit('tileSelect', { x: tileX, y: tileY, index, tile })
+    emit('cellSelect', { x, y, index })
   })
 
   world = new Container()
@@ -312,27 +294,32 @@ async function initPixi() {
 }
 
 watch(
-  () => [props.plane.baseAddress, props.sheet?.baseAddress, props.columns],
+  () => [props.image, props.palette, props.columns, props.selectableCount],
   () => {
-    void renderPlane({ preserveView: false, preserveSelection: false })
+    void renderImage({ preserveView: true, preserveSelection: true })
   },
 )
 
 watch(
-  () => props.palette?.baseAddress,
+  () => props.resetKey,
   () => {
-    void renderPlane({ preserveView: true, preserveSelection: true })
+    void renderImage({ preserveView: false, preserveSelection: false, forceFit: true })
   },
 )
 
-watch(() => props.showGrid, () => {
-  const rows = Math.max(1, Math.ceil(props.plane.tiles.length / props.columns))
-  drawGrid(props.columns, rows)
-})
+watch(
+  () => props.showGrid,
+  () => {
+    drawGrid()
+  },
+)
 
-watch(() => props.showSelection, () => {
-  drawSelection()
-})
+watch(
+  () => props.showSelection,
+  () => {
+    drawSelection()
+  },
+)
 
 onMounted(async () => {
   await initPixi()
@@ -347,7 +334,7 @@ onMounted(async () => {
     })
     resizeObserver.observe(host.value)
   }
-  await renderPlane()
+  await renderImage({ preserveView: false, preserveSelection: false, forceFit: true })
 })
 
 onBeforeUnmount(() => {

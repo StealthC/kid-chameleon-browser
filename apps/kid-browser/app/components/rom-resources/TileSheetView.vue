@@ -1,48 +1,72 @@
 <template>
-  <div
-    class="border-border/60 flex h-full min-h-0 flex-col gap-3 rounded-lg border bg-slate-900/60 p-3"
-  >
-    <div class="grid grid-cols-2 gap-2 md:grid-cols-[auto_9rem_auto] md:items-center">
-      <Button variant="outline" size="sm" @click="useColumns = !useColumns">
-        <Icon name="heroicons:adjustments-horizontal-solid" class="size-4" />
-        {{ useColumns ? 'Columns mode' : 'Rows mode' }}
-      </Button>
-      <Input type="number" v-model.number="value" class="text-center" :min="1" :max="255" />
-      <div class="col-span-2 flex items-center justify-end gap-2 md:col-span-1">
-        <Button size="icon-sm" variant="secondary" @click="value++">
-          <Icon name="heroicons:plus-solid" class="size-4" />
-        </Button>
-        <Button size="icon-sm" variant="secondary" @click="value = Math.max(1, value - 1)">
-          <Icon name="heroicons:minus-solid" class="size-4" />
-        </Button>
+  <ExpandableViewerLayout v-model:expanded="isExpanded">
+    <template #viewer="{ expanded }">
+      <PixiImageViewportRenderer
+        :key="`${resource.baseAddress}-${expanded ? 'expanded' : 'normal'}`"
+        v-if="image"
+        :image="image"
+        :palette="selectedPalette"
+        :show-grid="showGrid"
+        :show-selection="showSelection"
+        :cell-size="8"
+        :columns="values?.columns ?? 0"
+        :selectable-count="values?.cellsTotal ?? 0"
+        :reset-key="`${valueMode}-${value}`"
+        @cell-select="onCellSelect"
+        @clear-selection="onClearSelection"
+      />
+    </template>
+
+    <template #sidebar>
+      <p class="text-xs uppercase tracking-wider text-slate-400">Inspector</p>
+      <p class="font-mono text-xs text-emerald-300">{{ selectedTileText }}</p>
+
+      <div class="space-y-2">
+        <p class="text-xs uppercase tracking-wider text-slate-400">Layers</p>
+        <label class="flex items-center gap-2 text-xs">
+          <input v-model="showGrid" type="checkbox" />
+          <span>Grid</span>
+        </label>
+        <label class="flex items-center gap-2 text-xs">
+          <input v-model="showSelection" type="checkbox" />
+          <span>Selection</span>
+        </label>
       </div>
-    </div>
 
-    <Select v-if="paletteOptions.length > 1" v-model="selectedPaletteKey">
-      <SelectTrigger>
-        <SelectValue placeholder="Select palette" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem v-for="option in paletteOptions" :key="option.key" :value="option.key">
-          {{ option.label }}
-        </SelectItem>
-      </SelectContent>
-    </Select>
+      <div class="space-y-2">
+        <p class="text-xs uppercase tracking-wider text-slate-400">Layout</p>
+        <div class="gap-2 items-stretch flex flex-col">
+          <Button variant="outline" size="sm" @click="useColumns = !useColumns">
+            <Icon name="heroicons:adjustments-horizontal-solid" class="size-4" />
+            {{ useColumns ? 'Columns mode' : 'Rows mode' }}
+          </Button>
+          <div class="col-span-2 flex flex-row items-center justify-end gap-2 md:col-span-1">
+            <Input type="number" v-model.number="value" class="text-center" :min="1" :max="255" />
+            <Button size="icon-sm" variant="secondary" @click="value++">
+              <Icon name="heroicons:plus-solid" class="size-4" />
+            </Button>
+            <Button size="icon-sm" variant="secondary" @click="value = Math.max(1, value - 1)">
+              <Icon name="heroicons:minus-solid" class="size-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
 
-    <div
-      class="border-border/60 flex min-h-0 flex-1 items-center justify-center overflow-auto rounded-md border bg-slate-950/60 p-2"
-    >
-
-        <CanvasRenderer
-          v-if="values"
-          :width="values.columns * 8"
-          :height="values.rows * 8"
-          :update-key="values"
-          @update="draw"
-        />
-
-    </div>
-  </div>
+      <div class="space-y-2" v-if="paletteOptions.length > 1">
+        <p class="text-xs uppercase tracking-wider text-slate-400">Palette</p>
+        <Select v-model="selectedPaletteKey">
+          <SelectTrigger class="w-full">
+            <SelectValue placeholder="Select palette" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem v-for="option in paletteOptions" :key="option.key" :value="option.key">
+              {{ option.label }}
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </template>
+  </ExpandableViewerLayout>
 </template>
 
 <script setup lang="ts">
@@ -64,7 +88,7 @@ import {
   SelectValue,
 } from '~/components/ui/select'
 import { useResourceLoader } from '~/composables/useResourceLoader'
-import { bitmapFromKidImageData, getNormalizedName } from '~/utils/index'
+import { getNormalizedName } from '~/utils/index'
 
 interface Props {
   resource: SheetRomResourceLoaded
@@ -79,6 +103,10 @@ const useColumns = ref(props.mode === 'columns')
 const valueMode = computed(() => (useColumns.value ? 'columns' : 'rows'))
 const selectedPaletteKey = ref<string>('')
 const previousNonUvCount = ref(0)
+const showGrid = ref(true)
+const showSelection = ref(true)
+const isExpanded = ref(false)
+const selectedTileIndex = ref<number | null>(null)
 const loader = useResourceLoader()
 const references = loader.getReferencesResourcesLoadedQuery(computed(() => resource.value.baseAddress))
 
@@ -141,7 +169,6 @@ const selectedPalette = computed<PaletteRomResourceLoaded | undefined>(() => {
 })
 
 const values = computed(() => {
-  if (!resource.value) return null
   const cellsTotal = resource.value.tiles.length
   const columns = valueMode.value === 'columns' ? value.value : Math.ceil(cellsTotal / value.value)
   const rows = valueMode.value === 'rows' ? value.value : Math.ceil(cellsTotal / value.value)
@@ -149,14 +176,29 @@ const values = computed(() => {
     columns,
     rows,
     cellsTotal,
-    paletteKey: selectedPalette.value?.baseAddress ?? 'uv',
   }
 })
 
-const draw = async (ctx: CanvasRenderingContext2D) => {
-  if (!values.value) return
-  const sheetImage = KidImageData.fromSheet(resource.value, valueMode.value, value.value)
-  const bitmap = await bitmapFromKidImageData(sheetImage, selectedPalette.value)
-  ctx.drawImage(bitmap, 0, 0)
+const image = computed(() => {
+  return KidImageData.fromSheet(resource.value, valueMode.value, value.value)
+})
+
+const selectedTileText = computed(() => {
+  if (selectedTileIndex.value === null) {
+    return 'Nothing selected'
+  }
+  return `tileIndex=${selectedTileIndex.value} (0x${selectedTileIndex.value.toString(16).toUpperCase()})`
+})
+
+function onCellSelect(payload: { x: number; y: number; index: number }) {
+  selectedTileIndex.value = payload.index
 }
+
+function onClearSelection() {
+  selectedTileIndex.value = null
+}
+
+watch([value, useColumns], () => {
+  selectedTileIndex.value = null
+})
 </script>

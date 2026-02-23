@@ -1,65 +1,82 @@
 <template>
-  <div
-    class="border-border/60 flex h-full min-h-0 flex-col gap-3 rounded-lg border bg-slate-900/60 p-3"
-  >
-    <div class="flex items-center justify-between gap-2">
-      <p class="text-sm font-semibold">Sprite Frame — {{ resourceName }}</p>
-      <Badge variant="outline">{{ needSheet ? 'Needs sheet' : 'Embedded' }}</Badge>
-    </div>
-
-    <Select v-if="needSheet" v-model="sheetString">
-      <SelectTrigger>
-        <SelectValue placeholder="Select a tile sheet" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem v-for="s in sheets" :key="s.key" :value="String(s.value)">{{
-          s.name
-        }}</SelectItem>
-      </SelectContent>
-    </Select>
-
-    <Select v-if="paletteOptions.length > 1" v-model="selectedPaletteKey">
-      <SelectTrigger>
-        <SelectValue placeholder="Select palette" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem v-for="option in paletteOptions" :key="option.key" :value="option.key">
-          {{ option.label }}
-        </SelectItem>
-      </SelectContent>
-    </Select>
-
-    <div
-      class="border-border/60 flex max-h-[24rem] items-center justify-center overflow-auto rounded-md border bg-slate-950/60 p-2"
-    >
-      <SpriteRenderer
-        v-if="bytes"
-        :bytes="bytes"
-        :tile-id="tileId"
-        :width="resource.width"
-        :height="resource.height"
-        :palette="palette"
+  <ExpandableViewerLayout v-model:expanded="isExpanded">
+    <template #viewer="{ expanded }">
+      <PixiImageViewportRenderer
+        :key="`${resource.baseAddress}-${expanded ? 'expanded' : 'normal'}`"
+        v-if="image"
+        :image="image"
+        :palette="palette ?? undefined"
+        :show-grid="showGrid"
+        :show-selection="showSelection"
+        :cell-size="8"
+        :columns="tileColumns"
+        :selectable-count="tileColumns * tileRows"
+        :reset-key="`${resource.baseAddress}-${sheetString}-${resource.width}x${resource.height}`"
+        @cell-select="onCellSelect"
+        @clear-selection="onClearSelection"
       />
-      <p v-else class="text-muted-foreground text-sm">
+      <div v-else class="flex h-full min-h-[280px] items-center justify-center text-xs text-slate-300">
         Select a sheet to preview this sprite frame.
-      </p>
-    </div>
+      </div>
+    </template>
 
-    <div class="border-border/60 rounded border bg-slate-950/60 p-2">
-      <Table>
-        <TableBody>
-          <TableRow v-for="row in rows" :key="row.label">
-            <TableCell class="text-muted-foreground text-xs">{{ row.label }}</TableCell>
-            <TableCell class="font-mono text-xs">{{ row.value }}</TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
-    </div>
-  </div>
+    <template #sidebar>
+      <div class="flex items-center justify-between gap-2">
+        <p class="text-sm font-semibold">Sprite Frame — {{ resourceName }}</p>
+        <Badge variant="outline">{{ needSheet ? 'Needs sheet' : 'Embedded' }}</Badge>
+      </div>
+
+      <p class="font-mono text-xs text-emerald-300">{{ selectedCellText }}</p>
+
+      <div class="space-y-2">
+        <p class="text-xs uppercase tracking-wider text-slate-400">Layers</p>
+        <label class="flex items-center gap-2 text-xs">
+          <input v-model="showGrid" type="checkbox" />
+          <span>Grid</span>
+        </label>
+        <label class="flex items-center gap-2 text-xs">
+          <input v-model="showSelection" type="checkbox" />
+          <span>Selection</span>
+        </label>
+      </div>
+
+      <Select v-if="needSheet" v-model="sheetString">
+        <SelectTrigger>
+          <SelectValue placeholder="Select a tile sheet" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem v-for="s in sheets" :key="s.key" :value="String(s.value)">{{ s.name }}</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Select v-if="paletteOptions.length > 1" v-model="selectedPaletteKey">
+        <SelectTrigger>
+          <SelectValue placeholder="Select palette" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem v-for="option in paletteOptions" :key="option.key" :value="option.key">
+            {{ option.label }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
+
+      <div class="border-border/60 rounded border bg-slate-950/60 p-2">
+        <Table>
+          <TableBody>
+            <TableRow v-for="row in rows" :key="row.label">
+              <TableCell class="text-muted-foreground text-xs">{{ row.label }}</TableCell>
+              <TableCell class="font-mono text-xs">{{ row.value }}</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+    </template>
+  </ExpandableViewerLayout>
 </template>
 
 <script setup lang="ts">
 import {
+  KidImageData,
   isLinkedSpriteFrameResource,
   isLoadedResource,
   isPaletteResource,
@@ -103,6 +120,10 @@ const spriteReferences = resourceLoader.getReferencesResourcesLoadedQuery(
 )
 const selectedPaletteKey = ref<string>('')
 const previousNonUvCount = ref(0)
+const showGrid = ref(true)
+const showSelection = ref(true)
+const isExpanded = ref(false)
+const selectedCell = ref<number | null>(null)
 
 const sheets = computed(() => {
   if (!sheetList.data.value) return []
@@ -129,6 +150,16 @@ const bytes = computed(() => {
     return loadedSheet.data.value.data
   }
   return null
+})
+
+const tileColumns = computed(() => Math.ceil(resource.value.width / 8.0))
+const tileRows = computed(() => Math.ceil(resource.value.height / 8.0))
+
+const image = computed(() => {
+  if (!bytes.value) {
+    return null
+  }
+  return KidImageData.fromSprite(bytes.value, resource.value.width, resource.value.height, tileId.value)
 })
 
 const availablePalettes = computed<PaletteRomResourceLoaded[]>(() => {
@@ -199,6 +230,13 @@ const palette = computed<PaletteRomResourceLoaded | null>(() => {
   )
 })
 
+const selectedCellText = computed(() => {
+  if (selectedCell.value === null) {
+    return 'Nothing selected'
+  }
+  return `cell=${selectedCell.value} (0x${selectedCell.value.toString(16).toUpperCase()})`
+})
+
 const rows = computed(() => [
   { label: 'CRC32', value: addressFormat(resource.value.hash) },
   { label: 'Resource Index', value: addressFormat(resource.value.tableIndex ?? 0) },
@@ -208,4 +246,16 @@ const rows = computed(() => [
   { label: 'X Offset', value: String(resource.value.xOffset) },
   { label: 'Y Offset', value: String(resource.value.yOffset) },
 ])
+
+function onCellSelect(payload: { index: number }) {
+  selectedCell.value = payload.index
+}
+
+function onClearSelection() {
+  selectedCell.value = null
+}
+
+watch([sheet, () => resource.value.baseAddress], () => {
+  selectedCell.value = null
+})
 </script>
