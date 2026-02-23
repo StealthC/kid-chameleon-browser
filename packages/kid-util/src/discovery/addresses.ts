@@ -27,6 +27,8 @@ export const ImportantValues = [
   'levelTitleHeaderTable',
   'levelTitleElsewhereIndex',
   'levelTitleElsewhereHeader',
+  'levelTitleElsewhereText',
+  'levelTitleElsewhereLayout',
   'numberOfThemes',
   'numberOfLevels',
 ] as const
@@ -271,17 +273,101 @@ function findThemeTitleScreenSizeTable(kd: KidDiscovery) {
 }
 
 function findLevelTitleCardTableAndElsewhere(kd: KidDiscovery) {
-  const pattern =
-    '0c 47 ?? ?? 6d 02 7e ?? ce fc 00 0a 49 fa ?? ?? 24 74 70 00 26 74 70 04 30 34 70 08'
-  const ptr = kd.rom.findPattern(pattern)
-  const elsewhereIndex = kd.rom.data.getUint16(ptr + 2, false)
-  const tableOffset = kd.rom.data.getInt16(ptr + 14, false)
-  const tableBase = ptr + 14 + tableOffset
+  const signatures = [
+    '0c 47 ?? ?? 6d 02 7e ?? ce fc 00 0a 49 fa ?? ?? 24 74 70 00 26 74 70 04 30 34 70 08',
+    '0c 4? ?? ?? 6? ?? 7? ?? ce fc 00 0a 49 fa ?? ?? 24 74 70 00 26 74 70 04 30 34 70 08',
+  ]
+
+  const candidateSet = new Set<number>()
+  for (const signature of signatures) {
+    const finder = kd.rom.createPatternFinder(signature)
+    for (const match of finder.findAll()) {
+      candidateSet.add(match)
+    }
+  }
+
+  const candidates = Array.from(candidateSet)
+  if (candidates.length === 0) {
+    throw new Error('Could not find LevelTitleText title header access block')
+  }
+
+  const unpackGfxAddress = kd.knownFunctions.get('unpackGFX')?.address
+  let callSites: number[] = []
+  if (unpackGfxAddress !== undefined) {
+    const b0 = (unpackGfxAddress >>> 24) & 0xff
+    const b1 = (unpackGfxAddress >>> 16) & 0xff
+    const b2 = (unpackGfxAddress >>> 8) & 0xff
+    const b3 = unpackGfxAddress & 0xff
+    const callPattern = `4e b9 ${b0.toString(16).padStart(2, '0')} ${b1
+      .toString(16)
+      .padStart(2, '0')} ${b2.toString(16).padStart(2, '0')} ${b3.toString(16).padStart(2, '0')}`
+    callSites = kd.rom.createPatternFinder(callPattern).findAll()
+  }
+
+  const orderedCandidates = [...candidates].sort((a, b) => a - b)
+  const anchoredCandidates =
+    callSites.length > 0
+      ? orderedCandidates.filter((candidate) =>
+          callSites.some((callsite) => callsite < candidate && candidate - callsite <= 0x80),
+        )
+      : orderedCandidates
+
+  const selectedCandidate =
+    anchoredCandidates.find((candidate) => isValidLevelTitleAccessCandidate(kd, candidate)) ??
+    orderedCandidates.find((candidate) => isValidLevelTitleAccessCandidate(kd, candidate))
+
+  if (selectedCandidate === undefined) {
+    throw new Error('Could not validate LevelTitleText title header access candidate')
+  }
+
+  const elsewhereIndex = kd.rom.data.getUint16(selectedCandidate + 2, false)
+  const tableOffset = kd.rom.data.getInt16(selectedCandidate + 14, false)
+  const tableBase = selectedCandidate + 14 + tableOffset
   const elsewhereHeader = tableBase + elsewhereIndex * 10
+  const elsewhereText = kd.rom.data.getUint32(elsewhereHeader, false)
+  const elsewhereLayout = kd.rom.data.getUint32(elsewhereHeader + 4, false)
 
   kd.knownAddresses.set('levelTitleHeaderTable', tableBase)
   kd.knownAddresses.set('levelTitleElsewhereIndex', elsewhereIndex)
   kd.knownAddresses.set('levelTitleElsewhereHeader', elsewhereHeader)
+  kd.knownAddresses.set('levelTitleElsewhereText', elsewhereText)
+  kd.knownAddresses.set('levelTitleElsewhereLayout', elsewhereLayout)
+}
+
+function isValidLevelTitleAccessCandidate(kd: KidDiscovery, candidate: number): boolean {
+  const romSize = kd.rom.bytes.length
+  const elsewhereIndex = kd.rom.data.getUint16(candidate + 2, false)
+  if (elsewhereIndex > 0x200) {
+    return false
+  }
+
+  const tableOffset = kd.rom.data.getInt16(candidate + 14, false)
+  const tableBase = candidate + 14 + tableOffset
+  if (tableBase <= 0 || tableBase + elsewhereIndex * 10 + 10 >= romSize) {
+    return false
+  }
+
+  const sampleIndexes = [0, 1, 2, Math.floor(elsewhereIndex / 2), elsewhereIndex]
+  for (const sampleIndex of sampleIndexes) {
+    const entry = tableBase + sampleIndex * 10
+    if (entry < 0 || entry + 10 > romSize) {
+      return false
+    }
+    const textAddress = kd.rom.data.getUint32(entry, false)
+    const layoutAddress = kd.rom.data.getUint32(entry + 4, false)
+    const act = kd.rom.data.getUint16(entry + 8, false)
+    if (textAddress <= 0 || textAddress >= romSize) {
+      return false
+    }
+    if (layoutAddress <= 0 || layoutAddress >= romSize) {
+      return false
+    }
+    if (act > 10) {
+      return false
+    }
+  }
+
+  return true
 }
 
 function findFrameCollisionFrameTable(kd: KidDiscovery) {

@@ -207,6 +207,18 @@ export const KnownAddressesDescriptions: Partial<
     type: 'table',
     description: 'Elsewhere title-card header entry used after clamp index',
   },
+  levelTitleElsewhereText: {
+    name: 'Level Title Elsewhere Text',
+    addressInJUE: 0x1a7f8,
+    type: 'data',
+    description: 'Text stream used by the clamped level-title entry (not always named Elsewhere in hacks)',
+  },
+  levelTitleElsewhereLayout: {
+    name: 'Level Title Elsewhere Layout',
+    addressInJUE: 0x1a83e,
+    type: 'data',
+    description: 'Text layout positions used by the clamped level-title entry',
+  },
   numberOfThemes: {
     name: 'Number of Themes',
     addressInJUE: 10,
