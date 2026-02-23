@@ -17,8 +17,7 @@
     "lint": "turbo lint --log-prefix=none --log-order=stream",
     "format": "turbo format",
     "dev": "turbo dev",
-    "test": "pnpm vitest run",
-    "prepare": "husky"
+    "test": "pnpm vitest run"
   },
   "packageManager": "pnpm@9.11.0",
   "devDependencies": {
