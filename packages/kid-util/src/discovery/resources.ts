@@ -1,6 +1,7 @@
 import PQueue from 'p-queue'
 import type { KidDiscovery, KidDiscoveryFunction } from '~/kid-discovery'
 import { ExecuteInNextTick } from '../kid-utils'
+import { isSpriteFrameResource } from '../kid-resources'
 import {
   AssetPtrTableTypes,
   PackedTileSheet,
@@ -13,8 +14,12 @@ export async function findAllResouces(kd: KidDiscovery) {
     findFrameCollisionFromTableResources,
     findAssetTableResources,
     findAllLevelHeaders,
+    findThemePaletteResources,
+    findHudAnimationFrameResources,
+    findAnimationScriptResources,
     findSomeMoreResources,
     addThemeResources,
+    annotateUnknownResourcePossibleSizes,
   ]
   const queue = new PQueue({ concurrency: 4 })
   for (const fn of fns) {
@@ -25,7 +30,421 @@ export async function findAllResouces(kd: KidDiscovery) {
   await queue.onIdle()
 }
 
+function annotateUnknownResourcePossibleSizes(kd: KidDiscovery) {
+  const allResources = Array.from(kd.rom.resources.resources.values()).sort(
+    (a, b) => a.baseAddress - b.baseAddress,
+  )
+
+  for (let i = 0; i < allResources.length - 1; i++) {
+    const current = allResources[i]
+    if (current.type !== 'unknown') {
+      continue
+    }
+    const next = allResources[i + 1]
+    const delta = next.baseAddress - current.baseAddress
+    if (delta <= 0) {
+      continue
+    }
+    kd.rom.resources.createResource(current.baseAddress, 'unknown', {
+      ...current,
+      possibleSize: delta,
+    })
+  }
+}
+
+type AnimationTableGroup = {
+  name: string
+  sequenceOffset: number
+  pointerOffset: number
+}
+
+function findHudAnimationFrameResources(kd: KidDiscovery) {
+  // UpdateStaticAnimations (ROM JUE starts at $44dc)
+  const pattern =
+    '1e 38 fa ?? 48 87 53 47 66 00 ?? ?? 1e 38 fa ?? 48 87 54 47 11 c7 fa ?? 49 fb 70 ?? 1e 1c 6a 00 ?? ?? 7e 00 11 c7 fa ?? 60 ??'
+  let baseAddress: number
+  try {
+    baseAddress = kd.rom.findPattern(pattern)
+  } catch (_e) {
+    kd.log('Could not find UpdateStaticAnimations pattern for HUD animations')
+    return
+  }
+
+  const groups: AnimationTableGroup[] = [
+    { name: 'Coin', sequenceOffset: 0x2a, pointerOffset: 0x40 },
+    { name: 'Life', sequenceOffset: 0x94, pointerOffset: 0x9e },
+    { name: 'Clock', sequenceOffset: 0xe8, pointerOffset: 0xf2 },
+    { name: 'Diamond', sequenceOffset: 0x140, pointerOffset: 0x14c },
+    { name: 'Flag Top', sequenceOffset: 0x17e, pointerOffset: 0x18c },
+  ]
+
+  for (const group of groups) {
+    const sequenceAddress = baseAddress + group.sequenceOffset
+    const pointerTableAddress = baseAddress + group.pointerOffset
+    const frameOffsets = readAnimationSequenceFrameOffsets(kd, sequenceAddress)
+    if (frameOffsets.length === 0) {
+      continue
+    }
+    const maxFrameOffset = Math.max(...frameOffsets)
+    for (let frameOffset = 0; frameOffset <= maxFrameOffset; frameOffset += 4) {
+      const frameAddress = kd.rom.readPtr(pointerTableAddress + frameOffset)
+      const frameIndex = frameOffset / 4
+      kd.rom.resources.createResource(frameAddress, 'animation-frame', {
+        frameGroup: group.name,
+        frameIndex,
+        addressOffset: frameOffset,
+        tableAddress: pointerTableAddress,
+        inputSize: 0x80,
+        name: `${group.name} Animation Frame ${frameIndex}`,
+      })
+      kd.rom.resources.addReference(sequenceAddress, frameAddress)
+    }
+  }
+}
+
+function readAnimationSequenceFrameOffsets(kd: KidDiscovery, sequenceAddress: number): number[] {
+  const frameOffsets: number[] = []
+  let ptr = sequenceAddress
+  for (let i = 0; i < 0x40; i++) {
+    const step = kd.rom.data.getUint16(ptr, false)
+    if (step === 0xffff) {
+      break
+    }
+    frameOffsets.push(kd.rom.data.getUint8(ptr + 1))
+    ptr += 2
+  }
+  return frameOffsets
+}
+
+type ParsedAnimationStep = {
+  address: number
+  kind: number
+  delay: number
+  spriteOffset?: number
+  spriteAddress?: number
+  nextFrameAddress?: number
+}
+
+type ParsedAnimation = {
+  startAddress: number
+  terminatorAddress: number
+  totalFrames: number
+  steps: ParsedAnimationStep[]
+  frameStepAddresses: number[]
+}
+
+function findAnimationScriptResources(kd: KidDiscovery) {
+  const assetTable = kd.knownAddresses.get('assetTable')
+  if (!assetTable) {
+    return
+  }
+
+  const visitedStarts = new Set<number>()
+  const scriptSeedStarts = findAnimationScriptSeedsFromSetSprAnimationCalls(kd)
+  const maxAddress = Math.min(kd.rom.bytes.length - 8, 0x50000)
+  const candidates: ParsedAnimation[] = []
+
+  for (const start of scriptSeedStarts) {
+    const parsed = parseAnimationScript(kd, start, assetTable)
+    if (!parsed) {
+      continue
+    }
+    visitedStarts.add(parsed.startAddress)
+    if (parsed.frameStepAddresses.length === 0 || parsed.totalFrames <= 0) {
+      continue
+    }
+    candidates.push(parsed)
+  }
+
+  for (let start = 0; start <= maxAddress; start += 2) {
+    if (visitedStarts.has(start)) {
+      continue
+    }
+    const parsed = parseAnimationScript(kd, start, assetTable)
+    if (!parsed) {
+      continue
+    }
+    visitedStarts.add(parsed.startAddress)
+    if (parsed.frameStepAddresses.length === 0 || parsed.totalFrames <= 0) {
+      continue
+    }
+    candidates.push(parsed)
+  }
+
+  const selected = selectBestNonOverlappingAnimations(candidates)
+  const seededStarts = new Set(scriptSeedStarts)
+  let seededCount = 0
+  let scannedCount = 0
+  for (const parsed of selected) {
+    const isSeeded = seededStarts.has(parsed.startAddress)
+    createAnimationResourcesFromParsed(kd, parsed, isSeeded)
+    if (isSeeded) {
+      seededCount++
+    } else {
+      scannedCount++
+    }
+  }
+
+  kd.log(
+    `Animation scripts: selected=${selected.length}, seeded=${seededCount}, scanned=${scannedCount}, seedCandidates=${scriptSeedStarts.length}`,
+  )
+}
+
+type AnimationScriptSeedCall = {
+  scriptAddress: number
+  jsrTarget: number
+}
+
+function findAnimationScriptSeedsFromSetSprAnimationCalls(kd: KidDiscovery): number[] {
+  const calls = findMoveLongImmediateD7FollowedByJsr(kd)
+  if (calls.length === 0) {
+    return []
+  }
+
+  const targetCount = new Map<number, number>()
+  for (const call of calls) {
+    targetCount.set(call.jsrTarget, (targetCount.get(call.jsrTarget) ?? 0) + 1)
+  }
+
+  const sortedTargets = Array.from(targetCount.entries()).sort((a, b) => b[1] - a[1])
+  const topTarget = sortedTargets[0]
+  if (!topTarget) {
+    return []
+  }
+
+  const [targetAddress, count] = topTarget
+  const minimumConfidenceCount = 3
+  const acceptedCalls =
+    count >= minimumConfidenceCount
+      ? calls.filter((call) => call.jsrTarget === targetAddress)
+      : calls
+
+  const starts = new Set<number>()
+  for (const call of acceptedCalls) {
+    if (call.scriptAddress > 0 && call.scriptAddress < kd.rom.bytes.length) {
+      starts.add(call.scriptAddress)
+    }
+  }
+  return Array.from(starts)
+}
+
+function findMoveLongImmediateD7FollowedByJsr(kd: KidDiscovery): AnimationScriptSeedCall[] {
+  const view = kd.rom.data
+  const calls: AnimationScriptSeedCall[] = []
+
+  // move.l #<script>,D7 ; jsr <target>
+  // supports jsr .w (4e b8 xxxx) and jsr .l (4e b9 xxxxxxxx)
+  const finder = kd.rom.createPatternFinder(
+    '2e 3c ?? ?? ?? ?? 4e [b8 ?? ??]||[b9 ?? ?? ?? ??]',
+  )
+  for (const address of finder.findAll()) {
+    const scriptAddress = view.getUint32(address + 2, false)
+    const jsrMode = kd.rom.bytes[address + 7]
+    const jsrTarget =
+      jsrMode === 0xb8
+        ? view.getUint16(address + 8, false)
+        : jsrMode === 0xb9
+          ? view.getUint32(address + 8, false)
+          : 0
+    if (jsrTarget === 0) {
+      continue
+    }
+    calls.push({ scriptAddress, jsrTarget })
+  }
+
+  return calls
+}
+
+function selectBestNonOverlappingAnimations(candidates: ParsedAnimation[]): ParsedAnimation[] {
+  const sorted = [...candidates].sort((a, b) => {
+    if (b.frameStepAddresses.length !== a.frameStepAddresses.length) {
+      return b.frameStepAddresses.length - a.frameStepAddresses.length
+    }
+    if (b.totalFrames !== a.totalFrames) {
+      return b.totalFrames - a.totalFrames
+    }
+    return a.startAddress - b.startAddress
+  })
+
+  const claimedFrames = new Set<number>()
+  const selected: ParsedAnimation[] = []
+  for (const candidate of sorted) {
+    if (candidate.frameStepAddresses.some((address) => claimedFrames.has(address))) {
+      continue
+    }
+    selected.push(candidate)
+    for (const frameAddress of candidate.frameStepAddresses) {
+      claimedFrames.add(frameAddress)
+    }
+  }
+
+  return selected
+}
+
+function parseAnimationScript(kd: KidDiscovery, startAddress: number, assetTable: number): ParsedAnimation | null {
+  if (kd.rom.data.getUint8(startAddress) !== 1) {
+    return null
+  }
+
+  const steps: ParsedAnimationStep[] = []
+  const frameStepAddresses: number[] = []
+  const visited = new Set<number>()
+  let current = startAddress
+  let totalFrames = 0
+  let hasValidSpriteFrameStep = false
+  const maxSteps = 128
+
+  for (let i = 0; i < maxSteps; i++) {
+    if (current < 0 || current >= kd.rom.bytes.length) {
+      return null
+    }
+    if (visited.has(current)) {
+      if (steps.length >= 2 && hasValidSpriteFrameStep) {
+        return {
+          startAddress,
+          terminatorAddress: current,
+          totalFrames,
+          steps,
+          frameStepAddresses,
+        }
+      }
+      return null
+    }
+    visited.add(current)
+
+    const kind = kd.rom.data.getUint8(current)
+    if (kind === 0) {
+      steps.push({ address: current, kind, delay: 0 })
+      if (steps.length >= 2 && hasValidSpriteFrameStep) {
+        return {
+          startAddress,
+          terminatorAddress: current,
+          totalFrames,
+          steps,
+          frameStepAddresses,
+        }
+      }
+      return null
+    }
+
+    if (kind === 1) {
+      if (current + 4 > kd.rom.bytes.length) {
+        return null
+      }
+      const delay = kd.rom.data.getUint8(current + 1)
+      if (delay === 0) {
+        return null
+      }
+      const spriteOffset = kd.rom.data.getUint16(current + 2, false)
+      if (spriteOffset >= 0x49d * 4) {
+        return null
+      }
+      const spriteAddress = kd.rom.readPtr(assetTable + spriteOffset)
+      if (spriteAddress <= 0 || spriteAddress >= kd.rom.bytes.length) {
+        return null
+      }
+      const spriteResource = kd.rom.resources.getResource(spriteAddress)
+      if (!spriteResource || !isSpriteFrameResource(spriteResource)) {
+        return null
+      }
+      const nextFrameAddress = current + 4
+      steps.push({
+        address: current,
+        kind,
+        delay,
+        spriteOffset,
+        spriteAddress,
+        nextFrameAddress,
+      })
+      frameStepAddresses.push(current)
+      hasValidSpriteFrameStep = true
+      totalFrames += delay
+      current = nextFrameAddress
+      continue
+    }
+
+    if (kind === 2) {
+      if (current + 2 > kd.rom.bytes.length) {
+        return null
+      }
+      const returnTo = kd.rom.data.getUint8(current + 1)
+      const nextFrameAddress = current + 1 - returnTo
+      if (nextFrameAddress < startAddress || nextFrameAddress >= kd.rom.bytes.length) {
+        return null
+      }
+      steps.push({ address: current, kind, delay: 0, nextFrameAddress })
+      current = nextFrameAddress
+      continue
+    }
+
+    return null
+  }
+
+  return null
+}
+
+function createAnimationResourcesFromParsed(
+  kd: KidDiscovery,
+  parsed: ParsedAnimation,
+  fromCallSiteSeed: boolean,
+) {
+  if (parsed.frameStepAddresses.length === 0 || parsed.totalFrames <= 0) {
+    return
+  }
+
+  const existingAnimation = kd.rom.resources.getResource(parsed.startAddress)
+  if (existingAnimation && existingAnimation.type !== 'animation') {
+    return
+  }
+
+  const animation = kd.rom.resources.createResource(parsed.startAddress, 'animation', {
+    frameCount: parsed.frameStepAddresses.length,
+    totalFrames: parsed.totalFrames,
+    terminatorAddress: parsed.terminatorAddress,
+    stepAddresses: parsed.steps.map((step) => step.address),
+    confidence: fromCallSiteSeed ? 'certain' : undefined,
+    name: `Animation @ ${parsed.startAddress.toString(16)}`,
+  })
+
+  for (const step of parsed.steps) {
+    if (step.address === parsed.startAddress) {
+      if (step.spriteAddress) {
+        kd.rom.resources.addReference(animation, step.spriteAddress)
+      }
+      continue
+    }
+
+    const existingStep = kd.rom.resources.getResource(step.address)
+    if (existingStep && existingStep.type !== 'animation-step' && existingStep.type !== 'unknown') {
+      continue
+    }
+
+    kd.rom.resources.createResource(step.address, 'animation-step', {
+      animationAddress: parsed.startAddress,
+      kind: step.kind,
+      delay: step.delay,
+      spriteOffset: step.spriteOffset,
+      spriteAddress: step.spriteAddress,
+      nextFrameAddress: step.nextFrameAddress,
+      addressOffset: step.address - parsed.startAddress,
+      name: `Animation Step ${step.kind} @ ${step.address.toString(16)}`,
+    })
+    kd.rom.resources.addReference(animation, step.address)
+    if (step.spriteAddress) {
+      kd.rom.resources.addReference(step.address, step.spriteAddress)
+    }
+    if (step.nextFrameAddress !== undefined && step.nextFrameAddress >= parsed.startAddress) {
+      kd.rom.resources.addReference(step.address, step.nextFrameAddress)
+    }
+  }
+}
+
 async function findAllLevelHeaders(kd: KidDiscovery) {
+  const levelTitleHeaderStride = 10
+  const levelTitleMaxIndex = kd.knownAddresses.get('levelTitleElsewhereIndex') ?? 0x49
+  const levelTitleHeaderBaseAddr =
+    kd.knownAddresses.get('levelTitleHeaderTable') ??
+    discoverLevelTitleHeaderBaseAddress(kd, levelTitleHeaderStride)
   const levelWordTable = kd.knownAddresses.get('levelWordTable')
   const levelWordTableBase = kd.knownAddresses.get('levelWordTableBase')
   const levelIndexesTable = kd.knownAddresses.get('levelIndexesTable')
@@ -35,6 +454,9 @@ async function findAllLevelHeaders(kd: KidDiscovery) {
   let index = 0
   let minHeader: number = Infinity
   let maxTheme: number = 0
+  const levelBlocksPointers = new Set<number>()
+  const levelObjectsHeaderPointers = new Set<number>()
+  const levelEnemyLayoutPointers = new Set<number>()
   do {
     const wordOffset = kd.rom.data.getUint8(levelIndexesTable + index)
     if (wordOffset === 0xff) {
@@ -42,22 +464,76 @@ async function findAllLevelHeaders(kd: KidDiscovery) {
     }
     const headerOffset = kd.rom.data.getUint16(levelWordTable + wordOffset * 2, false)
     const headerAdresss = headerOffset + levelWordTableBase
+
+    let loadedTitleCardName: string | undefined
+    if (levelTitleHeaderBaseAddr !== undefined) {
+      const effectiveLevelIndex = Math.min(index, levelTitleMaxIndex)
+      const titleCardAddress = levelTitleHeaderBaseAddr + effectiveLevelIndex * levelTitleHeaderStride
+      kd.rom.resources.createResource(titleCardAddress, 'level-title-card', {
+        levelIndex: index,
+        effectiveLevelIndex,
+      })
+      kd.rom.resources.addReference(headerAdresss, titleCardAddress)
+      const loadedTitleCard = await kd.rom.resources.getResourceLoaded<'level-title-card'>(
+        titleCardAddress,
+      )
+      loadedTitleCardName = loadedTitleCard?.titleText
+    }
+
     kd.rom.resources.createResource(headerAdresss, 'level-header', {
       levelIndex: index,
       wordIndex: wordOffset,
+      name: loadedTitleCardName,
     })
     const loadedLevelHeader =
       await kd.rom.resources.getResourceLoaded<'level-header'>(headerAdresss)
     if (loadedLevelHeader) {
-      kd.rom.resources.addReference(headerAdresss, loadedLevelHeader.tilesDataPtr)
-      kd.rom.resources.addReference(headerAdresss, loadedLevelHeader.backgroundDataPtr)
-      kd.rom.resources.addReference(headerAdresss, loadedLevelHeader.blocksDataPtr)
-      kd.rom.resources.addReference(headerAdresss, loadedLevelHeader.levelObjectsHeaderPtr)
-      // Create resource for the level tiles
-      const levelTilesPtr = loadedLevelHeader.tilesDataPtr
-      kd.rom.resources.createResource(levelTilesPtr, 'level-tiles', {
-        packed: { format: 'kid' },
-      })
+      const tilesDataPtr = loadedLevelHeader.tilesDataPtr
+      const backgroundDataPtr = loadedLevelHeader.backgroundDataPtr
+      const blocksDataPtr = loadedLevelHeader.blocksDataPtr
+      const levelObjectsHeaderPtr = loadedLevelHeader.levelObjectsHeaderPtr
+
+      if (isValidRomPointer(tilesDataPtr, kd.rom.bytes.length)) {
+        kd.rom.resources.addReference(headerAdresss, tilesDataPtr)
+        kd.rom.resources.createResource(tilesDataPtr, 'level-tiles', {
+          packed: { format: 'kid' },
+        })
+      }
+
+      if (isValidRomPointer(backgroundDataPtr, kd.rom.bytes.length)) {
+        kd.rom.resources.addReference(headerAdresss, backgroundDataPtr)
+        kd.rom.resources.createResource(backgroundDataPtr, 'level-background-layout', {
+          backgroundType: loadedLevelHeader.backgroundType,
+          isPacked: loadedLevelHeader.backgroundIsPacked,
+          name: `Level ${index} Background Layout`,
+        })
+
+        const backgroundLayout =
+          await kd.rom.resources.getResourceLoaded<'level-background-layout'>(backgroundDataPtr)
+        if (
+          backgroundLayout?.indirect?.referenceAddress &&
+          isValidRomPointer(backgroundLayout.indirect.referenceAddress, kd.rom.bytes.length)
+        ) {
+          kd.rom.resources.addReference(backgroundDataPtr, backgroundLayout.indirect.referenceAddress)
+        }
+      }
+
+      if (isValidRomPointer(blocksDataPtr, kd.rom.bytes.length)) {
+        kd.rom.resources.addReference(headerAdresss, blocksDataPtr)
+        kd.rom.resources.createResource(blocksDataPtr, 'level-blocks', {
+          name: `Level ${index} Blocks`,
+        })
+        levelBlocksPointers.add(blocksDataPtr)
+      }
+
+      if (isValidRomPointer(levelObjectsHeaderPtr, kd.rom.bytes.length)) {
+        kd.rom.resources.addReference(headerAdresss, levelObjectsHeaderPtr)
+        kd.rom.resources.createResource(levelObjectsHeaderPtr, 'level-objects-header', {
+          inputSize: 0x10,
+          name: `Level ${index} Objects Header`,
+        })
+        levelObjectsHeaderPointers.add(levelObjectsHeaderPtr)
+      }
     }
 
     // Peek at the level theme value:
@@ -68,8 +544,170 @@ async function findAllLevelHeaders(kd: KidDiscovery) {
   } while (index < minHeader)
   kd.log('Discovered', index, 'level headers')
   kd.log('There is a max of', maxTheme, 'themes used in the levels')
+  if (levelTitleHeaderBaseAddr !== undefined) {
+    kd.log('Level title card table found at', `0x${levelTitleHeaderBaseAddr.toString(16)}`)
+    kd.log('Elsewhere clamp level index is', levelTitleMaxIndex)
+    const elsewhereHeader = kd.knownAddresses.get('levelTitleElsewhereHeader')
+    if (elsewhereHeader !== undefined) {
+      kd.log('Elsewhere title card header at', `0x${elsewhereHeader.toString(16)}`)
+    }
+  } else {
+    kd.log('Level title card table not found by discovery heuristics')
+  }
   kd.knownAddresses.set('numberOfLevels', index)
   kd.knownAddresses.set('numberOfThemes', maxTheme)
+
+  const inferredBlockSizes = inferPointerTableSizes(levelBlocksPointers)
+  for (const [address, size] of inferredBlockSizes) {
+    const existing = kd.rom.resources.getResource<'level-blocks'>(address)
+    if (!existing || existing.type !== 'level-blocks') {
+      continue
+    }
+    kd.rom.resources.createResource(address, 'level-blocks', {
+      ...existing,
+      inputSize: size,
+    })
+  }
+
+  for (const address of levelObjectsHeaderPointers) {
+    const h1Pointer = kd.rom.data.getUint32(address, false)
+    if (h1Pointer > 0 && h1Pointer < kd.rom.bytes.length) {
+      kd.rom.resources.addReference(address, h1Pointer)
+      const objectCount = kd.rom.data.getUint8(h1Pointer + 1)
+      const inputSize = 2 + objectCount * 8
+      kd.rom.resources.createResource(h1Pointer, 'level-enemy-layout', {
+        objectCount,
+        inputSize,
+        name: `Enemy Layout @ ${h1Pointer.toString(16)}`,
+      })
+      levelEnemyLayoutPointers.add(h1Pointer)
+    }
+  }
+
+  const inferredEnemyLayoutSizes = inferPointerTableSizes(levelEnemyLayoutPointers)
+  for (const [address, size] of inferredEnemyLayoutSizes) {
+    const existing = kd.rom.resources.getResource<'level-enemy-layout'>(address)
+    if (!existing || existing.type !== 'level-enemy-layout') {
+      continue
+    }
+    const objectCount = Math.max(0, Math.floor((size - 2) / 8))
+    kd.rom.resources.createResource(address, 'level-enemy-layout', {
+      ...existing,
+      inputSize: size,
+      objectCount,
+    })
+  }
+}
+
+const levelTitleGlyphCodes = new Set<number>([
+  0x00, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6a, 0x6b, 0x6c, 0x6d, 0x6e,
+  0x6f, 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7a, 0x7b, 0x7c, 0x7d,
+  0x7e, 0x7f, 0x80, 0x81, 0x82, 0x83, 0x84, 0xff,
+])
+
+function discoverLevelTitleHeaderBaseAddress(
+  kd: KidDiscovery,
+  stride: number,
+): number | undefined {
+  const romSize = kd.rom.bytes.length
+  const maxEffectiveLevelIndex = 0x49
+  const sampleIndexes = [0, 1, 2, 3, 4, 8, 12, 16, 24, 32, 40, 50, 60, 73]
+
+  let bestAddress: number | undefined
+  let bestScore = -1
+
+  for (let candidate = 0; candidate < romSize - (maxEffectiveLevelIndex + 1) * stride; candidate += 2) {
+    const firstTextAddress = kd.rom.data.getUint32(candidate, false)
+    const firstLayoutAddress = kd.rom.data.getUint32(candidate + 4, false)
+    const firstAct = kd.rom.data.getUint16(candidate + 8, false)
+
+    if (!isValidRomPointer(firstTextAddress, romSize) || !isValidRomPointer(firstLayoutAddress, romSize)) {
+      continue
+    }
+    if (firstAct > 10) {
+      continue
+    }
+    if (!looksLikeTitleTextAddress(kd, firstTextAddress)) {
+      continue
+    }
+
+    let score = 0
+    let validEntries = 0
+    for (const sampleIndex of sampleIndexes) {
+      const entryAddress = candidate + sampleIndex * stride
+      const textAddress = kd.rom.data.getUint32(entryAddress, false)
+      const layoutAddress = kd.rom.data.getUint32(entryAddress + 4, false)
+      const act = kd.rom.data.getUint16(entryAddress + 8, false)
+
+      if (!isValidRomPointer(textAddress, romSize) || !isValidRomPointer(layoutAddress, romSize)) {
+        continue
+      }
+      if (act > 10) {
+        continue
+      }
+      if (!looksLikeTitleTextAddress(kd, textAddress)) {
+        continue
+      }
+
+      validEntries++
+      score++
+    }
+
+    if (validEntries >= 10 && score > bestScore) {
+      bestScore = score
+      bestAddress = candidate
+    }
+  }
+
+  return bestAddress
+}
+
+function isValidRomPointer(address: number, romSize: number): boolean {
+  return address > 0 && address < romSize
+}
+
+function looksLikeTitleTextAddress(kd: KidDiscovery, address: number): boolean {
+  const romSize = kd.rom.bytes.length
+  if (address < 0 || address >= romSize) {
+    return false
+  }
+
+  const maxScan = Math.min(96, romSize - address)
+  if (maxScan <= 0) {
+    return false
+  }
+
+  let hasGlyph = false
+  for (let i = 0; i < maxScan; i++) {
+    const code = kd.rom.data.getUint8(address + i)
+    if (!levelTitleGlyphCodes.has(code)) {
+      return false
+    }
+    if (code === 0xff) {
+      return hasGlyph
+    }
+    if (code >= 0x61 && code <= 0x84) {
+      hasGlyph = true
+    }
+  }
+
+  return false
+}
+
+function inferPointerTableSizes(pointers: Set<number>): Map<number, number> {
+  const sorted = Array.from(pointers)
+    .filter((address) => address > 0)
+    .sort((a, b) => a - b)
+  const sizes = new Map<number, number>()
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const current = sorted[i]
+    const next = sorted[i + 1]
+    const delta = next - current
+    if (delta > 0) {
+      sizes.set(current, delta)
+    }
+  }
+  return sizes
 }
 
 function findAssetTableResources(kd: KidDiscovery) {
@@ -78,8 +716,11 @@ function findAssetTableResources(kd: KidDiscovery) {
     return
   }
   let index = 0
+  const totalAssets = 0x49d
+  const assetSizeHints = buildAssetSizeHints(kd, assetTable, totalAssets)
   const endAddress = assetTable + 0x49d * 4
   for (let ptr = assetTable; ptr < endAddress; ptr += 4) {
+    const tableOffset = ptr - assetTable
     const type = AssetPtrTableTypes[index]
     if (type === null) {
       kd.rom.tables.assetIndexTable.push(null)
@@ -87,16 +728,20 @@ function findAssetTableResources(kd: KidDiscovery) {
       continue
     }
     const resourcePtr = kd.rom.readPtr(ptr)
+    const currentAddressOffset = kd.rom.resources.getResource(resourcePtr)?.addressOffset
+    const addressOffset = currentAddressOffset ?? tableOffset
     kd.rom.tables.assetIndexTable.push(resourcePtr)
     const collisionPtr = kd.rom.tables.collisionIndexTable[index]
     if (type === PackedTileSheet) {
       kd.rom.resources.createResource(resourcePtr, 'sheet', {
         tableIndex: index,
+        addressOffset,
         packed: { format: 'kid' },
       })
     } else if (type === SpriteFrameType) {
       const resource = kd.rom.resources.createResource(resourcePtr, 'unlinked-sprite-frame', {
         tableIndex: index,
+        addressOffset,
       })
       if (collisionPtr) {
         kd.rom.resources.addReference(resource, collisionPtr)
@@ -104,17 +749,116 @@ function findAssetTableResources(kd: KidDiscovery) {
     } else if (type === SpriteFrameWithDataType) {
       const resource = kd.rom.resources.createResource(resourcePtr, 'linked-sprite-frame', {
         tableIndex: index,
+        addressOffset,
       })
       if (collisionPtr) {
         kd.rom.resources.addReference(resource, collisionPtr)
       }
-    } else {
-      kd.rom.resources.createResource(resourcePtr, 'unknown', {
-        description: `Unknown asset type ${type}`,
+    } else if (isColorAssetType(type)) {
+      const colorCount = getColorAssetTypeCount(type)
+      kd.rom.resources.createResource(resourcePtr, 'palette', {
+        size: colorCount,
+        addressOffset,
+        confidence: 'certain',
+        name: `Palette (${colorCount} colors)`,
+        description: `Asset table color entry ${type}`,
       })
+    } else {
+      const possibleSize = assetSizeHints.get(resourcePtr)
+      const inferredPaletteSize = inferPaletteSizeFromUnknownAsset(
+        kd,
+        resourcePtr,
+        assetSizeHints,
+      )
+      if (inferredPaletteSize) {
+        kd.rom.resources.createResource(resourcePtr, 'palette', {
+          size: inferredPaletteSize,
+          addressOffset,
+          confidence: 'possible',
+          description: `Inferred palette from unknown asset type ${type}`,
+          name: `Possible Palette (${inferredPaletteSize} colors)`,
+        })
+      } else {
+        kd.rom.resources.createResource(resourcePtr, 'unknown', {
+          possibleSize: possibleSize && possibleSize > 0 ? possibleSize : undefined,
+          description: `Unknown asset type ${type}`,
+        })
+      }
     }
     index++
   }
+}
+
+function isColorAssetType(type: unknown): type is string {
+  return typeof type === 'string' && /^Color\(\d+\)$/.test(type)
+}
+
+function getColorAssetTypeCount(type: string): number {
+  const match = /^Color\((\d+)\)$/.exec(type)
+  if (!match) {
+    return 0
+  }
+  return Number(match[1])
+}
+
+function inferPaletteSizeFromUnknownAsset(
+  kd: KidDiscovery,
+  currentAddress: number,
+  assetSizeHints: Map<number, number>,
+): number | null {
+  const maxSizeBytes = assetSizeHints.get(currentAddress)
+  if (!maxSizeBytes || maxSizeBytes <= 0 || maxSizeBytes > 32 || maxSizeBytes % 2 !== 0) {
+    return null
+  }
+
+  const words = maxSizeBytes / 2
+  for (let i = 0; i < words; i++) {
+    const color = kd.rom.data.getUint16(currentAddress + i * 2, false)
+    if (!isValidMdPaletteWord(color)) {
+      return null
+    }
+  }
+
+  return words
+}
+
+function buildAssetSizeHints(
+  kd: KidDiscovery,
+  assetTable: number,
+  totalAssets: number,
+): Map<number, number> {
+  const addresses = new Set<number>()
+  for (let index = 0; index < totalAssets; index++) {
+    if (AssetPtrTableTypes[index] === null) {
+      continue
+    }
+    const address = kd.rom.readPtr(assetTable + index * 4)
+    if (address > 0 && address < kd.rom.bytes.length) {
+      addresses.add(address)
+    }
+  }
+
+  const sorted = Array.from(addresses).sort((a, b) => a - b)
+  const sizeHints = new Map<number, number>()
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const current = sorted[i]
+    const next = sorted[i + 1]
+    const delta = next - current
+    if (delta > 0) {
+      sizeHints.set(current, delta)
+    }
+  }
+  return sizeHints
+}
+
+function isValidMdPaletteWord(value: number): boolean {
+  if ((value & 0xf000) !== 0) {
+    return false
+  }
+  if ((value & 0x111) !== 0) {
+    return false
+  }
+  return true
 }
 
 function findFrameCollisionFromTableResources(kd: KidDiscovery) {
@@ -133,6 +877,7 @@ function findFrameCollisionFromTableResources(kd: KidDiscovery) {
     kd.rom.tables.collisionIndexTable.push(address)
     kd.rom.resources.createResource(address, 'sprite-collision', {
       wordIndex: index,
+      addressOffset: index * 2,
       isInvalid: address >= addressLimit,
     })
     firstData = Math.min(firstData, address)
@@ -168,15 +913,108 @@ function findSomeMoreResources(kd: KidDiscovery) {
       kd.rom.resources.createResource(result.ptr, 'sheet', {
         packed: { format: 'kid' },
       })
+      if (isLikelyPaletteMap(kd, result.palPtr, 16)) {
+        kd.rom.resources.createResource(result.palPtr, 'palette-map', {
+          size: 16,
+          name: `Palette Map @ ${result.palPtr.toString(16)}`,
+        })
+        kd.rom.resources.addReference(result.ptr, result.palPtr)
+      }
     })
     findUntabledPackedTileSheetsWithPaletteSwap2(kd).map((result) => {
       kd.rom.resources.createResource(result.ptr, 'sheet', {
         packed: { format: 'kid' },
       })
+      if (isLikelyPaletteMap(kd, result.palPtr, 16)) {
+        kd.rom.resources.createResource(result.palPtr, 'palette-map', {
+          size: 16,
+          name: `Palette Map @ ${result.palPtr.toString(16)}`,
+        })
+        kd.rom.resources.addReference(result.ptr, result.palPtr)
+      }
     })
   } catch (e) {
     console.error(e)
   }
+}
+
+function isLikelyPaletteMap(kd: KidDiscovery, baseAddress: number, size: number): boolean {
+  if (baseAddress < 0 || baseAddress + size > kd.rom.bytes.length) {
+    return false
+  }
+
+  let hasNonIdentityValue = false
+  for (let i = 0; i < size; i++) {
+    const value = kd.rom.data.getUint8(baseAddress + i)
+    if (value > 0x0f) {
+      return false
+    }
+    if (value !== i) {
+      hasNonIdentityValue = true
+    }
+  }
+
+  return hasNonIdentityValue
+}
+
+function findThemePaletteResources(kd: KidDiscovery) {
+  const numberOfThemes = kd.knownAddresses.get('numberOfThemes')
+  const levelMiscPtrTable = kd.knownAddresses.get('levelMiscPtrTable')
+  const themePaletteWordTable = kd.knownAddresses.get('themePaletteWordTable')
+  const themeBackgroundPaletteWordTable = kd.knownAddresses.get('themeBackgroundPaletteWordTable')
+  if (!numberOfThemes || !levelMiscPtrTable || !themePaletteWordTable || !themeBackgroundPaletteWordTable) {
+    return
+  }
+
+  for (let theme = 1; theme <= numberOfThemes; theme++) {
+    const foregroundPalette = resolveThemePalettePointer(
+      kd,
+      levelMiscPtrTable,
+      themePaletteWordTable,
+      theme,
+    )
+    if (foregroundPalette) {
+      kd.rom.resources.createResource(foregroundPalette.paletteAddress, 'palette', {
+        size: 15,
+        name: `Theme ${theme} Foreground Palette`,
+        addressOffset: foregroundPalette.wordOffset,
+      })
+      kd.rom.resources.addReference(themePaletteWordTable, foregroundPalette.paletteAddress)
+    }
+
+    const backgroundPalette = resolveThemePalettePointer(
+      kd,
+      levelMiscPtrTable,
+      themeBackgroundPaletteWordTable,
+      theme,
+    )
+    if (backgroundPalette) {
+      kd.rom.resources.createResource(backgroundPalette.paletteAddress, 'palette', {
+        size: 8,
+        name: `Theme ${theme} Background Palette`,
+        addressOffset: backgroundPalette.wordOffset,
+      })
+      kd.rom.resources.addReference(themeBackgroundPaletteWordTable, backgroundPalette.paletteAddress)
+    }
+  }
+}
+
+function resolveThemePalettePointer(
+  kd: KidDiscovery,
+  levelMiscPtrTable: number,
+  wordTableAddress: number,
+  themeIndex: number,
+): { wordOffset: number; paletteAddress: number } | null {
+  const wordOffset = kd.rom.data.getUint16(wordTableAddress + themeIndex * 2, false)
+  const pointerSlotAddress = levelMiscPtrTable + wordOffset
+  if (pointerSlotAddress < 0 || pointerSlotAddress + 4 > kd.rom.bytes.length) {
+    return null
+  }
+  const paletteAddress = kd.rom.readPtr(pointerSlotAddress)
+  if (paletteAddress <= 0 || paletteAddress >= kd.rom.bytes.length) {
+    return null
+  }
+  return { wordOffset, paletteAddress }
 }
 
 function findUntabledPackedTileSheetsDirect1(kd: KidDiscovery) {

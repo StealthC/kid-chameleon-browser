@@ -1,5 +1,5 @@
 import useRomStore from '~/stores/romStore'
-import { ResourceTypes, Rom, type ResourceType } from '@repo/kid-util'
+import { ResourceTypes, Rom, type AllRomResources, type ResourceType } from '@repo/kid-util'
 import { useQuery } from '@tanstack/vue-query'
 import { storeToRefs } from 'pinia'
 import { computed, unref, type MaybeRef } from 'vue'
@@ -18,6 +18,47 @@ const getReferencesResources = (rom: Rom, resourceAddress: number) => {
 
 const getReferencesResourcesLoaded = (rom: Rom, resourceAddress: number) => {
   return rom.resources.getReferencesResourcesLoaded(resourceAddress)
+}
+
+const getReferencedByResources = (rom: Rom, resourceAddress: number) => {
+  return rom.resources.getMultipleResources(rom.resources.getReferencedBy(resourceAddress))
+}
+
+const getReferencedByResourcesLoaded = (rom: Rom, resourceAddress: number) => {
+  return rom.resources.getMultipleResourcesLoaded(rom.resources.getReferencedBy(resourceAddress))
+}
+
+export type RelatedResourceWithKind = {
+  resource: AllRomResources
+  kind: 'hard' | 'soft'
+}
+
+const getReferencesResourcesWithKind = (
+  rom: Rom,
+  resourceAddress: number,
+): RelatedResourceWithKind[] => {
+  return rom.resources.getReferences(resourceAddress).flatMap((targetAddress) => {
+    const resource = rom.resources.getResource(targetAddress)
+    const kind = rom.resources.getReferenceKind(resourceAddress, targetAddress)
+    if (!resource || !kind) {
+      return []
+    }
+    return [{ resource, kind }]
+  })
+}
+
+const getReferencedByResourcesWithKind = (
+  rom: Rom,
+  resourceAddress: number,
+): RelatedResourceWithKind[] => {
+  return rom.resources.getReferencedBy(resourceAddress).flatMap((sourceAddress) => {
+    const resource = rom.resources.getResource(sourceAddress)
+    const kind = rom.resources.getReferenceKind(sourceAddress, resourceAddress)
+    if (!resource || !kind) {
+      return []
+    }
+    return [{ resource, kind }]
+  })
 }
 
 const getResourcesOfType = <T extends (typeof ResourceTypes)[number]>(rom: Rom, type: T | T[]) => {
@@ -126,6 +167,78 @@ export function useResourceLoader() {
     })
   }
 
+  const getReferencesResourcesWithKindQuery = (
+    resourceAddress: MaybeRef<number | null | undefined>,
+  ) => {
+    const addressValue = computed(() => unref(resourceAddress))
+    const enabled = computed(() => hasRom.value && isValidAddress(addressValue.value))
+
+    return useQuery({
+      queryKey: computed(() => ['resource-references-kind', addressValue.value] as const),
+      queryFn: () => {
+        if (!isValidAddress(addressValue.value)) {
+          throw new Error('Invalid resource address')
+        }
+        return getReferencesResourcesWithKind(getRomOrThrow(), addressValue.value)
+      },
+      enabled,
+    })
+  }
+
+  const getReferencedByResourcesQuery = (
+    resourceAddress: MaybeRef<number | null | undefined>,
+  ) => {
+    const addressValue = computed(() => unref(resourceAddress))
+    const enabled = computed(() => hasRom.value && isValidAddress(addressValue.value))
+
+    return useQuery({
+      queryKey: computed(() => ['resource-referenced-by', addressValue.value] as const),
+      queryFn: () => {
+        if (!isValidAddress(addressValue.value)) {
+          throw new Error('Invalid resource address')
+        }
+        return getReferencedByResources(getRomOrThrow(), addressValue.value)
+      },
+      enabled,
+    })
+  }
+
+  const getReferencedByResourcesLoadedQuery = (
+    resourceAddress: MaybeRef<number | null | undefined>,
+  ) => {
+    const addressValue = computed(() => unref(resourceAddress))
+    const enabled = computed(() => hasRom.value && isValidAddress(addressValue.value))
+
+    return useQuery({
+      queryKey: computed(() => ['resource-referenced-by-loaded', addressValue.value] as const),
+      queryFn: () => {
+        if (!isValidAddress(addressValue.value)) {
+          throw new Error('Invalid resource address')
+        }
+        return getReferencedByResourcesLoaded(getRomOrThrow(), addressValue.value)
+      },
+      enabled,
+    })
+  }
+
+  const getReferencedByResourcesWithKindQuery = (
+    resourceAddress: MaybeRef<number | null | undefined>,
+  ) => {
+    const addressValue = computed(() => unref(resourceAddress))
+    const enabled = computed(() => hasRom.value && isValidAddress(addressValue.value))
+
+    return useQuery({
+      queryKey: computed(() => ['resource-referenced-by-kind', addressValue.value] as const),
+      queryFn: () => {
+        if (!isValidAddress(addressValue.value)) {
+          throw new Error('Invalid resource address')
+        }
+        return getReferencedByResourcesWithKind(getRomOrThrow(), addressValue.value)
+      },
+      enabled,
+    })
+  }
+
   return {
     hasRom,
     useGetResourceQuery,
@@ -133,5 +246,9 @@ export function useResourceLoader() {
     getResourceListOfTypeQuery,
     getReferencesResourcesQuery,
     getReferencesResourcesLoadedQuery,
+    getReferencesResourcesWithKindQuery,
+    getReferencedByResourcesQuery,
+    getReferencedByResourcesLoadedQuery,
+    getReferencedByResourcesWithKindQuery,
   }
 }

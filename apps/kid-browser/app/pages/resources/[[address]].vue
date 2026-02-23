@@ -6,6 +6,11 @@
       </div>
       <div class="min-h-0 overflow-hidden">
         <ResourceView v-if="selectedResource !== null" :resource-address="selectedResource" />
+        <GlassPanel v-else class="flex h-full items-center justify-center text-center">
+          <p class="text-muted-foreground text-sm">
+            Select a resource to inspect details and raw data.
+          </p>
+        </GlassPanel>
       </div>
     </main>
   </RequiresRom>
@@ -14,6 +19,10 @@
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue'
 import { parseAddressOrNull } from '~/utils/index'
+
+definePageMeta({
+  key: 'resources-browser',
+})
 
 const route = useRoute()
 const rawAddress = computed(() => route.params.address)

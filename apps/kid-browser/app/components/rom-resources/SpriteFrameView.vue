@@ -18,6 +18,17 @@
       </SelectContent>
     </Select>
 
+    <Select v-if="paletteOptions.length > 1" v-model="selectedPaletteKey">
+      <SelectTrigger>
+        <SelectValue placeholder="Select palette" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem v-for="option in paletteOptions" :key="option.key" :value="option.key">
+          {{ option.label }}
+        </SelectItem>
+      </SelectContent>
+    </Select>
+
     <div
       class="border-border/60 flex max-h-[24rem] items-center justify-center overflow-auto rounded-md border bg-slate-950/60 p-2"
     >
@@ -27,6 +38,7 @@
         :tile-id="tileId"
         :width="resource.width"
         :height="resource.height"
+        :palette="palette"
       />
       <p v-else class="text-muted-foreground text-sm">
         Select a sheet to preview this sprite frame.
@@ -50,10 +62,12 @@
 import {
   isLinkedSpriteFrameResource,
   isLoadedResource,
+  isPaletteResource,
   isSheetResource,
+  type PaletteRomResourceLoaded,
   type SpriteFrameRomResourceLoaded,
 } from '@repo/kid-util'
-import { computed, ref, toRefs } from 'vue'
+import { computed, ref, toRefs, watch } from 'vue'
 import { Badge } from '~/components/ui/badge'
 import {
   Select,
@@ -83,6 +97,12 @@ const resourceLoader = useResourceLoader()
 const sheetList = resourceLoader.getResourceListOfTypeQuery('sheet')
 const isSheetSelected = computed(() => sheet.value !== null)
 const loadedSheet = resourceLoader.useGetResourceLoadedQuery(sheet, isSheetSelected)
+const selectedSheetReferences = resourceLoader.getReferencesResourcesLoadedQuery(sheet, isSheetSelected)
+const spriteReferences = resourceLoader.getReferencesResourcesLoadedQuery(
+  computed(() => resource.value.baseAddress),
+)
+const selectedPaletteKey = ref<string>('')
+const previousNonUvCount = ref(0)
 
 const sheets = computed(() => {
   if (!sheetList.data.value) return []
@@ -109,6 +129,74 @@ const bytes = computed(() => {
     return loadedSheet.data.value.data
   }
   return null
+})
+
+const availablePalettes = computed<PaletteRomResourceLoaded[]>(() => {
+  const map = new Map<number, PaletteRomResourceLoaded>()
+  for (const candidate of selectedSheetReferences.data.value ?? []) {
+    if (isLoadedResource(candidate) && isPaletteResource(candidate)) {
+      map.set(candidate.baseAddress, candidate)
+    }
+  }
+  for (const candidate of spriteReferences.data.value ?? []) {
+    if (isLoadedResource(candidate) && isPaletteResource(candidate)) {
+      map.set(candidate.baseAddress, candidate)
+    }
+  }
+  return Array.from(map.values())
+})
+
+const paletteOptions = computed(() => {
+  return [
+    { key: 'uv', label: 'UV' },
+    ...availablePalettes.value.map((entry) => ({
+      key: String(entry.baseAddress),
+      label: getNormalizedName(entry),
+    })),
+  ]
+})
+
+watch(
+  paletteOptions,
+  (options) => {
+    const nonUvOptions = options.filter((option) => option.key !== 'uv')
+    const firstNonUv = nonUvOptions[0]
+
+    if (selectedPaletteKey.value === '') {
+      selectedPaletteKey.value = firstNonUv?.key ?? 'uv'
+      previousNonUvCount.value = nonUvOptions.length
+      return
+    }
+
+    if (
+      selectedPaletteKey.value === 'uv' &&
+      previousNonUvCount.value === 0 &&
+      nonUvOptions.length > 0
+    ) {
+      selectedPaletteKey.value = firstNonUv.key
+      previousNonUvCount.value = nonUvOptions.length
+      return
+    }
+
+    const selectedStillExists = options.some((option) => option.key === selectedPaletteKey.value)
+    if (selectedStillExists) {
+      previousNonUvCount.value = nonUvOptions.length
+      return
+    }
+    selectedPaletteKey.value = firstNonUv?.key ?? 'uv'
+    previousNonUvCount.value = nonUvOptions.length
+  },
+  { immediate: true },
+)
+
+const palette = computed<PaletteRomResourceLoaded | null>(() => {
+  if (selectedPaletteKey.value === 'uv') {
+    return null
+  }
+  return (
+    availablePalettes.value.find((candidate) => String(candidate.baseAddress) === selectedPaletteKey.value) ??
+    null
+  )
 })
 
 const rows = computed(() => [

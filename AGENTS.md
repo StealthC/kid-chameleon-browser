@@ -98,6 +98,24 @@ This repository does **not** ship proprietary game assets. It provides reverse-e
   - Pre-commit runs `pnpm format`, `pnpm lint`, `pnpm test`.
 - For frontend (`apps/kid-browser`) changes, consult `docs/kid-browser-frontend-guidelines.md` before refactoring.
 
+### kid-util Discovery Rules (ROM vs ROM hacks)
+
+These rules apply when working in `packages/kid-util`.
+
+- Treat the original ROM as the baseline reference for behavior and validation.
+- Assume ROM hacks may move code/data, change table sizes, or add/remove entries.
+- Prefer discovery by signatures and heuristics (PatternFinder + structural checks), not fixed absolute addresses.
+- The project already provides a PatternFinder implementation in `packages/kid-util/src/pattern-finder.ts`; use this existing class first instead of creating ad-hoc scanners.
+- If Ghidra MCP is available, use it to inspect disassembly and derive robust byte patterns before coding discovery logic.
+- For tables, infer boundaries and usage from code paths and pointer validity checks. Do not assume original index limits or item counts are always valid in hacks.
+
+Simple examples:
+
+- Good: find a table base from `lea (PC+offset)` pattern in the function that uses it, then compute the real runtime address.
+- Bad: hardcode `0x1a842` as the level title table for all ROMs.
+- Good: read a clamp/index constant from matched instructions (for example `cmpi.w #N, Dx`) and store it as discovered metadata.
+- Bad: assume `0x49` is always the last valid index.
+
 ## Quick Start for Agents
 
 1. `pnpm install`

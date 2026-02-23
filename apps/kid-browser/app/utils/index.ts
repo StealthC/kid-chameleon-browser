@@ -46,12 +46,12 @@ export function getNormalizedName(resource: AllRomResources | number, short = fa
   if (typeof resource === 'number') {
     return addressFormat(resource)
   }
+   if (resource.name) {
+    return resource.name
+  }
   let name = `${addressFormat(resource.baseAddress)}`
   if (!short) {
     name += ` - ${getNameForType(resource.type)}`
-  }
-  if (resource.name) {
-    name += `: ${resource.name}`
   }
   return name
 }
@@ -61,10 +61,19 @@ const nameForType: Partial<Record<(typeof ResourceTypes)[number], string>> = {
   'linked-sprite-frame': 'Sprite Frame (with graphics)',
   'unlinked-sprite-frame': 'Sprite Frame',
   plane: 'Plane',
+  'animation-frame': 'Animation Frame',
+  animation: 'Animation Script',
+  'animation-step': 'Animation Step',
   unknown: 'Unknown',
   palette: 'Palette',
+  'palette-map': 'Palette Map',
   'level-header': 'Level Header',
   'level-tiles': 'Level Tiles',
+  'level-blocks': 'Level Blocks',
+  'level-objects-header': 'Level Objects Header',
+  'level-background-layout': 'Level Background Layout',
+  'level-enemy-layout': 'Level Enemy Layout',
+  'level-title-card': 'Level Title Card',
   'sprite-collision': 'Sprite Collision',
 }
 

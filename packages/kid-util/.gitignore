@@ -1,1 +1,3 @@
-rom/kid.bin
+rom/**/*.bin
+rom/**/*.gen
+rom/**/*.md
