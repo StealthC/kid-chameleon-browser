@@ -1,5 +1,5 @@
-# Simple workflow for deploying static content to GitHub Pages
-name: Deploy static content to Pages
+# Workflow for deploying Nuxt static build to GitHub Pages
+name: Deploy Nuxt static app to Pages
 
 on:
   # Runs on pushes targeting the default branch
@@ -21,7 +21,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Single deploy job since we're just deploying
   deploy:
     environment:
       name: github-pages
@@ -38,16 +37,18 @@ jobs:
           node-version: 22
           cache: 'pnpm'
       - name: Install dependencies
-        run: pnpm install
-      - name: Build
-        run: BASE=/kid-chameleon-browser/ pnpm run build
+        run: pnpm install --frozen-lockfile
+      - name: Build shared packages
+        run: pnpm run build-packages
+      - name: Generate Nuxt static site
+        run: NUXT_APP_BASE_URL=/kid-chameleon-browser/ pnpm --filter kid-browser run generate
       - name: Setup Pages
         uses: actions/configure-pages@v4
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload dist folder
-          path: './apps/kid-browser/dist'
+          # Nuxt generate output
+          path: './apps/kid-browser/.output/public'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

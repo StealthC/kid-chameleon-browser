@@ -36,11 +36,10 @@
       </div>
       <div class="flex flex-wrap items-center justify-center gap-2">
         <ReadFile @load="onFileRead" />
-        <Button v-if="rom" variant="outline" @click="unloadRom">
-          <Icon name="heroicons:eject-solid" class="size-4" />
+        <Button v-if="rom" variant="outline" :disabled="isBusy" @click="unloadRom">
+          <Icon name="heroicons:bookmark-slash" class="size-4" />
           Unload
         </Button>
-        <Badge v-if="rom" variant="secondary">Local only</Badge>
       </div>
     </div>
 
@@ -57,18 +56,19 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import useRomStore from '~/stores/romStore'
 
-const { rom, romDetails, romFullLoaded, romLoading } = storeToRefs(useRomStore())
+const { rom, romDetails, romFullLoaded, romLoading, status } = storeToRefs(useRomStore())
 const { loadRom, unloadRom } = useRomStore()
 const inserted = ref<boolean>(!romFullLoaded.value && !romLoading.value)
+const isBusy = computed(() => status.value === 'loading' || status.value === 'restoring')
 
-const onFileRead = (bytes: ArrayBuffer) => {
+const onFileRead = async (bytes: ArrayBuffer) => {
   try {
-    loadRom(new Uint8Array(bytes))
+    await loadRom(new Uint8Array(bytes))
     inserted.value = true
   } catch (e) {
     console.error(e)

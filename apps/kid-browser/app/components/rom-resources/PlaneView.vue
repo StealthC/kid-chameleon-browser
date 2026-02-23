@@ -49,7 +49,8 @@ const useColumns = computed(() => !resource.value.width)
 const columns = ref(props.columns ?? 16)
 const calculatedColumns = computed(() => (useColumns.value ? columns.value : resource.value.width!))
 const loader = useResourceLoader()
-const related = loader.value.getReferencesResourcesLoadedQuery(resource)
+const resourceAddress = computed(() => resource.value.baseAddress)
+const related = loader.getReferencesResourcesLoadedQuery(resourceAddress)
 
 const selectedSheet = computed(() => {
   if (sheet.value) return sheet.value

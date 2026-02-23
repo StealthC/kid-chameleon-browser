@@ -53,7 +53,7 @@ import {
   isSheetResource,
   type SpriteFrameRomResourceLoaded,
 } from '@repo/kid-util'
-import { computed, ref, toRefs, type Ref } from 'vue'
+import { computed, ref, toRefs } from 'vue'
 import { Badge } from '~/components/ui/badge'
 import {
   Select,
@@ -80,12 +80,9 @@ const sheetString = computed({
   },
 })
 const resourceLoader = useResourceLoader()
-const sheetList = resourceLoader.value.getResourceListOfTypeQuery('sheet')
+const sheetList = resourceLoader.getResourceListOfTypeQuery('sheet')
 const isSheetSelected = computed(() => sheet.value !== null)
-const loadedSheet = resourceLoader.value.useGetResourceLoadedQuery(
-  sheet as Ref<number>,
-  isSheetSelected,
-)
+const loadedSheet = resourceLoader.useGetResourceLoadedQuery(sheet, isSheetSelected)
 
 const sheets = computed(() => {
   if (!sheetList.data.value) return []

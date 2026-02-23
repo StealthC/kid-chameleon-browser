@@ -25,7 +25,7 @@ export function crc32(data: Uint8Array, crc = 0xffffffff): number {
 }
 
 export async function sha256(data: Uint8Array, upper = true): Promise<string> {
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', new Uint8Array(data))
   const hash = Array.from(new Uint8Array(hashBuffer))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('')

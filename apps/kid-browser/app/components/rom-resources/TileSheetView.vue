@@ -21,7 +21,7 @@
     <div
       class="border-border/60 flex min-h-0 flex-1 items-center justify-center overflow-auto rounded-md border bg-slate-950/60 p-2"
     >
-      <div class="w-full">
+
         <CanvasRenderer
           v-if="values"
           :width="values.columns * 8"
@@ -29,7 +29,7 @@
           :update-key="values"
           @update="draw"
         />
-      </div>
+
     </div>
   </div>
 </template>

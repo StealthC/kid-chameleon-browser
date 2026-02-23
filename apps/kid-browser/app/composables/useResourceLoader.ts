@@ -1,5 +1,5 @@
 import useRomStore from '~/stores/romStore'
-import { ResourceTypes, Rom, type AllRomResources } from '@repo/kid-util'
+import { ResourceTypes, Rom, type ResourceType } from '@repo/kid-util'
 import { useQuery } from '@tanstack/vue-query'
 import { storeToRefs } from 'pinia'
 import { computed, unref, type MaybeRef } from 'vue'
@@ -12,12 +12,12 @@ const getResource = (rom: Rom, address: number) => {
   return rom.resources.getResource(address)
 }
 
-const getReferencesResources = (rom: Rom, resource: number | AllRomResources) => {
-  return rom.resources.getReferencesResources(resource)
+const getReferencesResources = (rom: Rom, resourceAddress: number) => {
+  return rom.resources.getReferencesResources(resourceAddress)
 }
 
-const getReferencesResourcesLoaded = (rom: Rom, resource: number | AllRomResources) => {
-  return rom.resources.getReferencesResourcesLoaded(resource)
+const getReferencesResourcesLoaded = (rom: Rom, resourceAddress: number) => {
+  return rom.resources.getReferencesResourcesLoaded(resourceAddress)
 }
 
 const getResourcesOfType = <T extends (typeof ResourceTypes)[number]>(rom: Rom, type: T | T[]) => {
@@ -25,71 +25,113 @@ const getResourcesOfType = <T extends (typeof ResourceTypes)[number]>(rom: Rom, 
 }
 
 export function useResourceLoader() {
-  const romStore = storeToRefs(useRomStore())
-  const rom = computed(() => romStore.rom.value as Rom | null)
+  const { rom } = storeToRefs(useRomStore())
+  const hasRom = computed(() => !!rom.value)
 
-  const useGetResourceQuery = (address: MaybeRef<number>) => {
-    return useQuery({
-      queryKey: ['getResource', address],
-      queryFn: async () => {
-        return getResource(unref(rom) as Rom, unref(address))
-      },
-    })
+  const isValidAddress = (value: unknown): value is number => {
+    return typeof value === 'number' && Number.isFinite(value)
   }
 
-  const useGetResourceLoadedQuery = (
-    address: MaybeRef<number>,
-    enabled: MaybeRef<boolean> = true,
-  ) => {
+  const getRomOrThrow = (): Rom => {
+    if (!rom.value) {
+      throw new Error('ROM not loaded')
+    }
+    return rom.value as Rom
+  }
+
+  const useGetResourceQuery = (address: MaybeRef<number | null | undefined>) => {
+    const addressValue = computed(() => unref(address))
+    const enabled = computed(() => hasRom.value && isValidAddress(addressValue.value))
     return useQuery({
-      queryKey: ['getResourceLoaded', address],
-      queryFn: async () => {
-        return getLoadedResource(unref(rom) as Rom, unref(address))
+      queryKey: computed(() => ['resource', addressValue.value] as const),
+      queryFn: () => {
+        if (!isValidAddress(addressValue.value)) {
+          throw new Error('Invalid resource address')
+        }
+        return getResource(getRomOrThrow(), addressValue.value)
       },
       enabled,
     })
   }
 
-  const getResourceListOfTypeQuery = (
-    type: MaybeRef<(typeof ResourceTypes)[number] | (typeof ResourceTypes)[number][]>,
+  const useGetResourceLoadedQuery = (
+    address: MaybeRef<number | null | undefined>,
+    enabled: MaybeRef<boolean> = true,
   ) => {
+    const addressValue = computed(() => unref(address))
+    const queryEnabled = computed(
+      () => hasRom.value && isValidAddress(addressValue.value) && unref(enabled),
+    )
+
     return useQuery({
-      queryKey: ['getResourcesOfType', type],
-      queryFn: async () => {
-        if (!rom.value) throw new Error('ROM not loaded')
-        return getResourcesOfType(unref(rom) as Rom, unref(type) as (typeof ResourceTypes)[number])
+      queryKey: computed(() => ['resource-loaded', addressValue.value] as const),
+      queryFn: () => {
+        if (!isValidAddress(addressValue.value)) {
+          throw new Error('Invalid resource address')
+        }
+        return getLoadedResource(getRomOrThrow(), addressValue.value)
       },
+      enabled: queryEnabled,
     })
   }
 
-  const getReferencesResourcesQuery = (resource: MaybeRef<number | AllRomResources>) => {
+  const getResourceListOfTypeQuery = (
+    type: MaybeRef<ResourceType | ResourceType[]>,
+  ) => {
+    const typeValue = computed(() => unref(type))
+    const typeKey = computed(() =>
+      Array.isArray(typeValue.value) ? typeValue.value.join('|') : typeValue.value,
+    )
+
     return useQuery({
-      queryKey: ['getReferencesResources', resource],
-      queryFn: async () => {
-        if (!unref(rom)) throw new Error('ROM not loaded')
-        return getReferencesResources(unref(rom)!, unref(resource))
+      queryKey: computed(() => ['resources-by-type', typeKey.value] as const),
+      queryFn: () => {
+        return getResourcesOfType(getRomOrThrow(), typeValue.value)
       },
+      enabled: hasRom,
     })
   }
 
-  const getReferencesResourcesLoadedQuery = (resource: MaybeRef<number | AllRomResources>) => {
+  const getReferencesResourcesQuery = (resourceAddress: MaybeRef<number | null | undefined>) => {
+    const addressValue = computed(() => unref(resourceAddress))
+    const enabled = computed(() => hasRom.value && isValidAddress(addressValue.value))
+
     return useQuery({
-      queryKey: ['getReferencesResourcesLoaded', resource],
-      queryFn: async () => {
-        if (!unref(rom)) throw new Error('ROM not loaded')
-        return getReferencesResourcesLoaded(unref(rom)!, unref(resource))
+      queryKey: computed(() => ['resource-references', addressValue.value] as const),
+      queryFn: () => {
+        if (!isValidAddress(addressValue.value)) {
+          throw new Error('Invalid resource address')
+        }
+        return getReferencesResources(getRomOrThrow(), addressValue.value)
       },
+      enabled,
     })
   }
 
-  const resourceLoader = computed(() => ({
-    _usingRom: !!rom.value,
+  const getReferencesResourcesLoadedQuery = (
+    resourceAddress: MaybeRef<number | null | undefined>,
+  ) => {
+    const addressValue = computed(() => unref(resourceAddress))
+    const enabled = computed(() => hasRom.value && isValidAddress(addressValue.value))
+
+    return useQuery({
+      queryKey: computed(() => ['resource-references-loaded', addressValue.value] as const),
+      queryFn: () => {
+        if (!isValidAddress(addressValue.value)) {
+          throw new Error('Invalid resource address')
+        }
+        return getReferencesResourcesLoaded(getRomOrThrow(), addressValue.value)
+      },
+      enabled,
+    })
+  }
+
+  return {
+    hasRom,
     useGetResourceQuery,
     useGetResourceLoadedQuery,
     getResourceListOfTypeQuery,
     getReferencesResourcesQuery,
     getReferencesResourcesLoadedQuery,
-  }))
-
-  return resourceLoader
+  }
 }

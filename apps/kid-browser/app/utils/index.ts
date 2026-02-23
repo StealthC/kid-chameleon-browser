@@ -22,6 +22,26 @@ export function getAddressNumber(address: string | number): number {
   return address
 }
 
+export function parseAddressOrNull(address: string | number | null | undefined): number | null {
+  if (address == null) {
+    return null
+  }
+
+  const parsedAddress = getAddressNumber(address)
+  if (!Number.isFinite(parsedAddress) || parsedAddress < 0) {
+    return null
+  }
+
+  return parsedAddress
+}
+
+export function getResourceRoute(address: number) {
+  return {
+    name: 'resources-address',
+    params: { address: addressFormat(address) },
+  }
+}
+
 export function getNormalizedName(resource: AllRomResources | number, short = false): string {
   if (typeof resource === 'number') {
     return addressFormat(resource)

@@ -1,71 +1,134 @@
-import { ref, watch, watchEffect } from 'vue'
+import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { Rom, type RomFileDetails } from '@repo/kid-util'
+
+export type RomStatus = 'idle' | 'restoring' | 'loading' | 'ready' | 'error'
 
 const useRomStore = defineStore('romStore', () => {
   const rom = ref<Rom | null>(null)
   const romDetails = ref<RomFileDetails | null>(null)
-  const romLoading = ref<boolean>(false)
-  const romFullLoaded = ref<boolean>(false)
-  const router = useRouter()
+  const status = ref<RomStatus>('idle')
+  const errorMessage = ref<string | null>(null)
+  const initialized = ref<boolean>(false)
+  let initPromise: Promise<void> | null = null
 
-  async function loadRomFromStorage() {
-    if (!import.meta.client) return
-    const localforage = (await import('localforage')).default
-    const romBytes = await localforage.getItem<Uint8Array>('rom')
-    if (romBytes) {
-      _loadRom(romBytes)
+  const romLoading = computed(() => status.value === 'loading' || status.value === 'restoring')
+  const romFullLoaded = computed(() => status.value === 'ready')
+
+  function getErrorMessage(err: unknown): string {
+    if (err instanceof Error) {
+      return err.message
     }
+    return 'Unknown ROM loading error'
   }
 
-  function _loadRom(bytes: Uint8Array) {
-    romFullLoaded.value = false
-    romLoading.value = true
-    rom.value = new Rom(bytes)
+  async function getLocalforage() {
+    if (!import.meta.client) {
+      return null
+    }
+    const localforage = (await import('localforage')).default
+    return localforage
   }
 
-  function unloadRom() {
+  async function loadRomData(bytes: Uint8Array): Promise<void> {
+    const nextRom = new Rom(bytes)
+    rom.value = nextRom
+    romDetails.value = null
+    await Promise.all([
+      nextRom.loadResources(),
+      nextRom.getRomFileDetails().then((details) => {
+        romDetails.value = details
+      }),
+    ])
+  }
+
+  async function initFromStorage(): Promise<void> {
+    if (initialized.value) {
+      return
+    }
+    if (initPromise) {
+      return initPromise
+    }
+
+    initPromise = (async () => {
+      if (!import.meta.client) {
+        initialized.value = true
+        return
+      }
+
+      status.value = 'restoring'
+      errorMessage.value = null
+
+      try {
+        const localforage = await getLocalforage()
+        const romBytes = await localforage?.getItem<Uint8Array>('rom')
+
+        if (!romBytes) {
+          status.value = 'idle'
+          return
+        }
+
+        await loadRomData(romBytes)
+        status.value = 'ready'
+      } catch (err) {
+        rom.value = null
+        romDetails.value = null
+        status.value = 'error'
+        errorMessage.value = getErrorMessage(err)
+      } finally {
+        initialized.value = true
+        initPromise = null
+      }
+    })()
+
+    return initPromise
+  }
+
+  async function unloadRom() {
     rom.value = null
     romDetails.value = null
-    romFullLoaded.value = false
-    romLoading.value = false
+    status.value = 'idle'
+    errorMessage.value = null
+
     if (import.meta.client) {
-      import('localforage').then(({ default: localforage }) => localforage.removeItem('rom'))
+      const localforage = await getLocalforage()
+      await localforage?.removeItem('rom')
     }
   }
 
   async function loadRom(bytes: Uint8Array) {
-    _loadRom(bytes)
-    if (import.meta.client) {
-      const localforage = (await import('localforage')).default
-      await localforage.setItem('rom', bytes)
+    status.value = 'loading'
+    errorMessage.value = null
+
+    try {
+      await loadRomData(bytes)
+
+      if (import.meta.client) {
+        const localforage = await getLocalforage()
+        await localforage?.setItem('rom', bytes)
+      }
+
+      status.value = 'ready'
+    } catch (err) {
+      rom.value = null
+      romDetails.value = null
+      status.value = 'error'
+      errorMessage.value = getErrorMessage(err)
     }
   }
 
-  watchEffect(() => {
-    if (!rom.value) {
-      loadRomFromStorage()
-    }
-  })
-
-  watch(rom, () => {
-    if (rom.value) {
-      Promise.all([
-        rom.value.loadResources(),
-        rom.value.getRomFileDetails().then((details) => {
-          romDetails.value = details
-        }),
-      ]).then(() => {
-        romFullLoaded.value = true
-        romLoading.value = false
-        if (router.currentRoute.value.name === 'about') {
-          router.push('/')
-        }
-      })
-    }
-  })
-
-  return { rom, romDetails, romFullLoaded, romLoading, loadRom, unloadRom }
+  return {
+    rom,
+    romDetails,
+    status,
+    errorMessage,
+    initialized,
+    romFullLoaded,
+    romLoading,
+    initFromStorage,
+    loadRom,
+    unloadRom,
+  }
 })
 
 export default useRomStore

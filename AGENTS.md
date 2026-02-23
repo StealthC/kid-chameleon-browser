@@ -59,6 +59,7 @@ This repository does **not** ship proprietary game assets. It provides reverse-e
 ### 4) Frontend App (`apps/kid-browser`)
 
 - Nuxt app source lives under `apps/kid-browser/app`.
+- Frontend maintenance guidelines live in `docs/kid-browser-frontend-guidelines.md`.
 - Global ROM state: `app/stores/romStore.ts`.
   - Loads ROM from local storage (`localforage`) when available.
   - Builds `Rom`, calls `rom.loadResources()`, and stores ROM details.
@@ -95,6 +96,7 @@ This repository does **not** ship proprietary game assets. It provides reverse-e
   3. Expose UI rendering path in `ResourceView` and corresponding component
 - Respect existing tooling and hooks:
   - Pre-commit runs `pnpm format`, `pnpm lint`, `pnpm test`.
+- For frontend (`apps/kid-browser`) changes, consult `docs/kid-browser-frontend-guidelines.md` before refactoring.
 
 ## Quick Start for Agents
 

@@ -1,6 +1,6 @@
 <template>
   <div class="h-full overflow-auto p-2 md:p-3">
-    <div class="mx-auto grid max-w-5xl gap-3 lg:grid-cols-2">
+    <div class="mx-auto flex flex-col max-w-5xl gap-3 ">
       <GlassPanel class="prose prose-invert max-w-none">
         <template #header>
           <div class="flex items-center gap-2">

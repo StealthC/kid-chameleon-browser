@@ -55,10 +55,7 @@
                     >
                       <NuxtLink
                         class="block text-sm"
-                        :to="{
-                          name: 'resources-address',
-                          params: { address: addressFormat(ref.baseAddress) },
-                        }"
+                        :to="getResourceRoute(ref.baseAddress)"
                       >
                         {{ getNormalizedName(ref) }}
                       </NuxtLink>
@@ -78,8 +75,7 @@
 </template>
 
 <script setup lang="ts">
-import { useResourceLoader } from '~/composables/useResourceLoader'
-import useRomStore from '~/stores/romStore'
+import { useResourceDetails } from '~/composables/useResourceDetails'
 import { Badge } from '~/components/ui/badge'
 import { ScrollArea } from '~/components/ui/scroll-area'
 import {
@@ -88,30 +84,15 @@ import {
   isSheetResource,
   isSpriteFrameResource,
 } from '@repo/kid-util'
-import { storeToRefs } from 'pinia'
 import { computed, defineAsyncComponent, toRefs } from 'vue'
-import { addressFormat, getNameForType, getNormalizedName } from '~/utils/index'
+import { addressFormat, getNameForType, getNormalizedName, getResourceRoute } from '~/utils/index'
 
 interface Props {
   resourceAddress: number
 }
 const props = defineProps<Props>()
 const { resourceAddress } = toRefs(props)
-const { rom } = storeToRefs(useRomStore())
-const resourceLoader = useResourceLoader()
-const resource = resourceLoader.value.useGetResourceLoadedQuery(resourceAddress)
-const referencesQuery = resourceLoader.value.getReferencesResourcesQuery(resourceAddress)
-const references = computed(() => referencesQuery.data.value ?? [])
-const { isError, isPending } = resource
-
-const title = computed(() => {
-  let str = `Resource Viewer: (${addressFormat(resourceAddress.value)})`
-  if (resource.data.value) {
-    str += ` - ${getNameForType(resource.data.value.type)}`
-    if (resource.data.value.name) str += ` - ${resource.data.value.name}`
-  }
-  return str
-})
+const { resource, references, isError, isPending, title, hexData } = useResourceDetails(resourceAddress)
 
 const tileSheetComponent = defineAsyncComponent(
   () => import('~/components/rom-resources/TileSheetView.vue'),
@@ -133,16 +114,5 @@ const componentValues = computed(() => {
     return { viewerComponent: planeComponent, props: { resource: resource.data.value } }
   }
   return null
-})
-
-const hexData = computed(() => {
-  if (!resource.data.value || !isLoadedResource(resource.data.value)) return null
-  return {
-    inputData: rom.value!.bytes.subarray(
-      resource.data.value.baseAddress,
-      resource.data.value.baseAddress + resource.data.value.inputSize,
-    ),
-    inputAddress: resource.data.value.baseAddress,
-  }
 })
 </script>
