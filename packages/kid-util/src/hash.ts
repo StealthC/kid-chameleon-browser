@@ -19,7 +19,7 @@ const CRC32_TABLE = (() => {
  */
 export function crc32(data: Uint8Array, crc = 0xffffffff): number {
   for (const byte of data) {
-    crc = (crc >>> 8) ^ CRC32_TABLE[(crc ^ byte) & 0xff]!
+    crc = (crc >>> 8) ^ CRC32_TABLE[(crc ^ byte) & 0xff]
   }
   return (crc ^ 0xffffffff) >>> 0
 }
@@ -45,8 +45,8 @@ export function mdCrc(data: Uint8Array, limit?: number): number {
   let crc = 0
   let pos = 0x200
   while (pos < limit) {
-    crc += data[pos++]! * 0x100
-    crc += data[pos++]!
+    crc += data[pos++] * 0x100
+    crc += data[pos++]
   }
   return crc & 0xffff
 }

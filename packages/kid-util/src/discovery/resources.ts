@@ -1,12 +1,12 @@
 import PQueue from 'p-queue'
 import type { KidDiscovery, KidDiscoveryFunction } from '~/kid-discovery'
-import { ExecuteInNextTick } from '~/kid-utils'
+import { ExecuteInNextTick } from '../kid-utils'
 import {
   AssetPtrTableTypes,
   PackedTileSheet,
   SpriteFrameType,
   SpriteFrameWithDataType,
-} from '~/tables/asset-ptr-table'
+} from '../tables/asset-ptr-table'
 
 export async function findAllResouces(kd: KidDiscovery) {
   const fns: KidDiscoveryFunction[] = [
@@ -18,7 +18,9 @@ export async function findAllResouces(kd: KidDiscovery) {
   ]
   const queue = new PQueue({ concurrency: 4 })
   for (const fn of fns) {
-    await queue.add(ExecuteInNextTick.bind(null, fn.bind(null, kd)))
+    await queue.add(async () => {
+      await ExecuteInNextTick(() => fn(kd))
+    })
   }
   await queue.onIdle()
 }
