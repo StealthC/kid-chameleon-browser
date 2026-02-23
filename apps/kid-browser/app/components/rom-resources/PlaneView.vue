@@ -1,19 +1,18 @@
 <template>
-  <div class="flex h-full w-full flex-row gap-2">
-    <div v-if="useColumns" class="flex flex-col items-center gap-1">
-      <button @click="columns++" class="px-2 text-lg leading-none">+</button>
-      <input
-        type="number"
-        v-model="columns"
-        class="w-16 bg-transparent text-center text-sm outline-none"
-        :min="1"
-        :max="255"
-      />
-      <button @click="columns = Math.max(1, columns - 1)" class="px-2 text-lg leading-none">
-        −
-      </button>
+  <div class="flex h-full min-h-0 w-full flex-col gap-3">
+    <div v-if="useColumns" class="flex items-center justify-end gap-2">
+      <Input type="number" v-model.number="columns" class="w-24 text-center" :min="1" :max="255" />
+      <Button size="icon-sm" variant="secondary" @click="columns++">
+        <Icon name="heroicons:plus-solid" class="size-4" />
+      </Button>
+      <Button size="icon-sm" variant="secondary" @click="columns = Math.max(1, columns - 1)">
+        <Icon name="heroicons:minus-solid" class="size-4" />
+      </Button>
     </div>
-    <div class="flex flex-grow items-center justify-center">
+
+    <div
+      class="border-border/60 flex min-h-0 flex-1 items-center justify-center overflow-auto rounded-md border bg-slate-950/60 p-2"
+    >
       <CanvasRenderer
         v-if="computedValues"
         :width="computedValues.width"
@@ -33,6 +32,8 @@ import {
   type PlaneRomResourceLoaded,
   type SheetRomResourceLoaded,
 } from '@repo/kid-util'
+import { Button } from '~/components/ui/button'
+import { Input } from '~/components/ui/input'
 import { bitmapFromKidImageData } from '~/utils/index'
 import { useResourceLoader } from '~/composables/useResourceLoader'
 

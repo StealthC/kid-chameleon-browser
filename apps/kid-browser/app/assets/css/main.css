@@ -1,41 +1,71 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
 @plugin '@tailwindcss/typography';
 
-/* ─── Brand scale ──────────────────────────────────────────────────────────
-   Valores OKLCH reais → Tailwind emite CSS custom properties em :root.
-   @theme só aceita valores CSS concretos, NÃO referências var() de outros
-   tokens — para aliases usar @theme inline (bloco abaixo).
-   ─────────────────────────────────────────────────────────────────────── */
 @theme {
-  --color-primary-50:  oklch(0.979 0.021 166.113);
-  --color-primary-100: oklch(0.950 0.052 163.051);
-  --color-primary-200: oklch(0.905 0.093 164.150);
-  --color-primary-300: oklch(0.845 0.143 164.978);
-  --color-primary-400: oklch(0.765 0.177 163.223);
-  --color-primary-500: oklch(0.696 0.170 162.480);
-  --color-primary-600: oklch(0.596 0.145 163.225);
-  --color-primary-700: oklch(0.508 0.118 165.612);
-  --color-primary-800: oklch(0.432 0.095 166.913);
-  --color-primary-900: oklch(0.378 0.077 168.940);
-  --color-primary-950: oklch(0.262 0.051 172.552);
-
-  /* Passo extra de escala: habilita scale-200 → scale: 2 */
   --scale-200: 2;
 }
 
-/* ─── Aliases semânticos ───────────────────────────────────────────────────
-   @theme inline não emite vars em :root — apenas cria aliases de build-time
-   para as utilities. Usar aqui para referenciar outros tokens do tema.
-   ─────────────────────────────────────────────────────────────────────── */
 @theme inline {
-  --color-primary: var(--color-primary-500);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* ─── Base styles ──────────────────────────────────────────────────────────
-   @layer base posiciona os estilos no lugar certo da cascata CSS.
-   ─────────────────────────────────────────────────────────────────────── */
+:root {
+  --radius: 0.75rem;
+  --background: oklch(21.191% 0.04477 239.711);
+  --foreground: oklch(0.98 0.01 200);
+  --card: oklch(0.23 0.02 238);
+  --card-foreground: oklch(0.98 0.01 200);
+  --popover: oklch(0.2 0.02 238);
+  --popover-foreground: oklch(0.98 0.01 200);
+  --primary: oklch(0.74 0.14 169);
+  --primary-foreground: oklch(0.2 0.02 238);
+  --secondary: oklch(0.31 0.02 236);
+  --secondary-foreground: oklch(0.98 0.01 200);
+  --muted: oklch(0.27 0.015 238);
+  --muted-foreground: oklch(0.78 0.015 210);
+  --accent: oklch(0.32 0.03 192);
+  --accent-foreground: oklch(0.98 0.01 200);
+  --destructive: oklch(0.68 0.19 25);
+  --border: oklch(0.44 0.03 215 / 0.6);
+  --input: oklch(0.33 0.02 225);
+  --ring: oklch(0.72 0.12 170);
+}
+
 @layer base {
-  html{
-    @apply h-full w-full bg-slate-900 text-gray-50;
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html,
+  body,
+  #__nuxt {
+    @apply h-full;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    color-scheme: dark;
   }
 }

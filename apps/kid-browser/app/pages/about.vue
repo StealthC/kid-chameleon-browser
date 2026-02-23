@@ -1,57 +1,48 @@
 <template>
-  <div class="h-full overflow-auto px-2 sm:px-0">
-    <div class="mx-auto flex max-w-3xl flex-col gap-4">
-      <GlassPanel class="prose dark:prose-invert max-w-none">
-        <h2 class="m-0 pb-4">About this tool</h2>
-        <p>This is a WIP project, so many features are not yet available and may never be.</p>
+  <div class="h-full overflow-auto p-2 md:p-3">
+    <div class="mx-auto grid max-w-5xl gap-3 lg:grid-cols-2">
+      <GlassPanel class="prose prose-invert max-w-none">
+        <template #header>
+          <div class="flex items-center gap-2">
+            <Icon name="heroicons:information-circle-solid" class="text-primary size-5" />
+            <p class="text-base font-semibold">About this tool</p>
+          </div>
+        </template>
         <p>
-          This is just a fancy tool for visualizing data from Sega Genesis/Mega-Drive Kid Chameleon
-          ROMs. Its purpose is to detect and display various types of game resources, such as:
+          Kid Chameleon Browser is an interactive workspace for visualizing and inspecting Sega
+          Genesis / Mega Drive ROM resources in the browser.
         </p>
+        <p>It helps reverse engineering by identifying and rendering:</p>
         <ul>
-          <li>Tile Sheets</li>
-          <li>Sprites</li>
-          <li>Animations</li>
-          <li>Planes</li>
-          <li>Levels</li>
-          <li>And whatever else he can find...</li>
+          <li>Tile sheets and sprite frames</li>
+          <li>Planes, palettes, and palette maps</li>
+          <li>Level metadata and linked references</li>
+          <li>Raw bytes through hex inspection</li>
         </ul>
         <p>
-          It also tries to sort the resources in a way that makes it easy to extract them in an
-          orderly fashion for the development of another game engine (Kid Engine) or any other
-          purpose.
+          ROM data never leaves your browser session. This repository does not include proprietary
+          game assets.
         </p>
-        <p>This tool is made with TypeScript and its GUI is made with Vue.js + Nuxt.</p>
-        <p>Author: StealthC</p>
       </GlassPanel>
-      <GlassPanel class="prose dark:prose-invert mx-auto max-w-none">
-        <h2 class="m-0 pb-4">Credits and References</h2>
-        <p>
-          This project could never be done without the help of the following resources and all the
-          great people behind them:
-        </p>
-        <ul class="flex flex-col gap-1 py-4">
-          <li>
-            <a class="no-underline hover:underline" href="https://github.com/sonicretro/kid-chameleon-disasm">
-              Kid Chameleon Disassembly
-            </a>
-          </li>
-          <li>
-            <a class="no-underline hover:underline" href="https://github.com/mrhappyasthma/Sega-Genesis-Checksum-Utility">
-              Sega Genesis Checksum Utility
-            </a>
-          </li>
-          <li>
+
+      <GlassPanel class="prose prose-invert max-w-none">
+        <template #header>
+          <div class="flex items-center gap-2">
+            <Icon name="heroicons:book-open-solid" class="text-primary size-5" />
+            <p class="text-base font-semibold">Credits and references</p>
+          </div>
+        </template>
+        <p>This project builds on excellent reverse engineering work from the community:</p>
+        <ul class="space-y-2">
+          <li v-for="link in links" :key="link.href">
             <a
-              class="no-underline hover:underline"
-              href="https://raw.githubusercontent.com/mrhappyasthma/Sega-Genesis-Checksum-Utility/refs/heads/master/Resources/Backup/The%20Complete%20Documentation%20About%20Genesis%20Rom%20Format%20(v1.1).txt"
+              :href="link.href"
+              target="_blank"
+              rel="noreferrer"
+              class="inline-flex items-center gap-2 no-underline"
             >
-              THE COMPLETE DOCUMENTATION ABOUT GENESIS ROM FORMAT
-            </a>
-          </li>
-          <li>
-            <a class="no-underline hover:underline" href="https://kidchameleon.fandom.com/wiki/Main_Page">
-              Kid Chameleon Wiki
+              <Icon name="heroicons:link-16-solid" class="size-4" />
+              <span class="underline-offset-4 hover:underline">{{ link.label }}</span>
             </a>
           </li>
         </ul>
@@ -59,3 +50,24 @@
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+const links = [
+  {
+    label: 'Kid Chameleon Disassembly',
+    href: 'https://github.com/sonicretro/kid-chameleon-disasm',
+  },
+  {
+    label: 'Sega Genesis Checksum Utility',
+    href: 'https://github.com/mrhappyasthma/Sega-Genesis-Checksum-Utility',
+  },
+  {
+    label: 'Genesis ROM format documentation',
+    href: 'https://raw.githubusercontent.com/mrhappyasthma/Sega-Genesis-Checksum-Utility/refs/heads/master/Resources/Backup/The%20Complete%20Documentation%20About%20Genesis%20Rom%20Format%20(v1.1).txt',
+  },
+  {
+    label: 'Kid Chameleon Wiki',
+    href: 'https://kidchameleon.fandom.com/wiki/Main_Page',
+  },
+]
+</script>

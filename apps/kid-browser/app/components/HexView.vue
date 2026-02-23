@@ -1,19 +1,25 @@
 <template>
   <GlassPanel :header="title" class="flex flex-col overflow-hidden font-mono text-xs">
-    <div class="pb-2 text-center">Start: {{ start }} End: {{ end }} Size: {{ size }}</div>
-    <div class="max-h-20 flex-1 overflow-auto sm:max-h-40 md:max-h-80">
-      <div class="flex flex-col items-center" v-if="stringData.length > 0">
-        <pre>{{ stringData }}</pre>
+    <div class="text-muted-foreground pb-2 text-center">
+      Start: {{ start }} End: {{ end }} Size: {{ size }}
+    </div>
+    <ScrollArea class="max-h-52">
+      <div
+        v-if="stringData.length > 0"
+        class="border-border/60 rounded-md border bg-slate-950/55 p-2"
+      >
+        <pre class="text-xs whitespace-pre">{{ stringData }}</pre>
       </div>
       <div v-else>
         <p>No data</p>
       </div>
-    </div>
+    </ScrollArea>
   </GlassPanel>
 </template>
 
 <script setup lang="ts">
 import { computed, toRefs } from 'vue'
+import { ScrollArea } from '~/components/ui/scroll-area'
 
 export type Props = {
   title?: string

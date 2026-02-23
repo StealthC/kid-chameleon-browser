@@ -32,7 +32,14 @@ const computedValues = computed(() => {
   const start = tileId.value * 8 * 4
   const end = start + size
   if (bytes.value.length < start || bytes.value.length < end) return null
-  return { tileId: tileId.value, columns, rows, width: width.value, height: height.value, bytes: bytes.value }
+  return {
+    tileId: tileId.value,
+    columns,
+    rows,
+    width: width.value,
+    height: height.value,
+    bytes: bytes.value,
+  }
 })
 
 const draw = async (ctx: CanvasRenderingContext2D) => {

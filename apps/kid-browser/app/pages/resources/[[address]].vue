@@ -1,11 +1,16 @@
 <template>
   <RequiresRom>
-    <main class="flex h-full w-full flex-row px-2 sm:px-0">
-      <div class="h-full">
+    <main class="grid h-full min-h-0 gap-3 lg:grid-cols-[24rem_minmax(0,1fr)]">
+      <div class="min-h-0">
         <ResourceList />
       </div>
-      <div class="h-full flex-grow overflow-auto ps-2">
+      <div class="min-h-0 overflow-hidden">
         <ResourceView v-if="selectedResource != null" :resource-address="selectedResource" />
+        <GlassPanel v-else class="flex h-full items-center justify-center text-center">
+          <p class="text-muted-foreground text-sm">
+            Select a resource to inspect details and raw data.
+          </p>
+        </GlassPanel>
       </div>
     </main>
   </RequiresRom>

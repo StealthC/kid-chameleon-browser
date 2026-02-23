@@ -1,40 +1,106 @@
 <template>
-  <div class="font-mono text-xs">
-    <div v-if="romDetails" class="flex flex-col gap-4">
-      <GlassPanel v-for="category in Object.keys(details)" :key="category" :header="category">
-        <ul>
-          <li
-            v-for="[key, value] in Object.entries(details[category])"
-            :key="key"
-            class="grid grid-cols-[max-content_1fr] gap-x-2"
-          >
-            <span class="block w-40 font-bold">{{ key }}:</span>
-            <span class="overflow-hidden text-ellipsis">{{ value }}</span>
-          </li>
-        </ul>
-      </GlassPanel>
-      <GlassPanel header="Discovered Addresses">
-        <table class="w-full">
-          <tr v-for="row in romKnownAddressesValues" :key="row[0]">
-            <td v-for="cell in row" :key="cell" class="border border-gray-600 p-1">
-              {{ cell }}
-            </td>
-          </tr>
-        </table>
+  <div class="h-full min-h-0">
+    <div
+      v-if="romDetails"
+      class="grid h-full min-h-0 gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]"
+    >
+      <div class="space-y-3">
+        <GlassPanel>
+          <template #header>
+            <div class="flex items-center justify-between gap-2">
+              <p class="text-base font-semibold">File details</p>
+              <Badge variant="secondary">
+                {{
+                  romDetails.known
+                    ? romDetails.known.hack
+                      ? 'Hack ROM'
+                      : 'Known ROM'
+                    : 'Unknown ROM'
+                }}
+              </Badge>
+            </div>
+          </template>
+          <dl class="space-y-2 text-sm">
+            <div
+              v-for="[key, value] in Object.entries(details['File Details'])"
+              :key="key"
+              class="grid grid-cols-[10rem_1fr] gap-3"
+            >
+              <dt class="text-muted-foreground">{{ key }}</dt>
+              <dd class="font-medium break-all">{{ value }}</dd>
+            </div>
+          </dl>
+        </GlassPanel>
+
+        <GlassPanel>
+          <template #header>
+            <p class="text-base font-semibold">ROM header</p>
+          </template>
+          <dl class="space-y-2 text-sm">
+            <div
+              v-for="[key, value] in Object.entries(details['ROM Header'])"
+              :key="key"
+              class="grid grid-cols-[10rem_1fr] gap-3"
+            >
+              <dt class="text-muted-foreground">{{ key }}</dt>
+              <dd class="font-medium break-words">{{ value }}</dd>
+            </div>
+          </dl>
+        </GlassPanel>
+      </div>
+
+      <GlassPanel class="min-h-0">
+        <template #header>
+          <div class="flex items-center justify-between gap-2">
+            <p class="text-base font-semibold">Discovered addresses</p>
+            <Badge variant="outline">{{ romKnownAddressesValues.length }} entries</Badge>
+          </div>
+        </template>
+        <ScrollArea class="h-[28rem] max-h-full">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Address</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Description</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="row in bodyRows" :key="row.name">
+                <TableCell class="font-medium">{{ row.name }}</TableCell>
+                <TableCell class="font-mono">{{ row.address }}</TableCell>
+                <TableCell>{{ row.type }}</TableCell>
+                <TableCell>{{ row.description }}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </ScrollArea>
       </GlassPanel>
     </div>
-    <div v-else>
-      <p>No ROM loaded</p>
-    </div>
+
+    <GlassPanel v-else class="flex h-full items-center justify-center text-center">
+      <p class="text-muted-foreground text-sm">No ROM loaded.</p>
+    </GlassPanel>
   </div>
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
+import { ImportantValues, KnownAddressesDescriptions, type KnownAddresses } from '@repo/kid-util'
+import { Badge } from '~/components/ui/badge'
+import { ScrollArea } from '~/components/ui/scroll-area'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '~/components/ui/table'
 import useRomStore from '~/stores/romStore'
 import { addressFormat, getByteSize } from '~/utils/index'
-import { ImportantValues, KnownAddressesDescriptions, type KnownAddresses } from '@repo/kid-util'
 
 const { romDetails, rom } = storeToRefs(useRomStore())
 type DetailsData = Record<string, Record<string, string>>
@@ -42,37 +108,39 @@ type DetailsData = Record<string, Record<string, string>>
 const romKnownAddresses = computed(() => rom.value?.discovery.knownAddresses)
 
 const romKnownAddressesValues = computed(() => {
-  const knownAdresses: KnownAddresses = romKnownAddresses.value ?? new Map()
+  const knownAddresses: KnownAddresses = romKnownAddresses.value ?? new Map()
   const mappedAddresses = (
     Object.keys(KnownAddressesDescriptions) as (typeof ImportantValues)[number][]
   ).map((key) => {
-    const knownValue = knownAdresses.get(key)
+    const knownValue = knownAddresses.get(key)
     const knownFormattedValue = knownValue ? addressFormat(knownValue) : '??'
     const description = KnownAddressesDescriptions[key] ?? {
-      description: 'Not Implemented yet',
+      description: 'Not implemented yet',
       addressInJUE: 'Unknown',
       name: key,
       type: 'Unknown',
     }
-    return [
-      description.name,
-      knownFormattedValue,
-      description.type.toUpperCase(),
-      description.description,
-    ]
+    return {
+      name: description.name,
+      address: knownFormattedValue,
+      type: description.type.toUpperCase(),
+      description: description.description,
+    }
   })
-  return [['Name', 'Address', 'Type', 'Description'], ...mappedAddresses]
+  return mappedAddresses
 })
 
+const bodyRows = computed(() => romKnownAddressesValues.value)
+
 const details = computed(() => {
-  if (!romDetails.value) return {}
+  if (!romDetails.value) return {} as DetailsData
   const calculatedChecksum = romDetails.value.header.calculatedChecksum
   let checksum = addressFormat(romDetails.value.header.checksum)
   if (calculatedChecksum) {
     checksum +=
       calculatedChecksum === romDetails.value.header.checksum
-        ? ' ✓'
-        : ` ✗ (Calculated: ${addressFormat(calculatedChecksum)})`
+        ? ' (valid)'
+        : ` (invalid, calculated: ${addressFormat(calculatedChecksum)})`
   }
   return {
     'File Details': {

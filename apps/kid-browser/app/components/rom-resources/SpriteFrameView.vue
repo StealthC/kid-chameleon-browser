@@ -1,31 +1,47 @@
 <template>
-  <div class="flex flex-col gap-2 rounded-lg border border-white/20 p-3">
-    <div class="text-sm font-bold">Sprite Frame — {{ resourceName }}</div>
-    <select
-      v-if="needSheet"
-      v-model="sheet"
-      class="rounded border border-white/30 bg-blue-950 p-1 text-sm text-white"
+  <div
+    class="border-border/60 flex h-full min-h-0 flex-col gap-3 rounded-lg border bg-slate-900/60 p-3"
+  >
+    <div class="flex items-center justify-between gap-2">
+      <p class="text-sm font-semibold">Sprite Frame — {{ resourceName }}</p>
+      <Badge variant="outline">{{ needSheet ? 'Needs sheet' : 'Embedded' }}</Badge>
+    </div>
+
+    <Select v-if="needSheet" v-model="sheetString">
+      <SelectTrigger>
+        <SelectValue placeholder="Select a tile sheet" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem v-for="s in sheets" :key="s.key" :value="String(s.value)">{{
+          s.name
+        }}</SelectItem>
+      </SelectContent>
+    </Select>
+
+    <div
+      class="border-border/60 flex max-h-[24rem] items-center justify-center overflow-auto rounded-md border bg-slate-950/60 p-2"
     >
-      <option :value="null" disabled>Select a tile sheet…</option>
-      <option v-for="s in sheets" :key="s.key" :value="s.value">{{ s.name }}</option>
-    </select>
-    <SpriteRenderer
-      v-if="bytes"
-      :bytes="bytes"
-      :tile-id="tileId"
-      :width="resource.width"
-      :height="resource.height"
-    />
-    <div class="rounded border border-white/20 p-2 font-mono text-xs">
-      <ul>
-        <li>CRC32: {{ addressFormat(resource.hash) }}</li>
-        <li>Resource Index: {{ addressFormat(resource.tableIndex ?? 0) }}</li>
-        <li>Tile ID: {{ addressFormat(tileId) }}</li>
-        <li>Width: {{ resource.width }}</li>
-        <li>Height: {{ resource.height }}</li>
-        <li>X Offset: {{ resource.xOffset }}</li>
-        <li>Y Offset: {{ resource.yOffset }}</li>
-      </ul>
+      <SpriteRenderer
+        v-if="bytes"
+        :bytes="bytes"
+        :tile-id="tileId"
+        :width="resource.width"
+        :height="resource.height"
+      />
+      <p v-else class="text-muted-foreground text-sm">
+        Select a sheet to preview this sprite frame.
+      </p>
+    </div>
+
+    <div class="border-border/60 rounded border bg-slate-950/60 p-2">
+      <Table>
+        <TableBody>
+          <TableRow v-for="row in rows" :key="row.label">
+            <TableCell class="text-muted-foreground text-xs">{{ row.label }}</TableCell>
+            <TableCell class="font-mono text-xs">{{ row.value }}</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
     </div>
   </div>
 </template>
@@ -38,6 +54,15 @@ import {
   type SpriteFrameRomResourceLoaded,
 } from '@repo/kid-util'
 import { computed, ref, toRefs, type Ref } from 'vue'
+import { Badge } from '~/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select'
+import { Table, TableBody, TableCell, TableRow } from '~/components/ui/table'
 import { addressFormat, getNormalizedName } from '~/utils/index'
 import { useResourceLoader } from '~/composables/useResourceLoader'
 
@@ -48,6 +73,12 @@ interface Props {
 const props = defineProps<Props>()
 const { resource } = toRefs(props)
 const sheet = ref<number | null>(null)
+const sheetString = computed({
+  get: () => (sheet.value === null ? '' : String(sheet.value)),
+  set: (value: string) => {
+    sheet.value = value ? Number(value) : null
+  },
+})
 const resourceLoader = useResourceLoader()
 const sheetList = resourceLoader.value.getResourceListOfTypeQuery('sheet')
 const isSheetSelected = computed(() => sheet.value !== null)
@@ -82,4 +113,14 @@ const bytes = computed(() => {
   }
   return null
 })
+
+const rows = computed(() => [
+  { label: 'CRC32', value: addressFormat(resource.value.hash) },
+  { label: 'Resource Index', value: addressFormat(resource.value.tableIndex ?? 0) },
+  { label: 'Tile ID', value: addressFormat(tileId.value) },
+  { label: 'Width', value: String(resource.value.width) },
+  { label: 'Height', value: String(resource.value.height) },
+  { label: 'X Offset', value: String(resource.value.xOffset) },
+  { label: 'Y Offset', value: String(resource.value.yOffset) },
+])
 </script>

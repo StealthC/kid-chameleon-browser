@@ -1,13 +1,14 @@
 <template>
-  <label
-    class="box-content cursor-pointer rounded-lg border border-primary p-2 text-primary hover:bg-primary/10"
-  >
-    Select ROM File
-    <input type="file" class="hidden" @change="loadFile" />
-  </label>
+  <Button variant="secondary" class="relative cursor-pointer">
+    <Icon name="heroicons:arrow-up-tray-solid" class="size-4" />
+    Select ROM file
+    <input type="file" class="absolute inset-0 cursor-pointer opacity-0" @change="loadFile" />
+  </Button>
 </template>
 
 <script setup lang="ts">
+import { Button } from '~/components/ui/button'
+
 const emit = defineEmits<{
   load: [bytes: ArrayBuffer]
 }>()

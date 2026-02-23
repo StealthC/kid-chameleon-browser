@@ -23,7 +23,7 @@
       </div>
       <div v-else class="flex-col items-center justify-center text-center text-white select-none">
         <p class="font-bold">Load ROM</p>
-        <div class="text-xs text-gray-400">Click Here</div>
+        <div class="text-xs text-gray-400">Click here</div>
       </div>
     </template>
 
@@ -34,15 +34,13 @@
           <p class="text-gray-400">ROM Hacks are partially supported.</p>
         </div>
       </div>
-      <div class="flex items-center justify-center gap-2">
+      <div class="flex flex-wrap items-center justify-center gap-2">
         <ReadFile @load="onFileRead" />
-        <button
-          v-if="rom"
-          @click="unloadRom"
-          class="box-content cursor-pointer rounded-lg border border-amber-500 p-2 text-amber-500 hover:bg-amber-900"
-        >
+        <Button v-if="rom" variant="outline" @click="unloadRom">
+          <Icon name="heroicons:eject-solid" class="size-4" />
           Unload
-        </button>
+        </Button>
+        <Badge v-if="rom" variant="secondary">Local only</Badge>
       </div>
     </div>
 
@@ -60,6 +58,8 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { ref } from 'vue'
+import { Badge } from '~/components/ui/badge'
+import { Button } from '~/components/ui/button'
 import useRomStore from '~/stores/romStore'
 
 const { rom, romDetails, romFullLoaded, romLoading } = storeToRefs(useRomStore())
