@@ -46,12 +46,12 @@ export function getNormalizedName(resource: AllRomResources | number, short = fa
   if (typeof resource === 'number') {
     return addressFormat(resource)
   }
+   if (resource.name) {
+    return resource.name
+  }
   let name = `${addressFormat(resource.baseAddress)}`
   if (!short) {
     name += ` - ${getNameForType(resource.type)}`
-  }
-  if (resource.name) {
-    name += `: ${resource.name}`
   }
   return name
 }

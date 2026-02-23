@@ -40,6 +40,7 @@ const computedValues = computed(() => {
     width: width.value,
     height: height.value,
     bytes: bytes.value,
+    paletteAddress: palette.value?.baseAddress ?? 'uv',
   }
 })
 

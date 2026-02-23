@@ -4,6 +4,9 @@ import { type ResourceType } from '@repo/kid-util'
 import useRomStore from '~/stores/romStore'
 import { getNormalizedName, parseAddressOrNull } from '~/utils/index'
 
+const HIDDEN_RESOURCE_TYPES = ['animation-step']
+const HIDDEN_RESOURCE_TYPE_SET = new Set<string>(HIDDEN_RESOURCE_TYPES)
+
 export function useResourcesIndex() {
   const route = useRoute()
   const { rom } = storeToRefs(useRomStore())
@@ -31,6 +34,7 @@ export function useResourcesIndex() {
 
     return Array.from(romValue.resources.resourcesByType.entries())
       .map(([type, resources]) => ({ type, count: resources.size }))
+      .filter(({ type }) => !HIDDEN_RESOURCE_TYPE_SET.has(String(type)))
       .filter(({ count }) => count > 0) as { type: ResourceType; count: number }[]
   })
 
@@ -64,6 +68,9 @@ export function useResourcesIndex() {
 
   const filteredResources = computed(() => {
     if (selectedTypeValue.value === 'all') return allResources.value
+    if (HIDDEN_RESOURCE_TYPE_SET.has(String(selectedTypeValue.value))) {
+      return allResources.value
+    }
     return allResources.value.filter((resource) => resource.type === selectedTypeValue.value)
   })
 

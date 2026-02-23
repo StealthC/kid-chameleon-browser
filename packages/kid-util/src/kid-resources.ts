@@ -77,6 +77,7 @@ export type AllRomResourcesLoaded =
 
 export type UnknownRomResourceUnloaded = UnloadedRomResource & {
   type: 'unknown'
+  possibleSize?: number
 }
 
 export type LoadedResourceOfType<K extends (typeof ResourceTypes)[number]> = Extract<
@@ -100,6 +101,7 @@ export type BaseRomResource = {
   readonly baseAddress: number
   readonly type: (typeof ResourceTypes)[number]
   addressOffset?: number
+  confidence?: 'certain' | 'possible'
   tags?: string[]
   name?: string
   description?: string

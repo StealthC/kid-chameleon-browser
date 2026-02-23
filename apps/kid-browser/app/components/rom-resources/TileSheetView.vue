@@ -18,6 +18,17 @@
       </div>
     </div>
 
+    <Select v-if="paletteOptions.length > 1" v-model="selectedPaletteKey">
+      <SelectTrigger>
+        <SelectValue placeholder="Select palette" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem v-for="option in paletteOptions" :key="option.key" :value="option.key">
+          {{ option.label }}
+        </SelectItem>
+      </SelectContent>
+    </Select>
+
     <div
       class="border-border/60 flex min-h-0 flex-1 items-center justify-center overflow-auto rounded-md border bg-slate-950/60 p-2"
     >
@@ -35,17 +46,25 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, toRefs } from 'vue'
+import { computed, ref, toRefs, watch } from 'vue'
 import {
   KidImageData,
   isLoadedResource,
   isPaletteResource,
+  type PaletteRomResourceLoaded,
   type SheetRomResourceLoaded,
 } from '@repo/kid-util'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select'
 import { useResourceLoader } from '~/composables/useResourceLoader'
-import { bitmapFromKidImageData } from '~/utils/index'
+import { bitmapFromKidImageData, getNormalizedName } from '~/utils/index'
 
 interface Props {
   resource: SheetRomResourceLoaded
@@ -58,14 +77,67 @@ const { resource } = toRefs(props)
 const value = ref(props.value ?? 16)
 const useColumns = ref(props.mode === 'columns')
 const valueMode = computed(() => (useColumns.value ? 'columns' : 'rows'))
+const selectedPaletteKey = ref<string>('')
+const previousNonUvCount = ref(0)
 const loader = useResourceLoader()
 const references = loader.getReferencesResourcesLoadedQuery(computed(() => resource.value.baseAddress))
 
-const sheetPalette = computed(() => {
+const availablePalettes = computed(() => {
   const related = references.data.value ?? []
-  return related.find(
+  const list = related.filter(
     (candidate) => isLoadedResource(candidate) && isPaletteResource(candidate),
   )
+  return list as PaletteRomResourceLoaded[]
+})
+
+const paletteOptions = computed(() => {
+  return [
+    { key: 'uv', label: 'UV' },
+    ...availablePalettes.value.map((palette) => ({
+      key: String(palette.baseAddress),
+      label: getNormalizedName(palette),
+    })),
+  ]
+})
+
+watch(
+  paletteOptions,
+  (options) => {
+    const nonUvOptions = options.filter((option) => option.key !== 'uv')
+    const firstNonUv = nonUvOptions[0]
+
+    if (selectedPaletteKey.value === '') {
+      selectedPaletteKey.value = firstNonUv?.key ?? 'uv'
+      previousNonUvCount.value = nonUvOptions.length
+      return
+    }
+
+    if (
+      selectedPaletteKey.value === 'uv' &&
+      previousNonUvCount.value === 0 &&
+      nonUvOptions.length > 0
+    ) {
+      selectedPaletteKey.value = firstNonUv.key
+      previousNonUvCount.value = nonUvOptions.length
+      return
+    }
+
+    const selectedStillExists = options.some((option) => option.key === selectedPaletteKey.value)
+    if (selectedStillExists) {
+      previousNonUvCount.value = nonUvOptions.length
+      return
+    }
+    selectedPaletteKey.value = firstNonUv?.key ?? 'uv'
+    previousNonUvCount.value = nonUvOptions.length
+  },
+  { immediate: true },
+)
+
+const selectedPalette = computed<PaletteRomResourceLoaded | undefined>(() => {
+  if (selectedPaletteKey.value === 'uv') {
+    return undefined
+  }
+  return availablePalettes.value.find((palette) => String(palette.baseAddress) === selectedPaletteKey.value)
 })
 
 const values = computed(() => {
@@ -73,13 +145,18 @@ const values = computed(() => {
   const cellsTotal = resource.value.tiles.length
   const columns = valueMode.value === 'columns' ? value.value : Math.ceil(cellsTotal / value.value)
   const rows = valueMode.value === 'rows' ? value.value : Math.ceil(cellsTotal / value.value)
-  return { columns, rows, cellsTotal }
+  return {
+    columns,
+    rows,
+    cellsTotal,
+    paletteKey: selectedPalette.value?.baseAddress ?? 'uv',
+  }
 })
 
 const draw = async (ctx: CanvasRenderingContext2D) => {
   if (!values.value) return
   const sheetImage = KidImageData.fromSheet(resource.value, valueMode.value, value.value)
-  const bitmap = await bitmapFromKidImageData(sheetImage, sheetPalette.value)
+  const bitmap = await bitmapFromKidImageData(sheetImage, selectedPalette.value)
   ctx.drawImage(bitmap, 0, 0)
 }
 </script>

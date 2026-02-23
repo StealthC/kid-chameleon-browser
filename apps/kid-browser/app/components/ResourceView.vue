@@ -8,7 +8,7 @@
       </div>
       <div v-else-if="isError" class="rounded bg-red-900/50 p-3 text-red-300">
         Error loading resource:
-        <div class="mt-1 font-mono text-white">{{ resource.error.value?.message }}</div>
+        <div class="mt-1 font-mono text-white">{{ error?.message }}</div>
       </div>
       <div v-else class="flex h-full min-h-0 flex-col overflow-hidden">
         <ScrollArea class="min-h-0 flex-1 pe-2">
@@ -17,9 +17,18 @@
               class="border-border/60 flex items-center justify-between gap-2 rounded-md border bg-slate-900/60 px-3 py-2"
             >
               <p class="text-muted-foreground text-sm">{{ addressFormat(resourceAddress) }}</p>
-              <Badge v-if="resource.data.value" variant="outline">
-                {{ getNameForType(resource.data.value.type) }}
-              </Badge>
+              <div class="flex items-center gap-2">
+                <Badge v-if="resource" variant="outline">
+                  {{ getNameForType(resource.type) }}
+                </Badge>
+                <Badge
+                  v-if="resource?.confidence === 'possible'"
+                  variant="secondary"
+                  class="uppercase"
+                >
+                  Possible
+                </Badge>
+              </div>
             </div>
 
             <div
@@ -134,7 +143,7 @@ interface Props {
 }
 const props = defineProps<Props>()
 const { resourceAddress } = toRefs(props)
-const { resource, referencesWithKind, referencedByWithKind, isError, isPending, title, hexData } =
+const { resource, error, referencesWithKind, referencedByWithKind, isError, isPending, title, hexData } =
   useResourceDetails(resourceAddress)
 
 const tileSheetComponent = defineAsyncComponent(
@@ -155,21 +164,28 @@ const animationStepComponent = defineAsyncComponent(
 const paletteComponent = defineAsyncComponent(
   () => import('~/components/rom-resources/PaletteView.vue'),
 )
+const unknownComponent = defineAsyncComponent(
+  () => import('~/components/rom-resources/UnknownView.vue'),
+)
 
 const componentValues = computed(() => {
-  if (!resource.data.value || !isLoadedResource(resource.data.value)) return null
-  if (isSheetResource(resource.data.value)) {
-    return { viewerComponent: tileSheetComponent, props: { resource: resource.data.value } }
-  } else if (isSpriteFrameResource(resource.data.value)) {
-    return { viewerComponent: spriteFrameComponent, props: { resource: resource.data.value } }
-  } else if (isPlaneResource(resource.data.value)) {
-    return { viewerComponent: planeComponent, props: { resource: resource.data.value } }
-  } else if (isAnimationResource(resource.data.value)) {
-    return { viewerComponent: animationComponent, props: { resource: resource.data.value } }
-  } else if (isAnimationStepResource(resource.data.value)) {
-    return { viewerComponent: animationStepComponent, props: { resource: resource.data.value } }
-  } else if (isPaletteResource(resource.data.value)) {
-    return { viewerComponent: paletteComponent, props: { resource: resource.data.value } }
+  if (!resource.value) return null
+  if (resource.value.type === 'unknown') {
+    return { viewerComponent: unknownComponent, props: { resource: resource.value } }
+  }
+  if (!isLoadedResource(resource.value)) return null
+  if (isSheetResource(resource.value)) {
+    return { viewerComponent: tileSheetComponent, props: { resource: resource.value } }
+  } else if (isSpriteFrameResource(resource.value)) {
+    return { viewerComponent: spriteFrameComponent, props: { resource: resource.value } }
+  } else if (isPlaneResource(resource.value)) {
+    return { viewerComponent: planeComponent, props: { resource: resource.value } }
+  } else if (isAnimationResource(resource.value)) {
+    return { viewerComponent: animationComponent, props: { resource: resource.value } }
+  } else if (isAnimationStepResource(resource.value)) {
+    return { viewerComponent: animationStepComponent, props: { resource: resource.value } }
+  } else if (isPaletteResource(resource.value)) {
+    return { viewerComponent: paletteComponent, props: { resource: resource.value } }
   }
   return null
 })

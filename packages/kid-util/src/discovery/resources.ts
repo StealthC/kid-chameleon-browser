@@ -19,6 +19,7 @@ export async function findAllResouces(kd: KidDiscovery) {
     findAnimationScriptResources,
     findSomeMoreResources,
     addThemeResources,
+    annotateUnknownResourcePossibleSizes,
   ]
   const queue = new PQueue({ concurrency: 4 })
   for (const fn of fns) {
@@ -27,6 +28,28 @@ export async function findAllResouces(kd: KidDiscovery) {
     })
   }
   await queue.onIdle()
+}
+
+function annotateUnknownResourcePossibleSizes(kd: KidDiscovery) {
+  const allResources = Array.from(kd.rom.resources.resources.values()).sort(
+    (a, b) => a.baseAddress - b.baseAddress,
+  )
+
+  for (let i = 0; i < allResources.length - 1; i++) {
+    const current = allResources[i]
+    if (current.type !== 'unknown') {
+      continue
+    }
+    const next = allResources[i + 1]
+    const delta = next.baseAddress - current.baseAddress
+    if (delta <= 0) {
+      continue
+    }
+    kd.rom.resources.createResource(current.baseAddress, 'unknown', {
+      ...current,
+      possibleSize: delta,
+    })
+  }
 }
 
 type AnimationTableGroup = {
@@ -372,6 +395,8 @@ function findAssetTableResources(kd: KidDiscovery) {
     return
   }
   let index = 0
+  const totalAssets = 0x49d
+  const assetSizeHints = buildAssetSizeHints(kd, assetTable, totalAssets)
   const endAddress = assetTable + 0x49d * 4
   for (let ptr = assetTable; ptr < endAddress; ptr += 4) {
     const tableOffset = ptr - assetTable
@@ -408,13 +433,111 @@ function findAssetTableResources(kd: KidDiscovery) {
       if (collisionPtr) {
         kd.rom.resources.addReference(resource, collisionPtr)
       }
-    } else {
-      kd.rom.resources.createResource(resourcePtr, 'unknown', {
-        description: `Unknown asset type ${type}`,
+    } else if (isColorAssetType(type)) {
+      const colorCount = getColorAssetTypeCount(type)
+      kd.rom.resources.createResource(resourcePtr, 'palette', {
+        size: colorCount,
+        addressOffset,
+        confidence: 'certain',
+        name: `Palette (${colorCount} colors)`,
+        description: `Asset table color entry ${type}`,
       })
+    } else {
+      const possibleSize = assetSizeHints.get(resourcePtr)
+      const inferredPaletteSize = inferPaletteSizeFromUnknownAsset(
+        kd,
+        resourcePtr,
+        assetSizeHints,
+      )
+      if (inferredPaletteSize) {
+        kd.rom.resources.createResource(resourcePtr, 'palette', {
+          size: inferredPaletteSize,
+          addressOffset,
+          confidence: 'possible',
+          description: `Inferred palette from unknown asset type ${type}`,
+          name: `Possible Palette (${inferredPaletteSize} colors)`,
+        })
+      } else {
+        kd.rom.resources.createResource(resourcePtr, 'unknown', {
+          possibleSize: possibleSize && possibleSize > 0 ? possibleSize : undefined,
+          description: `Unknown asset type ${type}`,
+        })
+      }
     }
     index++
   }
+}
+
+function isColorAssetType(type: unknown): type is string {
+  return typeof type === 'string' && /^Color\(\d+\)$/.test(type)
+}
+
+function getColorAssetTypeCount(type: string): number {
+  const match = /^Color\((\d+)\)$/.exec(type)
+  if (!match) {
+    return 0
+  }
+  return Number(match[1])
+}
+
+function inferPaletteSizeFromUnknownAsset(
+  kd: KidDiscovery,
+  currentAddress: number,
+  assetSizeHints: Map<number, number>,
+): number | null {
+  const maxSizeBytes = assetSizeHints.get(currentAddress)
+  if (!maxSizeBytes || maxSizeBytes <= 0 || maxSizeBytes > 32 || maxSizeBytes % 2 !== 0) {
+    return null
+  }
+
+  const words = maxSizeBytes / 2
+  for (let i = 0; i < words; i++) {
+    const color = kd.rom.data.getUint16(currentAddress + i * 2, false)
+    if (!isValidMdPaletteWord(color)) {
+      return null
+    }
+  }
+
+  return words
+}
+
+function buildAssetSizeHints(
+  kd: KidDiscovery,
+  assetTable: number,
+  totalAssets: number,
+): Map<number, number> {
+  const addresses = new Set<number>()
+  for (let index = 0; index < totalAssets; index++) {
+    if (AssetPtrTableTypes[index] === null) {
+      continue
+    }
+    const address = kd.rom.readPtr(assetTable + index * 4)
+    if (address > 0 && address < kd.rom.bytes.length) {
+      addresses.add(address)
+    }
+  }
+
+  const sorted = Array.from(addresses).sort((a, b) => a - b)
+  const sizeHints = new Map<number, number>()
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const current = sorted[i]
+    const next = sorted[i + 1]
+    const delta = next - current
+    if (delta > 0) {
+      sizeHints.set(current, delta)
+    }
+  }
+  return sizeHints
+}
+
+function isValidMdPaletteWord(value: number): boolean {
+  if ((value & 0xf000) !== 0) {
+    return false
+  }
+  if ((value & 0x111) !== 0) {
+    return false
+  }
+  return true
 }
 
 function findFrameCollisionFromTableResources(kd: KidDiscovery) {

@@ -72,6 +72,10 @@ describe('Rom checks', () => {
     const paletteMaps = rom.resources.getResourcesByType('palette-map')
     expect(paletteMaps.length).toBeGreaterThan(0)
 
+    const inferredMainTablePalette = rom.resources.getResource<'palette'>(0xa1c72)
+    expect(inferredMainTablePalette?.type).toBe('palette')
+    expect(inferredMainTablePalette?.size).toBe(12)
+
     const themeTitleSheet = rom.resources
       .getResourcesByType('sheet')
       .find((resource) => resource.name?.includes('Theme 1 Title Screen GFX'))
