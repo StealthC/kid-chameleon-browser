@@ -1,6 +1,7 @@
 import PQueue from 'p-queue'
 import type { KidDiscovery, KidDiscoveryFunction } from '~/kid-discovery'
 import { ExecuteInNextTick } from '../kid-utils'
+import { isSpriteFrameResource } from '../kid-resources'
 import {
   AssetPtrTableTypes,
   PackedTileSheet,
@@ -13,6 +14,8 @@ export async function findAllResouces(kd: KidDiscovery) {
     findFrameCollisionFromTableResources,
     findAssetTableResources,
     findAllLevelHeaders,
+    findHudAnimationFrameResources,
+    findAnimationScriptResources,
     findSomeMoreResources,
     addThemeResources,
   ]
@@ -23,6 +26,296 @@ export async function findAllResouces(kd: KidDiscovery) {
     })
   }
   await queue.onIdle()
+}
+
+type AnimationTableGroup = {
+  name: string
+  sequenceOffset: number
+  pointerOffset: number
+}
+
+function findHudAnimationFrameResources(kd: KidDiscovery) {
+  // UpdateStaticAnimations (ROM JUE starts at $44dc)
+  const pattern =
+    '1e 38 fa ?? 48 87 53 47 66 00 ?? ?? 1e 38 fa ?? 48 87 54 47 11 c7 fa ?? 49 fb 70 ?? 1e 1c 6a 00 ?? ?? 7e 00 11 c7 fa ?? 60 ??'
+  let baseAddress: number
+  try {
+    baseAddress = kd.rom.findPattern(pattern)
+  } catch (_e) {
+    kd.log('Could not find UpdateStaticAnimations pattern for HUD animations')
+    return
+  }
+
+  const groups: AnimationTableGroup[] = [
+    { name: 'Coin', sequenceOffset: 0x2a, pointerOffset: 0x40 },
+    { name: 'Life', sequenceOffset: 0x94, pointerOffset: 0x9e },
+    { name: 'Clock', sequenceOffset: 0xe8, pointerOffset: 0xf2 },
+    { name: 'Diamond', sequenceOffset: 0x140, pointerOffset: 0x14c },
+    { name: 'Flag Top', sequenceOffset: 0x17e, pointerOffset: 0x18c },
+  ]
+
+  for (const group of groups) {
+    const sequenceAddress = baseAddress + group.sequenceOffset
+    const pointerTableAddress = baseAddress + group.pointerOffset
+    const frameOffsets = readAnimationSequenceFrameOffsets(kd, sequenceAddress)
+    if (frameOffsets.length === 0) {
+      continue
+    }
+    const maxFrameOffset = Math.max(...frameOffsets)
+    for (let frameOffset = 0; frameOffset <= maxFrameOffset; frameOffset += 4) {
+      const frameAddress = kd.rom.readPtr(pointerTableAddress + frameOffset)
+      const frameIndex = frameOffset / 4
+      kd.rom.resources.createResource(frameAddress, 'animation-frame', {
+        frameGroup: group.name,
+        frameIndex,
+        addressOffset: frameOffset,
+        tableAddress: pointerTableAddress,
+        inputSize: 0x80,
+        name: `${group.name} Animation Frame ${frameIndex}`,
+      })
+      kd.rom.resources.addReference(sequenceAddress, frameAddress)
+    }
+  }
+}
+
+function readAnimationSequenceFrameOffsets(kd: KidDiscovery, sequenceAddress: number): number[] {
+  const frameOffsets: number[] = []
+  let ptr = sequenceAddress
+  for (let i = 0; i < 0x40; i++) {
+    const step = kd.rom.data.getUint16(ptr, false)
+    if (step === 0xffff) {
+      break
+    }
+    frameOffsets.push(kd.rom.data.getUint8(ptr + 1))
+    ptr += 2
+  }
+  return frameOffsets
+}
+
+type ParsedAnimationStep = {
+  address: number
+  kind: number
+  delay: number
+  spriteOffset?: number
+  spriteAddress?: number
+  nextFrameAddress?: number
+}
+
+type ParsedAnimation = {
+  startAddress: number
+  terminatorAddress: number
+  totalFrames: number
+  steps: ParsedAnimationStep[]
+  frameStepAddresses: number[]
+}
+
+function findAnimationScriptResources(kd: KidDiscovery) {
+  const assetTable = kd.knownAddresses.get('assetTable')
+  if (!assetTable) {
+    return
+  }
+
+  const visitedStarts = new Set<number>()
+  const maxAddress = Math.min(kd.rom.bytes.length - 8, 0x50000)
+  const candidates: ParsedAnimation[] = []
+  for (let start = 0; start <= maxAddress; start += 2) {
+    if (visitedStarts.has(start)) {
+      continue
+    }
+    const parsed = parseAnimationScript(kd, start, assetTable)
+    if (!parsed) {
+      continue
+    }
+    visitedStarts.add(parsed.startAddress)
+    if (parsed.frameStepAddresses.length === 0 || parsed.totalFrames <= 0) {
+      continue
+    }
+    candidates.push(parsed)
+  }
+
+  const selected = selectBestNonOverlappingAnimations(candidates)
+  for (const parsed of selected) {
+    createAnimationResourcesFromParsed(kd, parsed)
+  }
+}
+
+function selectBestNonOverlappingAnimations(candidates: ParsedAnimation[]): ParsedAnimation[] {
+  const sorted = [...candidates].sort((a, b) => {
+    if (b.frameStepAddresses.length !== a.frameStepAddresses.length) {
+      return b.frameStepAddresses.length - a.frameStepAddresses.length
+    }
+    if (b.totalFrames !== a.totalFrames) {
+      return b.totalFrames - a.totalFrames
+    }
+    return a.startAddress - b.startAddress
+  })
+
+  const claimedFrames = new Set<number>()
+  const selected: ParsedAnimation[] = []
+  for (const candidate of sorted) {
+    if (candidate.frameStepAddresses.some((address) => claimedFrames.has(address))) {
+      continue
+    }
+    selected.push(candidate)
+    for (const frameAddress of candidate.frameStepAddresses) {
+      claimedFrames.add(frameAddress)
+    }
+  }
+
+  return selected
+}
+
+function parseAnimationScript(kd: KidDiscovery, startAddress: number, assetTable: number): ParsedAnimation | null {
+  if (kd.rom.data.getUint8(startAddress) !== 1) {
+    return null
+  }
+
+  const steps: ParsedAnimationStep[] = []
+  const frameStepAddresses: number[] = []
+  const visited = new Set<number>()
+  let current = startAddress
+  let totalFrames = 0
+  let hasValidSpriteFrameStep = false
+  const maxSteps = 128
+
+  for (let i = 0; i < maxSteps; i++) {
+    if (current < 0 || current >= kd.rom.bytes.length) {
+      return null
+    }
+    if (visited.has(current)) {
+      if (steps.length >= 2 && hasValidSpriteFrameStep) {
+        return {
+          startAddress,
+          terminatorAddress: current,
+          totalFrames,
+          steps,
+          frameStepAddresses,
+        }
+      }
+      return null
+    }
+    visited.add(current)
+
+    const kind = kd.rom.data.getUint8(current)
+    if (kind === 0) {
+      steps.push({ address: current, kind, delay: 0 })
+      if (steps.length >= 2 && hasValidSpriteFrameStep) {
+        return {
+          startAddress,
+          terminatorAddress: current,
+          totalFrames,
+          steps,
+          frameStepAddresses,
+        }
+      }
+      return null
+    }
+
+    if (kind === 1) {
+      if (current + 4 > kd.rom.bytes.length) {
+        return null
+      }
+      const delay = kd.rom.data.getUint8(current + 1)
+      if (delay === 0) {
+        return null
+      }
+      const spriteOffset = kd.rom.data.getUint16(current + 2, false)
+      if (spriteOffset >= 0x49d * 4) {
+        return null
+      }
+      const spriteAddress = kd.rom.readPtr(assetTable + spriteOffset)
+      if (spriteAddress <= 0 || spriteAddress >= kd.rom.bytes.length) {
+        return null
+      }
+      const spriteResource = kd.rom.resources.getResource(spriteAddress)
+      if (!spriteResource || !isSpriteFrameResource(spriteResource)) {
+        return null
+      }
+      const nextFrameAddress = current + 4
+      steps.push({
+        address: current,
+        kind,
+        delay,
+        spriteOffset,
+        spriteAddress,
+        nextFrameAddress,
+      })
+      frameStepAddresses.push(current)
+      hasValidSpriteFrameStep = true
+      totalFrames += delay
+      current = nextFrameAddress
+      continue
+    }
+
+    if (kind === 2) {
+      if (current + 2 > kd.rom.bytes.length) {
+        return null
+      }
+      const returnTo = kd.rom.data.getUint8(current + 1)
+      const nextFrameAddress = current + 1 - returnTo
+      if (nextFrameAddress < startAddress || nextFrameAddress >= kd.rom.bytes.length) {
+        return null
+      }
+      steps.push({ address: current, kind, delay: 0, nextFrameAddress })
+      current = nextFrameAddress
+      continue
+    }
+
+    return null
+  }
+
+  return null
+}
+
+function createAnimationResourcesFromParsed(kd: KidDiscovery, parsed: ParsedAnimation) {
+  if (parsed.frameStepAddresses.length === 0 || parsed.totalFrames <= 0) {
+    return
+  }
+
+  const existingAnimation = kd.rom.resources.getResource(parsed.startAddress)
+  if (existingAnimation && existingAnimation.type !== 'animation') {
+    return
+  }
+
+  const animation = kd.rom.resources.createResource(parsed.startAddress, 'animation', {
+    frameCount: parsed.frameStepAddresses.length,
+    totalFrames: parsed.totalFrames,
+    terminatorAddress: parsed.terminatorAddress,
+    stepAddresses: parsed.steps.map((step) => step.address),
+    name: `Animation @ ${parsed.startAddress.toString(16)}`,
+  })
+
+  for (const step of parsed.steps) {
+    if (step.address === parsed.startAddress) {
+      if (step.spriteAddress) {
+        kd.rom.resources.addReference(animation, step.spriteAddress)
+      }
+      continue
+    }
+
+    const existingStep = kd.rom.resources.getResource(step.address)
+    if (existingStep && existingStep.type !== 'animation-step') {
+      continue
+    }
+
+    kd.rom.resources.createResource(step.address, 'animation-step', {
+      animationAddress: parsed.startAddress,
+      kind: step.kind,
+      delay: step.delay,
+      spriteOffset: step.spriteOffset,
+      spriteAddress: step.spriteAddress,
+      nextFrameAddress: step.nextFrameAddress,
+      addressOffset: step.address - parsed.startAddress,
+      name: `Animation Step ${step.kind} @ ${step.address.toString(16)}`,
+    })
+    kd.rom.resources.addReference(animation, step.address)
+    if (step.spriteAddress) {
+      kd.rom.resources.addReference(step.address, step.spriteAddress)
+    }
+    if (step.nextFrameAddress !== undefined && step.nextFrameAddress >= parsed.startAddress) {
+      kd.rom.resources.addReference(step.address, step.nextFrameAddress)
+    }
+  }
 }
 
 async function findAllLevelHeaders(kd: KidDiscovery) {
@@ -80,6 +373,7 @@ function findAssetTableResources(kd: KidDiscovery) {
   let index = 0
   const endAddress = assetTable + 0x49d * 4
   for (let ptr = assetTable; ptr < endAddress; ptr += 4) {
+    const tableOffset = ptr - assetTable
     const type = AssetPtrTableTypes[index]
     if (type === null) {
       kd.rom.tables.assetIndexTable.push(null)
@@ -87,16 +381,20 @@ function findAssetTableResources(kd: KidDiscovery) {
       continue
     }
     const resourcePtr = kd.rom.readPtr(ptr)
+    const currentAddressOffset = kd.rom.resources.getResource(resourcePtr)?.addressOffset
+    const addressOffset = currentAddressOffset ?? tableOffset
     kd.rom.tables.assetIndexTable.push(resourcePtr)
     const collisionPtr = kd.rom.tables.collisionIndexTable[index]
     if (type === PackedTileSheet) {
       kd.rom.resources.createResource(resourcePtr, 'sheet', {
         tableIndex: index,
+        addressOffset,
         packed: { format: 'kid' },
       })
     } else if (type === SpriteFrameType) {
       const resource = kd.rom.resources.createResource(resourcePtr, 'unlinked-sprite-frame', {
         tableIndex: index,
+        addressOffset,
       })
       if (collisionPtr) {
         kd.rom.resources.addReference(resource, collisionPtr)
@@ -104,6 +402,7 @@ function findAssetTableResources(kd: KidDiscovery) {
     } else if (type === SpriteFrameWithDataType) {
       const resource = kd.rom.resources.createResource(resourcePtr, 'linked-sprite-frame', {
         tableIndex: index,
+        addressOffset,
       })
       if (collisionPtr) {
         kd.rom.resources.addReference(resource, collisionPtr)
@@ -133,6 +432,7 @@ function findFrameCollisionFromTableResources(kd: KidDiscovery) {
     kd.rom.tables.collisionIndexTable.push(address)
     kd.rom.resources.createResource(address, 'sprite-collision', {
       wordIndex: index,
+      addressOffset: index * 2,
       isInvalid: address >= addressLimit,
     })
     firstData = Math.min(firstData, address)

@@ -12,8 +12,10 @@ export function useResourceDetails(resourceAddress: MaybeRef<number>) {
   const resourceAddressValue = computed(() => unref(resourceAddress))
   const resource = loader.useGetResourceLoadedQuery(resourceAddressValue)
   const referencesQuery = loader.getReferencesResourcesQuery(resourceAddressValue)
+  const referencedByQuery = loader.getReferencedByResourcesQuery(resourceAddressValue)
 
   const references = computed(() => referencesQuery.data.value ?? [])
+  const referencedBy = computed(() => referencedByQuery.data.value ?? [])
   const { isError, isPending } = resource
 
   const title = computed(() => {
@@ -40,6 +42,7 @@ export function useResourceDetails(resourceAddress: MaybeRef<number>) {
   return {
     resource,
     references,
+    referencedBy,
     isError,
     isPending,
     title,

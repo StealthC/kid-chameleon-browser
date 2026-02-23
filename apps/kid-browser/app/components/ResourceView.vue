@@ -45,27 +45,50 @@
                 :data="hexData.inputData"
                 :address="hexData.inputAddress"
               />
-              <GlassPanel header="References" class="h-auto max-h-64">
-                <ScrollArea class="h-full pe-3">
-                  <ul class="space-y-1">
-                    <li
-                      v-for="ref in references"
-                      :key="ref.baseAddress"
-                      class="hover:bg-accent rounded-md px-2 py-1"
-                    >
-                      <NuxtLink
-                        class="block text-sm"
-                        :to="getResourceRoute(ref.baseAddress)"
+              <div class="flex flex-col gap-3">
+                <GlassPanel header="References" class="h-auto max-h-64">
+                  <ScrollArea class="h-full pe-3">
+                    <ul class="space-y-1">
+                      <li
+                        v-for="ref in references"
+                        :key="ref.baseAddress"
+                        class="hover:bg-accent rounded-md px-2 py-1"
                       >
-                        {{ getNormalizedName(ref) }}
-                      </NuxtLink>
-                    </li>
-                    <li v-if="references.length === 0" class="text-muted-foreground text-sm">
-                      No references mapped.
-                    </li>
-                  </ul>
-                </ScrollArea>
-              </GlassPanel>
+                        <NuxtLink
+                          class="block text-sm"
+                          :to="getResourceRoute(ref.baseAddress)"
+                        >
+                          {{ getNormalizedName(ref) }}
+                        </NuxtLink>
+                      </li>
+                      <li v-if="references.length === 0" class="text-muted-foreground text-sm">
+                        No references mapped.
+                      </li>
+                    </ul>
+                  </ScrollArea>
+                </GlassPanel>
+                <GlassPanel header="Referenced By" class="h-auto max-h-64">
+                  <ScrollArea class="h-full pe-3">
+                    <ul class="space-y-1">
+                      <li
+                        v-for="ref in referencedBy"
+                        :key="ref.baseAddress"
+                        class="hover:bg-accent rounded-md px-2 py-1"
+                      >
+                        <NuxtLink
+                          class="block text-sm"
+                          :to="getResourceRoute(ref.baseAddress)"
+                        >
+                          {{ getNormalizedName(ref) }}
+                        </NuxtLink>
+                      </li>
+                      <li v-if="referencedBy.length === 0" class="text-muted-foreground text-sm">
+                        No resources point to this address.
+                      </li>
+                    </ul>
+                  </ScrollArea>
+                </GlassPanel>
+              </div>
             </div>
           </div>
         </ScrollArea>
@@ -79,6 +102,8 @@ import { useResourceDetails } from '~/composables/useResourceDetails'
 import { Badge } from '~/components/ui/badge'
 import { ScrollArea } from '~/components/ui/scroll-area'
 import {
+  isAnimationResource,
+  isAnimationStepResource,
   isLoadedResource,
   isPlaneResource,
   isSheetResource,
@@ -92,7 +117,8 @@ interface Props {
 }
 const props = defineProps<Props>()
 const { resourceAddress } = toRefs(props)
-const { resource, references, isError, isPending, title, hexData } = useResourceDetails(resourceAddress)
+const { resource, references, referencedBy, isError, isPending, title, hexData } =
+  useResourceDetails(resourceAddress)
 
 const tileSheetComponent = defineAsyncComponent(
   () => import('~/components/rom-resources/TileSheetView.vue'),
@@ -103,6 +129,12 @@ const spriteFrameComponent = defineAsyncComponent(
 const planeComponent = defineAsyncComponent(
   () => import('~/components/rom-resources/PlaneView.vue'),
 )
+const animationComponent = defineAsyncComponent(
+  () => import('~/components/rom-resources/AnimationView.vue'),
+)
+const animationStepComponent = defineAsyncComponent(
+  () => import('~/components/rom-resources/AnimationStepView.vue'),
+)
 
 const componentValues = computed(() => {
   if (!resource.data.value || !isLoadedResource(resource.data.value)) return null
@@ -112,6 +144,10 @@ const componentValues = computed(() => {
     return { viewerComponent: spriteFrameComponent, props: { resource: resource.data.value } }
   } else if (isPlaneResource(resource.data.value)) {
     return { viewerComponent: planeComponent, props: { resource: resource.data.value } }
+  } else if (isAnimationResource(resource.data.value)) {
+    return { viewerComponent: animationComponent, props: { resource: resource.data.value } }
+  } else if (isAnimationStepResource(resource.data.value)) {
+    return { viewerComponent: animationStepComponent, props: { resource: resource.data.value } }
   }
   return null
 })

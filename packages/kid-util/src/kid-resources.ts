@@ -14,6 +14,8 @@ export const ResourceTypes = [
   'linked-sprite-frame',
   'sprite-collision',
   'animation-frame',
+  'animation',
+  'animation-step',
   'plane',
   'level-header',
   'level-tiles',
@@ -33,6 +35,9 @@ export const ResourceTypeLoaderMap: ResourceLoaderMap = {
   'unlinked-sprite-frame': loadUnlinkedSpriteFrameResource,
   'linked-sprite-frame': loadLinkedSpriteFrameResource,
   'sprite-collision': loadSpriteCollisionRomResource,
+  'animation-frame': loadAnimationFrameRomResource,
+  animation: loadAnimationRomResource,
+  'animation-step': loadAnimationStepRomResource,
   plane: loadPlaneRomResource,
   palette: loadPaletteRomResource,
   'palette-map': loadPaletteMapRomResource,
@@ -47,6 +52,9 @@ export type AllRomResourcesUnloaded =
   | UnlinkedSpriteFrameRomResourceUnloaded
   | LinkedSpriteFrameRomResourceUnloaded
   | SpriteCollisionRomResourceUnloaded
+  | AnimationFrameRomResourceUnloaded
+  | AnimationRomResourceUnloaded
+  | AnimationStepRomResourceUnloaded
   | PlaneRomResourceUnloaded
   | PaletteRomResourceUnloaded
   | PaletteMapRomResourceUnloaded
@@ -59,6 +67,9 @@ export type AllRomResourcesLoaded =
   | UnlinkedSpriteFrameRomResourceLoaded
   | LinkedSpriteFrameRomResourceLoaded
   | SpriteCollisionRomResourceLoaded
+  | AnimationFrameRomResourceLoaded
+  | AnimationRomResourceLoaded
+  | AnimationStepRomResourceLoaded
   | PlaneRomResourceLoaded
   | PaletteRomResourceLoaded
   | PaletteMapRomResourceLoaded
@@ -88,6 +99,7 @@ type ResourceLoaderMap = Partial<{
 export type BaseRomResource = {
   readonly baseAddress: number
   readonly type: (typeof ResourceTypes)[number]
+  addressOffset?: number
   tags?: string[]
   name?: string
   description?: string
@@ -170,6 +182,22 @@ export function isSpriteFrameResource(
   resource: BaseRomResource,
 ): resource is SpriteFrameRomResource {
   return resource.type === 'unlinked-sprite-frame' || resource.type === 'linked-sprite-frame'
+}
+
+export function isAnimationResource(resource: BaseRomResource): resource is AnimationRomResource {
+  return resource.type === 'animation'
+}
+
+export function isAnimationStepResource(
+  resource: BaseRomResource,
+): resource is AnimationStepRomResource {
+  return resource.type === 'animation-step'
+}
+
+export function isAnimationFrameResource(
+  resource: BaseRomResource,
+): resource is AnimationFrameRomResource {
+  return resource.type === 'animation-frame'
 }
 
 export function isUnlinkedSpriteFrameResource(
@@ -352,6 +380,69 @@ export type SpriteCollisionRomResourceLoaded = LoadedRomResource & {
 export type SpriteCollisionRomResource =
   | SpriteCollisionRomResourceUnloaded
   | SpriteCollisionRomResourceLoaded
+
+export type AnimationFrameRomResourceUnloaded = UnloadedRomResource & {
+  type: 'animation-frame'
+  frameGroup?: string
+  frameIndex?: number
+  tableAddress?: number
+  inputSize?: number
+}
+
+export type AnimationFrameRomResourceLoaded = LoadedRomResource & {
+  type: 'animation-frame'
+  frameGroup?: string
+  frameIndex?: number
+  tableAddress?: number
+  data: Uint8Array
+  tiles: KidImageData[]
+}
+
+export type AnimationFrameRomResource =
+  | AnimationFrameRomResourceUnloaded
+  | AnimationFrameRomResourceLoaded
+
+export type AnimationRomResourceUnloaded = UnloadedRomResource & {
+  type: 'animation'
+  frameCount?: number
+  totalFrames?: number
+  terminatorAddress?: number
+  stepAddresses?: number[]
+}
+
+export type AnimationRomResourceLoaded = LoadedRomResource & {
+  type: 'animation'
+  frameCount: number
+  totalFrames: number
+  terminatorAddress?: number
+  stepAddresses: number[]
+}
+
+export type AnimationRomResource = AnimationRomResourceUnloaded | AnimationRomResourceLoaded
+
+export type AnimationStepRomResourceUnloaded = UnloadedRomResource & {
+  type: 'animation-step'
+  animationAddress?: number
+  kind?: number
+  delay?: number
+  spriteOffset?: number
+  spriteAddress?: number
+  nextFrameAddress?: number
+}
+
+export type AnimationStepRomResourceLoaded = LoadedRomResource & {
+  type: 'animation-step'
+  animationAddress?: number
+  kind: number
+  delay: number
+  spriteOffset?: number
+  spriteAddress?: number
+  nextFrameAddress?: number
+}
+
+export type AnimationStepRomResource =
+  | AnimationStepRomResourceUnloaded
+  | AnimationStepRomResourceLoaded
 
 export function loadLevelHeaderRomResource(
   rom: Rom,
@@ -600,6 +691,87 @@ export function loadPaletteMapRomResource(
     ...resource,
     loaded: true,
     map,
+    hash,
+    inputSize,
+  }
+}
+
+export function loadAnimationFrameRomResource(
+  rom: Rom,
+  resource: AnimationFrameRomResourceUnloaded,
+): AnimationFrameRomResourceLoaded {
+  const { baseAddress, inputSize = 0x80 } = resource
+  const data = rom.bytes.subarray(baseAddress, baseAddress + inputSize)
+  const tiles: KidImageData[] = []
+  for (let i = 0; i < data.length; i += TILE_INDEXED4_BYTE_COUNT) {
+    const tile = data.subarray(i, i + TILE_INDEXED4_BYTE_COUNT)
+    tiles.push(KidImageData.from(tile, TILE_WIDTH, TILE_WIDTH, 'Indexed4'))
+  }
+  const hash = crc32(data)
+  return {
+    ...resource,
+    loaded: true,
+    data,
+    tiles,
+    hash,
+    inputSize,
+  }
+}
+
+export function loadAnimationRomResource(
+  rom: Rom,
+  resource: AnimationRomResourceUnloaded,
+): AnimationRomResourceLoaded {
+  const { baseAddress, frameCount = 0, totalFrames = 0, terminatorAddress, stepAddresses = [] } = resource
+  const endAddress = terminatorAddress ? terminatorAddress + 2 : baseAddress
+  const inputSize = Math.max(0, endAddress - baseAddress)
+  const bytes = rom.bytes.subarray(baseAddress, baseAddress + inputSize)
+  const hash = crc32(bytes)
+  return {
+    ...resource,
+    loaded: true,
+    frameCount,
+    totalFrames,
+    stepAddresses,
+    hash,
+    inputSize,
+  }
+}
+
+export function loadAnimationStepRomResource(
+  rom: Rom,
+  resource: AnimationStepRomResourceUnloaded,
+): AnimationStepRomResourceLoaded {
+  const { baseAddress } = resource
+  const kind = resource.kind ?? rom.data.getUint8(baseAddress)
+  const delay = resource.delay ?? (kind === 1 ? rom.data.getUint8(baseAddress + 1) : 0)
+  const spriteOffset = resource.spriteOffset ?? (kind === 1 ? rom.data.getUint16(baseAddress + 2, false) : undefined)
+  const spriteAddress =
+    resource.spriteAddress ??
+    (kind === 1 && spriteOffset !== undefined
+      ? (() => {
+          const fallbackAssetTable = 0xa09fe
+          return rom.readPtr(fallbackAssetTable + spriteOffset)
+        })()
+      : undefined)
+  const nextFrameAddress =
+    resource.nextFrameAddress ??
+    (kind === 1
+      ? baseAddress + 4
+      : kind === 2
+        ? baseAddress + 1 - rom.data.getUint8(baseAddress + 1)
+        : undefined)
+  const inputSize = kind === 1 ? 4 : kind === 2 ? 2 : 1
+  const bytes = rom.bytes.subarray(baseAddress, baseAddress + inputSize)
+  const hash = crc32(bytes)
+  return {
+    ...resource,
+    loaded: true,
+    kind,
+    delay,
+    spriteOffset,
+    spriteAddress,
+    nextFrameAddress,
     hash,
     inputSize,
   }

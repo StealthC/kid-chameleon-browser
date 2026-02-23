@@ -20,6 +20,14 @@ const getReferencesResourcesLoaded = (rom: Rom, resourceAddress: number) => {
   return rom.resources.getReferencesResourcesLoaded(resourceAddress)
 }
 
+const getReferencedByResources = (rom: Rom, resourceAddress: number) => {
+  return rom.resources.getMultipleResources(rom.resources.getReferencedBy(resourceAddress))
+}
+
+const getReferencedByResourcesLoaded = (rom: Rom, resourceAddress: number) => {
+  return rom.resources.getMultipleResourcesLoaded(rom.resources.getReferencedBy(resourceAddress))
+}
+
 const getResourcesOfType = <T extends (typeof ResourceTypes)[number]>(rom: Rom, type: T | T[]) => {
   return rom.resources.getResourcesByType<T>(type)
 }
@@ -126,6 +134,42 @@ export function useResourceLoader() {
     })
   }
 
+  const getReferencedByResourcesQuery = (
+    resourceAddress: MaybeRef<number | null | undefined>,
+  ) => {
+    const addressValue = computed(() => unref(resourceAddress))
+    const enabled = computed(() => hasRom.value && isValidAddress(addressValue.value))
+
+    return useQuery({
+      queryKey: computed(() => ['resource-referenced-by', addressValue.value] as const),
+      queryFn: () => {
+        if (!isValidAddress(addressValue.value)) {
+          throw new Error('Invalid resource address')
+        }
+        return getReferencedByResources(getRomOrThrow(), addressValue.value)
+      },
+      enabled,
+    })
+  }
+
+  const getReferencedByResourcesLoadedQuery = (
+    resourceAddress: MaybeRef<number | null | undefined>,
+  ) => {
+    const addressValue = computed(() => unref(resourceAddress))
+    const enabled = computed(() => hasRom.value && isValidAddress(addressValue.value))
+
+    return useQuery({
+      queryKey: computed(() => ['resource-referenced-by-loaded', addressValue.value] as const),
+      queryFn: () => {
+        if (!isValidAddress(addressValue.value)) {
+          throw new Error('Invalid resource address')
+        }
+        return getReferencedByResourcesLoaded(getRomOrThrow(), addressValue.value)
+      },
+      enabled,
+    })
+  }
+
   return {
     hasRom,
     useGetResourceQuery,
@@ -133,5 +177,7 @@ export function useResourceLoader() {
     getResourceListOfTypeQuery,
     getReferencesResourcesQuery,
     getReferencesResourcesLoadedQuery,
+    getReferencedByResourcesQuery,
+    getReferencedByResourcesLoadedQuery,
   }
 }
