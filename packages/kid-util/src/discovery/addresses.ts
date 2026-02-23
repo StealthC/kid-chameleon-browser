@@ -52,7 +52,14 @@ export async function findAllKnownAddresses(kd: KidDiscovery) {
   const queue = new PQueue({ concurrency: 4 })
   for (const fn of fns) {
     await queue.add(async () => {
-      await ExecuteInNextTick(() => fn(kd))
+      await ExecuteInNextTick(() => {
+        try {
+          return fn(kd)
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          kd.log('Address discovery skipped for', fn.name, '-', message)
+        }
+      })
     })
   }
   await queue.onIdle()
@@ -276,6 +283,7 @@ function findLevelTitleCardTableAndElsewhere(kd: KidDiscovery) {
   const signatures = [
     '0c 47 ?? ?? 6d 02 7e ?? ce fc 00 0a 49 fa ?? ?? 24 74 70 00 26 74 70 04 30 34 70 08',
     '0c 4? ?? ?? 6? ?? 7? ?? ce fc 00 0a 49 fa ?? ?? 24 74 70 00 26 74 70 04 30 34 70 08',
+    '0c 4? ?? ?? 6? ?? 7? ?? ce fc 00 0a 49 fa ?? ??',
   ]
 
   const candidateSet = new Set<number>()
