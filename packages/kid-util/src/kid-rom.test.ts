@@ -95,6 +95,12 @@ describe('Rom checks', () => {
       expect(loadedStep?.animationAddress).toBe(0x8bb4)
     }
 
+    const loopStep = rom.resources.getResource<'animation-step'>(0x8b72)
+    expect(loopStep?.type).toBe('animation-step')
+    expect(loopStep?.kind).toBe(2)
+    expect(loopStep?.animationAddress).toBe(0x8b6a)
+    expect(loopStep?.nextFrameAddress).toBe(0x8b6a)
+
     const animations = rom.resources.getResourcesByType('animation')
     const frameStepOwners = new Map<number, number>()
     for (const animation of animations) {

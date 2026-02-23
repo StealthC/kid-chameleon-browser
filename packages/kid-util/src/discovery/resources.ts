@@ -140,8 +140,22 @@ function findAnimationScriptResources(kd: KidDiscovery) {
   }
 
   const visitedStarts = new Set<number>()
+  const scriptSeedStarts = findAnimationScriptSeedsFromSetSprAnimationCalls(kd)
   const maxAddress = Math.min(kd.rom.bytes.length - 8, 0x50000)
   const candidates: ParsedAnimation[] = []
+
+  for (const start of scriptSeedStarts) {
+    const parsed = parseAnimationScript(kd, start, assetTable)
+    if (!parsed) {
+      continue
+    }
+    visitedStarts.add(parsed.startAddress)
+    if (parsed.frameStepAddresses.length === 0 || parsed.totalFrames <= 0) {
+      continue
+    }
+    candidates.push(parsed)
+  }
+
   for (let start = 0; start <= maxAddress; start += 2) {
     if (visitedStarts.has(start)) {
       continue
@@ -158,9 +172,87 @@ function findAnimationScriptResources(kd: KidDiscovery) {
   }
 
   const selected = selectBestNonOverlappingAnimations(candidates)
+  const seededStarts = new Set(scriptSeedStarts)
+  let seededCount = 0
+  let scannedCount = 0
   for (const parsed of selected) {
-    createAnimationResourcesFromParsed(kd, parsed)
+    const isSeeded = seededStarts.has(parsed.startAddress)
+    createAnimationResourcesFromParsed(kd, parsed, isSeeded)
+    if (isSeeded) {
+      seededCount++
+    } else {
+      scannedCount++
+    }
   }
+
+  kd.log(
+    `Animation scripts: selected=${selected.length}, seeded=${seededCount}, scanned=${scannedCount}, seedCandidates=${scriptSeedStarts.length}`,
+  )
+}
+
+type AnimationScriptSeedCall = {
+  scriptAddress: number
+  jsrTarget: number
+}
+
+function findAnimationScriptSeedsFromSetSprAnimationCalls(kd: KidDiscovery): number[] {
+  const calls = findMoveLongImmediateD7FollowedByJsr(kd)
+  if (calls.length === 0) {
+    return []
+  }
+
+  const targetCount = new Map<number, number>()
+  for (const call of calls) {
+    targetCount.set(call.jsrTarget, (targetCount.get(call.jsrTarget) ?? 0) + 1)
+  }
+
+  const sortedTargets = Array.from(targetCount.entries()).sort((a, b) => b[1] - a[1])
+  const topTarget = sortedTargets[0]
+  if (!topTarget) {
+    return []
+  }
+
+  const [targetAddress, count] = topTarget
+  const minimumConfidenceCount = 3
+  const acceptedCalls =
+    count >= minimumConfidenceCount
+      ? calls.filter((call) => call.jsrTarget === targetAddress)
+      : calls
+
+  const starts = new Set<number>()
+  for (const call of acceptedCalls) {
+    if (call.scriptAddress > 0 && call.scriptAddress < kd.rom.bytes.length) {
+      starts.add(call.scriptAddress)
+    }
+  }
+  return Array.from(starts)
+}
+
+function findMoveLongImmediateD7FollowedByJsr(kd: KidDiscovery): AnimationScriptSeedCall[] {
+  const view = kd.rom.data
+  const calls: AnimationScriptSeedCall[] = []
+
+  // move.l #<script>,D7 ; jsr <target>
+  // supports jsr .w (4e b8 xxxx) and jsr .l (4e b9 xxxxxxxx)
+  const finder = kd.rom.createPatternFinder(
+    '2e 3c ?? ?? ?? ?? 4e [b8 ?? ??]||[b9 ?? ?? ?? ??]',
+  )
+  for (const address of finder.findAll()) {
+    const scriptAddress = view.getUint32(address + 2, false)
+    const jsrMode = kd.rom.bytes[address + 7]
+    const jsrTarget =
+      jsrMode === 0xb8
+        ? view.getUint16(address + 8, false)
+        : jsrMode === 0xb9
+          ? view.getUint32(address + 8, false)
+          : 0
+    if (jsrTarget === 0) {
+      continue
+    }
+    calls.push({ scriptAddress, jsrTarget })
+  }
+
+  return calls
 }
 
 function selectBestNonOverlappingAnimations(candidates: ParsedAnimation[]): ParsedAnimation[] {
@@ -291,7 +383,11 @@ function parseAnimationScript(kd: KidDiscovery, startAddress: number, assetTable
   return null
 }
 
-function createAnimationResourcesFromParsed(kd: KidDiscovery, parsed: ParsedAnimation) {
+function createAnimationResourcesFromParsed(
+  kd: KidDiscovery,
+  parsed: ParsedAnimation,
+  fromCallSiteSeed: boolean,
+) {
   if (parsed.frameStepAddresses.length === 0 || parsed.totalFrames <= 0) {
     return
   }
@@ -306,6 +402,7 @@ function createAnimationResourcesFromParsed(kd: KidDiscovery, parsed: ParsedAnim
     totalFrames: parsed.totalFrames,
     terminatorAddress: parsed.terminatorAddress,
     stepAddresses: parsed.steps.map((step) => step.address),
+    confidence: fromCallSiteSeed ? 'certain' : undefined,
     name: `Animation @ ${parsed.startAddress.toString(16)}`,
   })
 
@@ -318,7 +415,7 @@ function createAnimationResourcesFromParsed(kd: KidDiscovery, parsed: ParsedAnim
     }
 
     const existingStep = kd.rom.resources.getResource(step.address)
-    if (existingStep && existingStep.type !== 'animation-step') {
+    if (existingStep && existingStep.type !== 'animation-step' && existingStep.type !== 'unknown') {
       continue
     }
 
