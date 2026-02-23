@@ -131,6 +131,7 @@ import {
   isAnimationStepResource,
   isLevelBackgroundLayoutResource,
   isLevelEnemyLayoutResource,
+  isLevelTitleCardResource,
   isLoadedResource,
   isPaletteResource,
   isPlaneResource,
@@ -175,6 +176,9 @@ const levelEnemyLayoutComponent = defineAsyncComponent(
 const levelBackgroundLayoutComponent = defineAsyncComponent(
   () => import('~/components/rom-resources/LevelBackgroundLayoutView.vue'),
 )
+const levelTitleCardComponent = defineAsyncComponent(
+  () => import('~/components/rom-resources/LevelTitleCardView.vue'),
+)
 
 const componentValues = computed(() => {
   if (!resource.value) return null
@@ -198,6 +202,8 @@ const componentValues = computed(() => {
     return { viewerComponent: levelBackgroundLayoutComponent, props: { resource: resource.value } }
   } else if (isLevelEnemyLayoutResource(resource.value)) {
     return { viewerComponent: levelEnemyLayoutComponent, props: { resource: resource.value } }
+  } else if (isLevelTitleCardResource(resource.value)) {
+    return { viewerComponent: levelTitleCardComponent, props: { resource: resource.value } }
   }
   return null
 })

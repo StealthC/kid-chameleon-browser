@@ -440,6 +440,9 @@ function createAnimationResourcesFromParsed(
 }
 
 async function findAllLevelHeaders(kd: KidDiscovery) {
+  const levelTitleHeaderBaseAddr = 0x1a842
+  const levelTitleHeaderStride = 10
+  const levelTitleMaxIndex = 0x49
   const levelWordTable = kd.knownAddresses.get('levelWordTable')
   const levelWordTableBase = kd.knownAddresses.get('levelWordTableBase')
   const levelIndexesTable = kd.knownAddresses.get('levelIndexesTable')
@@ -459,9 +462,21 @@ async function findAllLevelHeaders(kd: KidDiscovery) {
     }
     const headerOffset = kd.rom.data.getUint16(levelWordTable + wordOffset * 2, false)
     const headerAdresss = headerOffset + levelWordTableBase
+
+    const effectiveLevelIndex = Math.min(index, levelTitleMaxIndex)
+    const titleCardAddress = levelTitleHeaderBaseAddr + effectiveLevelIndex * levelTitleHeaderStride
+    kd.rom.resources.createResource(titleCardAddress, 'level-title-card', {
+      levelIndex: index,
+      effectiveLevelIndex,
+    })
+    kd.rom.resources.addReference(headerAdresss, titleCardAddress)
+
+    const loadedTitleCard = await kd.rom.resources.getResourceLoaded<'level-title-card'>(titleCardAddress)
+
     kd.rom.resources.createResource(headerAdresss, 'level-header', {
       levelIndex: index,
       wordIndex: wordOffset,
+      name: loadedTitleCard?.titleText,
     })
     const loadedLevelHeader =
       await kd.rom.resources.getResourceLoaded<'level-header'>(headerAdresss)

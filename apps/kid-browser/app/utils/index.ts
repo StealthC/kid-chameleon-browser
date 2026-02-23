@@ -73,6 +73,7 @@ const nameForType: Partial<Record<(typeof ResourceTypes)[number], string>> = {
   'level-objects-header': 'Level Objects Header',
   'level-background-layout': 'Level Background Layout',
   'level-enemy-layout': 'Level Enemy Layout',
+  'level-title-card': 'Level Title Card',
   'sprite-collision': 'Sprite Collision',
 }
 

@@ -23,6 +23,7 @@ export const ResourceTypes = [
   'level-objects-header',
   'level-background-layout',
   'level-enemy-layout',
+  'level-title-card',
   'palette',
   'palette-map',
 ] as const
@@ -37,6 +38,7 @@ export const ResourceTypeLoaderMap: ResourceLoaderMap = {
   'level-objects-header': loadLevelObjectsHeaderRomResource,
   'level-background-layout': loadLevelBackgroundLayoutRomResource,
   'level-enemy-layout': loadLevelEnemyLayoutRomResource,
+  'level-title-card': loadLevelTitleCardRomResource,
   sheet: loadSheetRomResource,
   'unlinked-sprite-frame': loadUnlinkedSpriteFrameResource,
   'linked-sprite-frame': loadLinkedSpriteFrameResource,
@@ -70,6 +72,7 @@ export type AllRomResourcesUnloaded =
   | UnknownRomResourceUnloaded
   | LevelTilesRomResourceUnloaded
   | LevelBackgroundLayoutRomResourceUnloaded
+  | LevelTitleCardRomResourceUnloaded
 
 export type AllRomResourcesLoaded =
   | LevelHeaderRomResourceLoaded
@@ -88,6 +91,7 @@ export type AllRomResourcesLoaded =
   | PaletteMapRomResourceLoaded
   | LevelTilesRomResourceLoaded
   | LevelBackgroundLayoutRomResourceLoaded
+  | LevelTitleCardRomResourceLoaded
 
 export type UnknownRomResourceUnloaded = UnloadedRomResource & {
   type: 'unknown'
@@ -238,6 +242,27 @@ export type LevelBackgroundLayoutRomResource =
   | LevelBackgroundLayoutRomResourceUnloaded
   | LevelBackgroundLayoutRomResourceLoaded
 
+export type LevelTitleCardRomResourceUnloaded = UnloadedRomResource & {
+  type: 'level-title-card'
+  levelIndex: number
+  effectiveLevelIndex: number
+}
+
+export type LevelTitleCardRomResourceLoaded = LoadedRomResource & {
+  type: 'level-title-card'
+  levelIndex: number
+  effectiveLevelIndex: number
+  textAddress: number
+  layoutAddress: number
+  act: number
+  lines: string[]
+  titleText: string
+}
+
+export type LevelTitleCardRomResource =
+  | LevelTitleCardRomResourceUnloaded
+  | LevelTitleCardRomResourceLoaded
+
 export type PaletteRomResourceUnloaded = UnloadedRomResource & {
   type: 'palette'
   size: number
@@ -319,6 +344,12 @@ export function isLevelBackgroundLayoutResource(
   resource: BaseRomResource,
 ): resource is LevelBackgroundLayoutRomResource {
   return resource.type === 'level-background-layout'
+}
+
+export function isLevelTitleCardResource(
+  resource: BaseRomResource,
+): resource is LevelTitleCardRomResource {
+  return resource.type === 'level-title-card'
 }
 
 export function isUnlinkedSpriteFrameResource(
@@ -828,6 +859,115 @@ export function loadLevelBackgroundLayoutRomResource(
     format: 'layered',
     indirect,
     placements,
+  }
+}
+
+const levelTitleGlyphDisplayMap = new Map<number, string>([
+  [0x61, 'A'],
+  [0x62, 'B'],
+  [0x63, 'C'],
+  [0x64, 'D'],
+  [0x65, 'E'],
+  [0x66, 'F'],
+  [0x67, 'G'],
+  [0x68, 'H'],
+  [0x69, 'I'],
+  [0x6a, 'J'],
+  [0x6b, 'K'],
+  [0x6c, 'L'],
+  [0x6d, 'M'],
+  [0x6e, 'N'],
+  [0x6f, 'O'],
+  [0x70, 'P'],
+  [0x71, 'Q'],
+  [0x72, 'R'],
+  [0x73, 'S'],
+  [0x74, 'T'],
+  [0x75, 'U'],
+  [0x76, 'V'],
+  [0x77, 'W'],
+  [0x78, 'X'],
+  [0x79, 'Y'],
+  [0x7a, 'Z'],
+  [0x7b, 'I'],
+  [0x7c, 'THE'],
+  [0x7d, 'the'],
+  [0x7e, 'OF'],
+  [0x7f, 'to'],
+  [0x80, 'PLAYER'],
+  [0x81, '1'],
+  [0x82, '2'],
+  [0x83, "'"],
+])
+
+function toRomanNumeral(value: number): string {
+  const numerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']
+  if (value <= 0 || value > numerals.length) {
+    return String(value)
+  }
+  return numerals[value - 1]
+}
+
+export function loadLevelTitleCardRomResource(
+  rom: Rom,
+  resource: LevelTitleCardRomResourceUnloaded,
+): LevelTitleCardRomResourceLoaded {
+  const { baseAddress } = resource
+  const textAddress = rom.data.getUint32(baseAddress, false)
+  const layoutAddress = rom.data.getUint32(baseAddress + 4, false)
+  const act = rom.data.getUint16(baseAddress + 8, false)
+
+  const lines: string[] = []
+  let current = ''
+  const maxTitleBytes = 512
+  let cursor = textAddress
+
+  for (let i = 0; i < maxTitleBytes; i++) {
+    if (cursor >= rom.bytes.length) {
+      break
+    }
+    const code = rom.data.getUint8(cursor)
+    cursor++
+
+    if (code === 0xff) {
+      if (current.length > 0) {
+        lines.push(current)
+      }
+      break
+    }
+
+    if (code === 0x00) {
+      lines.push(current)
+      current = ''
+      continue
+    }
+
+    if (code === 0x84) {
+      current += ' '
+      continue
+    }
+
+    current += levelTitleGlyphDisplayMap.get(code) ?? ''
+  }
+
+  const normalizedLines = lines.map((line) => line.trim()).filter((line) => line.length > 0)
+  const titleBase = normalizedLines.join(' ').replace(/\s+/g, ' ').trim().toUpperCase()
+  const titleText = act > 0 ? `${titleBase} ${toRomanNumeral(act)}` : titleBase
+
+  const inputSize = 10
+  const bytes = rom.bytes.subarray(baseAddress, baseAddress + inputSize)
+  const hash = crc32(bytes)
+
+  return {
+    ...resource,
+    loaded: true,
+    hash,
+    inputSize,
+    textAddress,
+    layoutAddress,
+    act,
+    lines: normalizedLines,
+    titleText,
   }
 }
 

@@ -90,6 +90,9 @@ describe('Rom checks', () => {
     const firstLevelHeader = rom.resources.getResourcesByType('level-header')[0]
     expect(firstLevelHeader).toBeTruthy()
     if (firstLevelHeader) {
+      expect(firstLevelHeader.name).toBeTruthy()
+      expect(firstLevelHeader.name).toBe(firstLevelHeader.name?.toUpperCase())
+
       const loadedHeader = await rom.resources.getResourceLoaded<'level-header'>(firstLevelHeader.baseAddress)
       expect(loadedHeader).toBeTruthy()
       if (loadedHeader) {
@@ -106,6 +109,18 @@ describe('Rom checks', () => {
         )
         expect(backgroundLayout?.type).toBe('level-background-layout')
         expect(backgroundLayout?.format).toBeTruthy()
+
+        const titleCard = rom.resources
+          .getReferencesResources(loadedHeader.baseAddress)
+          .find((resource) => resource.type === 'level-title-card')
+        expect(titleCard?.type).toBe('level-title-card')
+        if (titleCard?.type === 'level-title-card') {
+          const loadedTitleCard = await rom.resources.getResourceLoaded<'level-title-card'>(
+            titleCard.baseAddress,
+          )
+          expect(loadedTitleCard?.titleText.length).toBeGreaterThan(0)
+          expect(loadedTitleCard?.titleText).toBe(loadedTitleCard?.titleText.toUpperCase())
+        }
 
         const objectsHeader = await rom.resources.getResourceLoaded<'level-objects-header'>(
           loadedHeader.levelObjectsHeaderPtr,
