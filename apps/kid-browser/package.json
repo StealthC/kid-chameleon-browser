@@ -12,6 +12,7 @@
   "dependencies": {
     "@nuxt/icon": "2.2.1",
     "@pinia/nuxt": "^0.11.3",
+    "@pixi/tilemap": "^5.0.2",
     "@repo/kid-util": "workspace:^",
     "@tailwindcss/vite": "^4.2.1",
     "@tanstack/vue-query": "^5.92.9",
@@ -24,6 +25,8 @@
     "lucide-vue-next": "^0.575.0",
     "nuxt": "^4.3.1",
     "pinia": "^3.0.4",
+    "pixi-viewport": "^6.0.3",
+    "pixi.js": "^8.16.0",
     "reka-ui": "^2.8.2",
     "shadcn-nuxt": "2.4.3",
     "tailwind-merge": "^3.5.0",

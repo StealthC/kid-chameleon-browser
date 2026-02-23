@@ -1,55 +1,104 @@
 <template>
-  <div class="flex h-full min-h-0 w-full flex-col gap-3">
-    <div class="flex flex-wrap items-center justify-end gap-2">
-      <template v-if="useColumns">
-        <Input type="number" v-model.number="columns" class="w-24 text-center" :min="1" :max="255" />
-        <Button size="icon-sm" variant="secondary" @click="columns++">
-          <Icon name="heroicons:plus-solid" class="size-4" />
-        </Button>
-        <Button size="icon-sm" variant="secondary" @click="columns = Math.max(1, columns - 1)">
-          <Icon name="heroicons:minus-solid" class="size-4" />
-        </Button>
-      </template>
-
-      <Select v-if="paletteOptions.length > 1" v-model="selectedPaletteKey">
-        <SelectTrigger class="w-56">
-          <SelectValue placeholder="Select palette" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem v-for="option in paletteOptions" :key="option.key" :value="option.key">
-            {{ option.label }}
-          </SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-
+  <div
+    :class="
+      isExpanded
+        ? 'fixed inset-4 z-50 rounded-xl border border-white/20 bg-slate-950/95 p-3 shadow-2xl'
+        : 'h-full w-full'
+    "
+  >
+    <div class="flex h-full min-h-90 w-full gap-3 flex-col md:flex-row">
     <div
-      class="border-border/60 flex min-h-0 flex-1 items-center justify-center overflow-auto rounded-md border bg-slate-950/60 p-2"
+      class="border-border/60 relative min-h-0 rounded-md border bg-slate-950/60 p-2 flex-1"
     >
-      <CanvasRenderer
-        v-if="computedValues"
-        :width="computedValues.width"
-        :height="computedValues.height"
-        :update-key="computedValues"
-        @update="draw"
-      ></CanvasRenderer>
+      <Button
+        size="icon-sm"
+        variant="secondary"
+        class="absolute top-3 right-3 z-20"
+        :title="isExpanded ? 'Restore' : 'Expand'"
+        @click="isExpanded = !isExpanded"
+      >
+        <Icon
+          :name="
+            isExpanded ? 'heroicons:arrows-pointing-in-solid' : 'heroicons:arrows-pointing-out-solid'
+          "
+          class="size-4"
+        />
+      </Button>
+      <PixiPlaneRenderer
+        :key="`${resource.baseAddress}-${isExpanded ? 'expanded' : 'normal'}`"
+        v-if="selectedSheet"
+        :plane="resource"
+        :sheet="selectedSheet"
+        :palette="selectedPalette"
+        :columns="calculatedColumns"
+        :show-grid="showGrid"
+        :show-selection="showSelection"
+        @tile-select="onTileSelect"
+      />
+      <div v-else class="flex h-full min-h-[280px] items-center justify-center text-xs text-slate-300">
+        Plane has no related sheet to render.
+      </div>
     </div>
+
+    <div class="flex min-h-0 flex-col gap-3 overflow-auto rounded-md border border-white/15 bg-black/20 p-3 text-sm text-slate-200">
+      <p class="text-xs uppercase tracking-wider text-slate-400">Inspector</p>
+      <p class="font-mono text-xs text-emerald-300">{{ selectedTileText }}</p>
+
+      <div class="space-y-2">
+        <p class="text-xs uppercase tracking-wider text-slate-400">Layers</p>
+        <label class="flex items-center gap-2 text-xs">
+          <input v-model="showGrid" type="checkbox" />
+          <span>Grid</span>
+        </label>
+        <label class="flex items-center gap-2 text-xs">
+          <input v-model="showSelection" type="checkbox" />
+          <span>Selection</span>
+        </label>
+      </div>
+
+      <div class="space-y-2">
+        <p class="text-xs uppercase tracking-wider text-slate-400">Options</p>
+        <template v-if="useColumns">
+          <div class="flex items-center gap-2">
+            <Input type="number" v-model.number="columns" class="w-24 text-center" :min="1" :max="255" />
+            <Button size="icon-sm" variant="secondary" @click="columns++">
+              <Icon name="heroicons:plus-solid" class="size-4" />
+            </Button>
+            <Button size="icon-sm" variant="secondary" @click="columns = Math.max(1, columns - 1)">
+              <Icon name="heroicons:minus-solid" class="size-4" />
+            </Button>
+          </div>
+        </template>
+
+        <Select v-if="paletteOptions.length > 1" v-model="selectedPaletteKey">
+          <SelectTrigger class="w-full">
+            <SelectValue placeholder="Select palette" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem v-for="option in paletteOptions" :key="option.key" :value="option.key">
+              {{ option.label }}
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, toRefs, watch } from 'vue'
 import {
-  KidImageData,
   isLoadedResource,
   isPaletteResource,
   type PaletteRomResourceLoaded,
   type PlaneRomResourceLoaded,
+  type PlaneRomResourceTile,
   type SheetRomResourceLoaded,
 } from '@repo/kid-util'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
-import { bitmapFromKidImageData, getNormalizedName } from '~/utils/index'
+import { getNormalizedName } from '~/utils/index'
 import { useResourceLoader } from '~/composables/useResourceLoader'
 import {
   Select,
@@ -72,6 +121,12 @@ const columns = ref(props.columns ?? 16)
 const calculatedColumns = computed(() => (useColumns.value ? columns.value : resource.value.width!))
 const selectedPaletteKey = ref<string>('')
 const previousNonUvCount = ref(0)
+const showGrid = ref(true)
+const showSelection = ref(true)
+const isExpanded = ref(false)
+const selectedTile = ref<{ x: number; y: number; index: number; tile: PlaneRomResourceTile } | null>(
+  null,
+)
 const loader = useResourceLoader()
 const resourceAddress = computed(() => resource.value.baseAddress)
 const related = loader.getReferencesResourcesLoadedQuery(resourceAddress)
@@ -142,24 +197,17 @@ watch(
   { immediate: true },
 )
 
-const computedValues = computed(() => {
-  const width = calculatedColumns.value * 8
-  const height = (resource.value.tiles.length / calculatedColumns.value) * 8
-  return {
-    plane: resource.value,
-    sheet: selectedSheet.value,
-    width,
-    height,
-    paletteKey: selectedPalette.value?.baseAddress ?? 'uv',
+const selectedTileText = computed(() => {
+  if (!selectedTile.value) {
+    return 'Nothing selected'
   }
+  const { x, y, index, tile } = selectedTile.value
+  return `tile(${x},${y}) idx=${index} tile=0x${tile.tileIndex
+    .toString(16)
+    .toUpperCase()} pal=${tile.palette} pri=${tile.priority ? 1 : 0} xFlip=${tile.xFlip ? 1 : 0} yFlip=${tile.yFlip ? 1 : 0}`
 })
 
-const draw = async (ctx: CanvasRenderingContext2D) => {
-  if (!selectedSheet.value) return
-  const bitmap = await bitmapFromKidImageData(
-    KidImageData.fromPlane(resource.value, selectedSheet.value, calculatedColumns.value),
-    selectedPalette.value,
-  )
-  ctx.drawImage(bitmap, 0, 0)
+const onTileSelect = (payload: { x: number; y: number; index: number; tile: PlaneRomResourceTile }) => {
+  selectedTile.value = payload
 }
 </script>

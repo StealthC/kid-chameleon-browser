@@ -66,7 +66,7 @@ const getResourcesOfType = <T extends (typeof ResourceTypes)[number]>(rom: Rom, 
 }
 
 export function useResourceLoader() {
-  const { rom } = storeToRefs(useRomStore())
+  const { rom, romSessionKey } = storeToRefs(useRomStore())
   const hasRom = computed(() => !!rom.value)
 
   const isValidAddress = (value: unknown): value is number => {
@@ -84,7 +84,7 @@ export function useResourceLoader() {
     const addressValue = computed(() => unref(address))
     const enabled = computed(() => hasRom.value && isValidAddress(addressValue.value))
     return useQuery({
-      queryKey: computed(() => ['resource', addressValue.value] as const),
+      queryKey: computed(() => ['resource', romSessionKey.value, addressValue.value] as const),
       queryFn: () => {
         if (!isValidAddress(addressValue.value)) {
           throw new Error('Invalid resource address')
@@ -105,7 +105,7 @@ export function useResourceLoader() {
     )
 
     return useQuery({
-      queryKey: computed(() => ['resource-loaded', addressValue.value] as const),
+      queryKey: computed(() => ['resource-loaded', romSessionKey.value, addressValue.value] as const),
       queryFn: () => {
         if (!isValidAddress(addressValue.value)) {
           throw new Error('Invalid resource address')
@@ -125,7 +125,7 @@ export function useResourceLoader() {
     )
 
     return useQuery({
-      queryKey: computed(() => ['resources-by-type', typeKey.value] as const),
+      queryKey: computed(() => ['resources-by-type', romSessionKey.value, typeKey.value] as const),
       queryFn: () => {
         return getResourcesOfType(getRomOrThrow(), typeValue.value)
       },
@@ -138,7 +138,9 @@ export function useResourceLoader() {
     const enabled = computed(() => hasRom.value && isValidAddress(addressValue.value))
 
     return useQuery({
-      queryKey: computed(() => ['resource-references', addressValue.value] as const),
+      queryKey: computed(
+        () => ['resource-references', romSessionKey.value, addressValue.value] as const,
+      ),
       queryFn: () => {
         if (!isValidAddress(addressValue.value)) {
           throw new Error('Invalid resource address')
@@ -156,7 +158,9 @@ export function useResourceLoader() {
     const enabled = computed(() => hasRom.value && isValidAddress(addressValue.value))
 
     return useQuery({
-      queryKey: computed(() => ['resource-references-loaded', addressValue.value] as const),
+      queryKey: computed(
+        () => ['resource-references-loaded', romSessionKey.value, addressValue.value] as const,
+      ),
       queryFn: () => {
         if (!isValidAddress(addressValue.value)) {
           throw new Error('Invalid resource address')
@@ -174,7 +178,9 @@ export function useResourceLoader() {
     const enabled = computed(() => hasRom.value && isValidAddress(addressValue.value))
 
     return useQuery({
-      queryKey: computed(() => ['resource-references-kind', addressValue.value] as const),
+      queryKey: computed(
+        () => ['resource-references-kind', romSessionKey.value, addressValue.value] as const,
+      ),
       queryFn: () => {
         if (!isValidAddress(addressValue.value)) {
           throw new Error('Invalid resource address')
@@ -192,7 +198,9 @@ export function useResourceLoader() {
     const enabled = computed(() => hasRom.value && isValidAddress(addressValue.value))
 
     return useQuery({
-      queryKey: computed(() => ['resource-referenced-by', addressValue.value] as const),
+      queryKey: computed(
+        () => ['resource-referenced-by', romSessionKey.value, addressValue.value] as const,
+      ),
       queryFn: () => {
         if (!isValidAddress(addressValue.value)) {
           throw new Error('Invalid resource address')
@@ -210,7 +218,9 @@ export function useResourceLoader() {
     const enabled = computed(() => hasRom.value && isValidAddress(addressValue.value))
 
     return useQuery({
-      queryKey: computed(() => ['resource-referenced-by-loaded', addressValue.value] as const),
+      queryKey: computed(
+        () => ['resource-referenced-by-loaded', romSessionKey.value, addressValue.value] as const,
+      ),
       queryFn: () => {
         if (!isValidAddress(addressValue.value)) {
           throw new Error('Invalid resource address')
@@ -228,7 +238,9 @@ export function useResourceLoader() {
     const enabled = computed(() => hasRom.value && isValidAddress(addressValue.value))
 
     return useQuery({
-      queryKey: computed(() => ['resource-referenced-by-kind', addressValue.value] as const),
+      queryKey: computed(
+        () => ['resource-referenced-by-kind', romSessionKey.value, addressValue.value] as const,
+      ),
       queryFn: () => {
         if (!isValidAddress(addressValue.value)) {
           throw new Error('Invalid resource address')

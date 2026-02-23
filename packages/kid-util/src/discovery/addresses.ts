@@ -242,12 +242,91 @@ function findThemeTitleScreenPalettePtrTable(kd: KidDiscovery) {
 
 */
 
-  const pattern = '3c 81 51 c8 ff fc 41 fa ?? ?? 20 70 70 00 43 f9 ff ff 4e 58'
-  const ptr = kd.rom.findPattern(pattern)
-  const offset = kd.rom.data.getInt16(ptr + 8, false)
-  const PC = ptr + 8
-  const address = PC + offset
-  kd.knownAddresses.set('themeTitleScreenPalettePtrTable', address)
+  const primaryPattern = '3c 81 51 c8 ff fc 41 fa ?? ?? 20 70 70 00 43 f9 ff ff 4e 58'
+  try {
+    const ptr = kd.rom.findPattern(primaryPattern)
+    const offset = kd.rom.data.getInt16(ptr + 8, false)
+    const PC = ptr + 8
+    const address = PC + offset
+    kd.knownAddresses.set('themeTitleScreenPalettePtrTable', address)
+    return
+  } catch (_error) {
+    // Fallback to heuristic search for heavily modified ROM hacks.
+  }
+
+  const fallbackAddress = findThemeTitleScreenPalettePtrTableHeuristic(kd)
+  if (fallbackAddress === undefined) {
+    throw new Error(`Pattern ${primaryPattern} not found`)
+  }
+  kd.knownAddresses.set('themeTitleScreenPalettePtrTable', fallbackAddress)
+}
+
+function findThemeTitleScreenPalettePtrTableHeuristic(kd: KidDiscovery): number | undefined {
+  const candidates = kd.rom.createPatternFinder('20 70 70 00').findAll()
+  const copyLoops = kd.rom.createPatternFinder('70 0f 32 d8 51 c8 ff fc').findAll()
+  let bestAddress: number | undefined
+  let bestScore = -1
+
+  for (const candidate of candidates) {
+    if (candidate < 4) {
+      continue
+    }
+    if (kd.rom.data.getUint8(candidate - 4) !== 0x41 || kd.rom.data.getUint8(candidate - 3) !== 0xfa) {
+      continue
+    }
+
+    const tableOffset = kd.rom.data.getInt16(candidate - 2, false)
+    const tableBase = candidate - 2 + tableOffset
+    if (tableBase <= 0 || tableBase >= kd.rom.bytes.length) {
+      continue
+    }
+
+    const pointerScore = scorePalettePointerTable(kd, tableBase)
+    if (pointerScore <= 0) {
+      continue
+    }
+
+    let score = pointerScore * 10
+    const copyLoop = copyLoops.find((address) => address >= candidate) ?? -1
+    if (copyLoop !== -1 && copyLoop - candidate <= 0xc0) {
+      score += 5
+    }
+
+    if (score > bestScore) {
+      bestScore = score
+      bestAddress = tableBase
+    }
+  }
+
+  return bestAddress
+}
+
+function scorePalettePointerTable(kd: KidDiscovery, tableBase: number): number {
+  const romSize = kd.rom.bytes.length
+  const themeCount = Math.max(1, kd.knownAddresses.get('numberOfThemes') ?? 10)
+  const maxEntries = Math.min(themeCount, 16)
+  let validPointers = 0
+
+  for (let i = 1; i <= maxEntries; i++) {
+    const ptr = kd.rom.readPtr(tableBase + i * 4)
+    if (ptr <= 0 || ptr + 32 > romSize) {
+      continue
+    }
+
+    let validWords = 0
+    for (let word = 0; word < 16; word++) {
+      const color = kd.rom.data.getUint16(ptr + word * 2, false)
+      if (color <= 0x0fff) {
+        validWords++
+      }
+    }
+
+    if (validWords >= 12) {
+      validPointers++
+    }
+  }
+
+  return validPointers
 }
 
 function findThemeTitleScreenSizeTable(kd: KidDiscovery) {

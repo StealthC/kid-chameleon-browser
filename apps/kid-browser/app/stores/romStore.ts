@@ -10,6 +10,7 @@ const useRomStore = defineStore('romStore', () => {
   const status = ref<RomStatus>('idle')
   const errorMessage = ref<string | null>(null)
   const initialized = ref<boolean>(false)
+  const romSessionKey = ref<number>(0)
   let initPromise: Promise<void> | null = null
 
   const romLoading = computed(() => status.value === 'loading' || status.value === 'restoring')
@@ -33,6 +34,7 @@ const useRomStore = defineStore('romStore', () => {
   async function loadRomData(bytes: Uint8Array): Promise<void> {
     const nextRom = new Rom(bytes)
     rom.value = nextRom
+    romSessionKey.value++
     romDetails.value = null
     await Promise.all([
       nextRom.loadResources(),
@@ -86,6 +88,7 @@ const useRomStore = defineStore('romStore', () => {
 
   async function unloadRom() {
     rom.value = null
+    romSessionKey.value++
     romDetails.value = null
     status.value = 'idle'
     errorMessage.value = null
@@ -120,6 +123,7 @@ const useRomStore = defineStore('romStore', () => {
   return {
     rom,
     romDetails,
+    romSessionKey,
     status,
     errorMessage,
     initialized,

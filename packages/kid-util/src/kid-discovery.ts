@@ -211,7 +211,7 @@ export const KnownAddressesDescriptions: Partial<
     name: 'Level Title Elsewhere Text',
     addressInJUE: 0x1a7f8,
     type: 'data',
-    description: 'Text stream used by the clamped level-title entry (not always named Elsewhere in hacks)',
+    description: 'Text stream used by the clamped level-title entry',
   },
   levelTitleElsewhereLayout: {
     name: 'Level Title Elsewhere Layout',
