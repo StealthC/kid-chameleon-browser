@@ -7,17 +7,17 @@
       "cache": false
     },
     "lint": {
-      "inputs": ["apps/*/src/**", "packages/*/src/**"],
+      "inputs": ["apps/*/src/**", "apps/*/app/**", "packages/*/src/**"],
       "cache": false
     },
     "format": {
-      "inputs": ["apps/*/src/**", "packages/*/src/**"],
+      "inputs": ["apps/*/src/**", "apps/*/app/**", "packages/*/src/**"],
       "cache": false
     },
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**"],
-      "env": ["BASE"]
+      "outputs": ["dist/**", ".output/**"],
+      "env": ["BASE", "npm_package_version"]
     },
     "build-packages": {
       "dependsOn": [],
