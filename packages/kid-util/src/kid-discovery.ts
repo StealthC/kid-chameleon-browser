@@ -23,7 +23,9 @@ export class KidDiscovery {
   private async runPreFunctions() {
     const queue = new PQueue({ concurrency: 4 })
     for (const fn of this.preFunctions) {
-      await queue.add(ExecuteInNextTick.bind(null, fn.bind(null, this)))
+      await queue.add(async () => {
+        await ExecuteInNextTick(() => fn(this))
+      })
     }
     await queue.onIdle()
   }
@@ -31,7 +33,9 @@ export class KidDiscovery {
   private async runPostFunctions() {
     const queue = new PQueue({ concurrency: 4 })
     for (const fn of this.postFunctions) {
-      await queue.add(ExecuteInNextTick.bind(null, fn.bind(null, this)))
+      await queue.add(async () => {
+        await ExecuteInNextTick(() => fn(this))
+      })
     }
     await queue.onIdle()
   }

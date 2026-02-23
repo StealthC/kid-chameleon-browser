@@ -100,7 +100,7 @@ function convertIndexed4ToRGBA(
   // Each Indexed4 byte becomes 2 pixels, each pixel with 4 bytes (RGBA)
   const rgbaImage = new Uint8ClampedArray(indexed4Image.length * 2 * 4)
   for (let i = 0; i < indexed4Image.length; i++) {
-    const [color1, color2] = getRGBAColorsFromIndexed4Byte(indexed4Image[i]!, palette)
+    const [color1, color2] = getRGBAColorsFromIndexed4Byte(indexed4Image[i], palette)
     rgbaImage.set(color1, i * 8)
     rgbaImage.set(color2, i * 8 + 4)
   }
@@ -341,7 +341,7 @@ export class KidImageData {
       }
       //const tileData = getIndexed4TileBytes(i, sheetData);
       //const tileImageData = KidImageData.from(tileData, TILE_WIDTH, TILE_HEIGHT, 'Indexed4');
-      const tileImageData = sheet.tiles[i]!
+      const tileImageData = sheet.tiles[i]
       sheetImageData.draw(tileImageData, x * TILE_WIDTH, y * TILE_HEIGHT)
     }
 
@@ -398,7 +398,7 @@ export class KidImageData {
           // Each byte stores 2 pixels:
           const srcByteIndex = Math.floor(srcPixelIndex / 2)
           const isSrcHighNibble = srcPixelIndex % 2 === 0
-          const srcByte = this.imageData[srcByteIndex]!
+          const srcByte = this.imageData[srcByteIndex]
           // Extract the corresponding nibble
           const pixelValue = isSrcHighNibble ? srcByte >> 4 : srcByte & 0x0f
 
@@ -412,11 +412,11 @@ export class KidImageData {
           if (isDstHighNibble) {
             // Write to the high nibble
             newImage.imageData[dstByteIndex] =
-              (pixelValue << 4) | (newImage.imageData[dstByteIndex]! & 0x0f)
+              (pixelValue << 4) | (newImage.imageData[dstByteIndex] & 0x0f)
           } else {
             // Write to the low nibble
             newImage.imageData[dstByteIndex] =
-              (newImage.imageData[dstByteIndex]! & 0xf0) | (pixelValue & 0x0f)
+              (newImage.imageData[dstByteIndex] & 0xf0) | (pixelValue & 0x0f)
           }
         }
       }

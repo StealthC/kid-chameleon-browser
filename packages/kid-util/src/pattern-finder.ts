@@ -36,14 +36,14 @@ class PatternParser {
 
   // Skips whitespace
   skipWhitespace(): void {
-    while (this.pos < this.input.length && /\s/.test(this.input[this.pos]!)) {
+    while (this.pos < this.input.length && /\s/.test(this.input[this.pos])) {
       this.pos++
     }
   }
 
   // Returns the current character without consuming it
   peek(): string | null {
-    return this.pos < this.input.length ? this.input[this.pos]! : null
+    return this.pos < this.input.length ? this.input[this.pos] : null
   }
 
   // Consumes a character; if an expected character is passed, consumes while it is equal
@@ -54,7 +54,7 @@ class PatternParser {
       }
       return expectedChar
     }
-    return this.input[this.pos++]!
+    return this.input[this.pos++]
   }
 
   // Checks if the current position starts with the given string
@@ -119,7 +119,7 @@ class PatternParser {
     const start = this.pos
     let bracketCount = 1
     while (this.pos < this.input.length && bracketCount > 0) {
-      const ch = this.input[this.pos]!
+      const ch = this.input[this.pos]
       if (ch === '[') {
         bracketCount++
       } else if (ch === ']') {
@@ -153,7 +153,7 @@ class PatternParser {
     }
     // If it has 2 characters and one of them is "?"
     if (token.length === 2) {
-      const [c0, c1] = [token[0]!, token[1]!]
+      const [c0, c1] = [token[0], token[1]]
       if (c0 === '?' && /[0-9A-F]/.test(c1)) {
         const value = parseInt(c1, 16)
         return { value, mask: 0x0f } // fixes lower nibble
@@ -203,7 +203,7 @@ export function matchPattern(data: Uint8Array, offset: number, pattern: Pattern)
   }
   // If it is a PatternSingleValue
   if (offset >= data.length) return -1
-  return (data[offset]! & pattern.mask) === (pattern.value & pattern.mask) ? 1 : -1
+  return (data[offset] & pattern.mask) === (pattern.value & pattern.mask) ? 1 : -1
 }
 
 // ========================================================

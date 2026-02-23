@@ -1,8 +1,10 @@
 {
-  "extends": "@codecompose/typescript-config/library.json",
+  "extends": "@codecompose/typescript-config/library",
   "compilerOptions": {
     "outDir": "dist",
     "lib": ["ESNext", "DOM"],
+    "declaration": true,
+    "erasableSyntaxOnly": false,
   },
   "exclude": [
       "**/*.test.ts"

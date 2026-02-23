@@ -1,0 +1,71 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@plugin '@tailwindcss/typography';
+
+@theme {
+  --scale-200: 2;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.75rem;
+  --background: oklch(21.191% 0.04477 239.711);
+  --foreground: oklch(0.98 0.01 200);
+  --card: oklch(0.23 0.02 238);
+  --card-foreground: oklch(0.98 0.01 200);
+  --popover: oklch(0.2 0.02 238);
+  --popover-foreground: oklch(0.98 0.01 200);
+  --primary: oklch(0.74 0.14 169);
+  --primary-foreground: oklch(0.2 0.02 238);
+  --secondary: oklch(0.31 0.02 236);
+  --secondary-foreground: oklch(0.98 0.01 200);
+  --muted: oklch(0.27 0.015 238);
+  --muted-foreground: oklch(0.78 0.015 210);
+  --accent: oklch(0.32 0.03 192);
+  --accent-foreground: oklch(0.98 0.01 200);
+  --destructive: oklch(0.68 0.19 25);
+  --border: oklch(0.44 0.03 215 / 0.6);
+  --input: oklch(0.33 0.02 225);
+  --ring: oklch(0.72 0.12 170);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html,
+  body,
+  #__nuxt {
+    @apply h-full;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    color-scheme: dark;
+  }
+}

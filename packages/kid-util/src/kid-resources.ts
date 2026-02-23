@@ -568,7 +568,7 @@ export function loadPaletteRomResource(
   resource: PaletteRomResourceUnloaded,
 ): PaletteRomResourceLoaded {
   const { baseAddress, size } = resource
-  const colors = []
+  const colors: number[] = []
   for (let i = 0; i < size; i++) {
     colors.push(rom.data.getUint16(baseAddress + i * 2, false))
   }
@@ -589,7 +589,7 @@ export function loadPaletteMapRomResource(
   resource: PaletteMapRomResourceUnloaded,
 ): PaletteMapRomResourceLoaded {
   const { baseAddress, size } = resource
-  const map = []
+  const map: number[] = []
   for (let i = 0; i < size; i++) {
     map.push(rom.data.getUint8(baseAddress + i))
   }
@@ -711,7 +711,7 @@ export class ResourceManager {
     const existingResource = this.resources.get(resource.baseAddress)
     if (!existingResource) {
       this.resources.set(resource.baseAddress, resource)
-      this.resourcesByType.get(resource.type)!.add(resource.baseAddress)
+      this.resourcesByType.get(resource.type).add(resource.baseAddress)
       return resource
     } else {
       if (existingResource.type === resource.type) {
@@ -724,16 +724,16 @@ export class ResourceManager {
         const typeObject = { type: existingResource.type }
         const newResource = { ...existingResource, ...resource, ...typeObject } as AllRomResources
         this.resources.set(resource.baseAddress, newResource)
-        this.resourcesByType.get(resource.type)!.delete(resource.baseAddress)
-        this.resourcesByType.get(newResource.type)!.add(resource.baseAddress)
+        this.resourcesByType.get(resource.type).delete(resource.baseAddress)
+        this.resourcesByType.get(newResource.type).add(resource.baseAddress)
         return newResource
       }
       // Do the same if its the opposite... but the new resources take precedence
       if (existingResource.type === 'unknown') {
         const typeObject = { type: resource.type }
         const newResource = { ...resource, ...existingResource, ...typeObject } as AllRomResources
-        this.resourcesByType.get(existingResource.type)!.delete(resource.baseAddress)
-        this.resourcesByType.get(newResource.type)!.add(resource.baseAddress)
+        this.resourcesByType.get(existingResource.type).delete(resource.baseAddress)
+        this.resourcesByType.get(newResource.type).add(resource.baseAddress)
         this.resources.set(resource.baseAddress, newResource)
         return newResource
       }
@@ -788,9 +788,9 @@ export class ResourceManager {
 
   getAllRelated(resource: AllRomResources | number): number[] {
     const address = typeof resource === 'number' ? resource : resource.baseAddress
-    const referenced = this.referencesMap.get(address) ?? []
-    const referencedBy = this.referencedByMap.get(address) ?? []
-    return Array.from(new Set([...referenced, ...referencedBy]))
+    const referenced = this.referencesMap.get(address)
+    const referencedBy = this.referencedByMap.get(address)
+    return Array.from(new Set([...(referenced ?? []), ...(referencedBy ?? [])]))
   }
 
   getReferences(resource: AllRomResources | number): number[] {
@@ -804,7 +804,10 @@ export class ResourceManager {
   }
 
   getMultipleResources(resources: Iterable<number>): AllRomResources[] {
-    return Array.from(resources).map((address) => this.resources.get(address)!)
+    return Array.from(resources).flatMap((address) => {
+      const resource = this.resources.get(address)
+      return resource ? [resource] : []
+    })
   }
 
   async getMultipleResourcesLoaded(resources: Iterable<number>): Promise<AllRomResourcesLoaded[]> {
@@ -867,9 +870,9 @@ export class ResourceManager {
   getResourceAddressesByType<T extends (typeof ResourceTypes)[number]>(type: T | T[]): number[] {
     // Get the merged types of one or more types
     if (typeof type === 'string') {
-      return Array.from(this.resourcesByType.get(type)!)
+      return Array.from(this.resourcesByType.get(type))
     } else {
-      return type.flatMap((t) => Array.from(this.resourcesByType.get(t)!))
+      return type.flatMap((t) => Array.from(this.resourcesByType.get(t)))
     }
   }
   getResourcesByType<T extends (typeof ResourceTypes)[number]>(
