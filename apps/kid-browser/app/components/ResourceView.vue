@@ -9,42 +9,153 @@
         <div class="mt-1 font-mono text-white">{{ error?.message }}</div>
       </div>
       <ScrollArea v-else class="h-full pe-3">
-        <div class="flex flex-col gap-3 justify-start items-stretch h-full">
-          <div
-            class="border-border/60 flex items-center justify-between gap-2 rounded-md border bg-slate-900/60 px-3 py-2">
-            <p class="text-muted-foreground text-sm">{{ addressFormat(resourceAddress) }}</p>
-            <div class="flex items-center gap-2">
+        <div class="flex h-full flex-col items-stretch justify-start gap-3">
+          <div class="border-border/60 flex flex-wrap items-center justify-between gap-2 rounded-md border bg-slate-900/60 px-3 py-2">
+            <div class="flex min-w-0 flex-wrap items-center gap-2">
+              <p class="text-muted-foreground font-mono text-sm">{{ addressFormat(resourceAddress) }}</p>
               <Badge v-if="resource" variant="outline">
                 {{ getNameForType(resource.type) }}
               </Badge>
-              <Badge v-if="resource?.confidence === 'possible'" variant="secondary" class="uppercase">
+              <Badge
+                v-if="resource?.confidence === 'possible'"
+                variant="outline"
+                class="border-amber-400/50 text-amber-200 uppercase"
+                title="Heuristic discovery; verify references before relying on this resource."
+              >
                 Possible
               </Badge>
+              <Badge v-if="resource?.loaded" variant="secondary" class="uppercase">Decoded</Badge>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-1">
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                :disabled="!canGoBack"
+                aria-label="History back"
+                title="History back (Alt+Left)"
+                @click="goBack"
+              >
+                <Icon name="heroicons:arrow-left-solid" class="size-4" />
+              </Button>
+              <span class="text-muted-foreground px-1 text-[10px]">History {{ historyPosition }}</span>
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                :disabled="!canGoForward"
+                aria-label="History forward"
+                title="History forward (Alt+Right)"
+                @click="goForward"
+              >
+                <Icon name="heroicons:arrow-right-solid" class="size-4" />
+              </Button>
+
+              <span class="mx-1 h-4 w-px bg-white/15"></span>
+
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                :disabled="previousInList === null"
+                aria-label="Previous resource in filtered list"
+                title="Previous in filtered list"
+                @click="goToListOffset(-1)"
+              >
+                <Icon name="heroicons:chevron-up-solid" class="size-4" />
+              </Button>
+              <span class="text-muted-foreground px-1 text-[10px]">List {{ listPosition }}</span>
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                :disabled="nextInList === null"
+                aria-label="Next resource in filtered list"
+                title="Next in filtered list"
+                @click="goToListOffset(1)"
+              >
+                <Icon name="heroicons:chevron-down-solid" class="size-4" />
+              </Button>
+
+              <span class="mx-1 h-4 w-px bg-white/15"></span>
+
+              <span class="text-muted-foreground text-[10px]">Related</span>
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                :disabled="previousRelated === null"
+                aria-label="Previous related resource"
+                title="Previous related resource"
+                @click="goToRelated(-1)"
+              >
+                <Icon name="heroicons:arrow-uturn-left-solid" class="size-4" />
+              </Button>
+              <span class="text-muted-foreground px-1 text-[10px]">{{ relatedPosition }}</span>
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                :disabled="nextRelated === null"
+                aria-label="Next related resource"
+                title="Next related resource"
+                @click="goToRelated(1)"
+              >
+                <Icon name="heroicons:arrow-uturn-right-solid" class="size-4" />
+              </Button>
             </div>
           </div>
 
           <div class="border-border/60 rounded-md border bg-indigo-950/55 p-3">
-            <component v-if="componentValues" :is="componentValues.viewerComponent" v-bind="componentValues.props"/>
-            <div v-else class="text-muted-foreground flex h-full items-center justify-center text-sm">
-              No dedicated viewer for this resource type.
+            <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <p class="text-sm font-semibold">Preview</p>
+              <Button
+                v-if="canCompare"
+                size="sm"
+                :variant="compareEnabled ? 'secondary' : 'ghost'"
+                @click="compareEnabled = !compareEnabled"
+              >
+                {{ compareEnabled ? 'Close comparison' : 'Compare…' }}
+              </Button>
+            </div>
+            <div :class="compareEnabled ? 'grid gap-3 2xl:grid-cols-2' : ''">
+              <VisualResourceView v-if="resource" :resource="resource" />
+              <div v-else class="text-muted-foreground flex h-full items-center justify-center text-sm">
+                No dedicated viewer for this resource type.
+              </div>
+              <ResourceComparePanel v-if="compareEnabled && resource" :current-resource="resource" />
             </div>
           </div>
 
+          <ResourceMetadataPanel
+            v-if="resource"
+            :resource="resource"
+            :reference-count="referencesWithKind.length"
+            :referenced-by-count="referencedByWithKind.length"
+          />
+
           <div class="grid gap-3 lg:grid-cols-2">
-            <HexView v-if="hexData" title="Input Data" :data="hexData.inputData" :address="hexData.inputAddress" />
+            <HexView
+              v-if="hexData"
+              title="Input Data"
+              :data="hexData.inputData"
+              :address="hexData.inputAddress"
+              :declared-size="hexData.declaredSize"
+            />
+            <GlassPanel v-else class="h-auto">
+              <p class="text-muted-foreground p-2 text-sm">
+                No byte range is declared for this resource, so hex inspection is unavailable.
+              </p>
+            </GlassPanel>
+
             <div class="flex flex-col gap-3">
               <GlassPanel header="References" class="h-auto max-h-64">
                 <ScrollArea class="h-full pe-3">
                   <ul class="space-y-1">
-                    <li v-for="ref in referencesWithKind" :key="`${ref.resource.baseAddress}-${ref.kind}`"
+                    <li v-for="reference in referencesWithKind" :key="`${reference.resource.baseAddress}-${reference.kind}`"
                       class="hover:bg-accent rounded-md px-2 py-1">
                       <div class="flex items-center justify-between gap-2">
                         <NuxtLink class="block min-w-0 truncate text-sm"
-                          :to="getResourceRoute(ref.resource.baseAddress)">
-                          {{ getNormalizedName(ref.resource) }}
+                          :to="getResourceRoute(reference.resource.baseAddress)">
+                          {{ getNormalizedName(reference.resource) }}
                         </NuxtLink>
                         <Badge variant="outline" class="px-1.5 py-0 text-[10px] uppercase tracking-wide">
-                          {{ ref.kind }}
+                          {{ reference.kind }}
                         </Badge>
                       </div>
                     </li>
@@ -57,15 +168,15 @@
               <GlassPanel header="Referenced By" class="h-auto max-h-64">
                 <ScrollArea class="h-full pe-3">
                   <ul class="space-y-1">
-                    <li v-for="ref in referencedByWithKind" :key="`${ref.resource.baseAddress}-${ref.kind}`"
+                    <li v-for="reference in referencedByWithKind" :key="`${reference.resource.baseAddress}-${reference.kind}`"
                       class="hover:bg-accent rounded-md px-2 py-1">
                       <div class="flex items-center justify-between gap-2">
                         <NuxtLink class="block min-w-0 truncate text-sm"
-                          :to="getResourceRoute(ref.resource.baseAddress)">
-                          {{ getNormalizedName(ref.resource) }}
+                          :to="getResourceRoute(reference.resource.baseAddress)">
+                          {{ getNormalizedName(reference.resource) }}
                         </NuxtLink>
                         <Badge variant="outline" class="px-1.5 py-0 text-[10px] uppercase tracking-wide">
-                          {{ ref.kind }}
+                          {{ reference.kind }}
                         </Badge>
                       </div>
                     </li>
@@ -77,30 +188,23 @@
               </GlassPanel>
             </div>
           </div>
-          </div>
+        </div>
       </ScrollArea>
     </GlassPanel>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed, ref, toRefs, watch } from 'vue'
+import { useEventListener } from '@vueuse/core'
 import { useResourceDetails } from '~/composables/useResourceDetails'
+import { useResourceNavigation } from '~/composables/useResourceNavigation'
+import { useResourcesIndex } from '~/composables/useResourcesIndex'
 import { Badge } from '~/components/ui/badge'
+import { Button } from '~/components/ui/button'
 import { ScrollArea } from '~/components/ui/scroll-area'
-import {
-  isAnimationResource,
-  isAnimationStepResource,
-  isLevelBackgroundLayoutResource,
-  isLevelEnemyLayoutResource,
-  isLevelTitleCardResource,
-  isLoadedResource,
-  isPaletteResource,
-  isPlaneResource,
-  isSheetResource,
-  isSpriteFrameResource,
-} from '@repo/kid-util'
-import { computed, defineAsyncComponent, toRefs } from 'vue'
 import { addressFormat, getNameForType, getNormalizedName, getResourceRoute } from '~/utils/index'
+import { isVisualResourceType } from '~/utils/resourceVisuals'
 
 interface Props {
   resourceAddress: number
@@ -110,62 +214,112 @@ const { resourceAddress } = toRefs(props)
 const { resource, error, referencesWithKind, referencedByWithKind, isError, isPending, title, hexData } =
   useResourceDetails(resourceAddress)
 
-const tileSheetComponent = defineAsyncComponent(
-  () => import('~/components/rom-resources/TileSheetView.vue'),
-)
-const spriteFrameComponent = defineAsyncComponent(
-  () => import('~/components/rom-resources/SpriteFrameView.vue'),
-)
-const planeComponent = defineAsyncComponent(
-  () => import('~/components/rom-resources/PlaneView.vue'),
-)
-const animationComponent = defineAsyncComponent(
-  () => import('~/components/rom-resources/AnimationView.vue'),
-)
-const animationStepComponent = defineAsyncComponent(
-  () => import('~/components/rom-resources/AnimationStepView.vue'),
-)
-const paletteComponent = defineAsyncComponent(
-  () => import('~/components/rom-resources/PaletteView.vue'),
-)
-const unknownComponent = defineAsyncComponent(
-  () => import('~/components/rom-resources/UnknownView.vue'),
-)
-const levelEnemyLayoutComponent = defineAsyncComponent(
-  () => import('~/components/rom-resources/LevelEnemyLayoutView.vue'),
-)
-const levelBackgroundLayoutComponent = defineAsyncComponent(
-  () => import('~/components/rom-resources/LevelBackgroundLayoutView.vue'),
-)
-const levelTitleCardComponent = defineAsyncComponent(
-  () => import('~/components/rom-resources/LevelTitleCardView.vue'),
-)
+const { filteredResources } = useResourcesIndex()
+const {
+  canGoBack,
+  canGoForward,
+  historyPosition,
+  recordVisit,
+  navigateToAddress,
+  goBack,
+  goForward,
+} = useResourceNavigation()
 
-const componentValues = computed(() => {
-  if (!resource.value) return null
-  if (resource.value.type === 'unknown') {
-    return { viewerComponent: unknownComponent, props: { resource: resource.value } }
+const compareEnabled = ref(false)
+
+watch(resourceAddress, (address) => recordVisit(address), { immediate: true })
+
+const listIndex = computed(() =>
+  filteredResources.value.findIndex((entry) => entry.address === resourceAddress.value),
+)
+const listPosition = computed(() =>
+  listIndex.value === -1 ? 'not filtered in' : `${listIndex.value + 1} / ${filteredResources.value.length}`,
+)
+const previousInList = computed(() => {
+  if (listIndex.value <= 0) {
+    return null
   }
-  if (!isLoadedResource(resource.value)) return null
-  if (isSheetResource(resource.value)) {
-    return { viewerComponent: tileSheetComponent, props: { resource: resource.value } }
-  } else if (isSpriteFrameResource(resource.value)) {
-    return { viewerComponent: spriteFrameComponent, props: { resource: resource.value } }
-  } else if (isPlaneResource(resource.value)) {
-    return { viewerComponent: planeComponent, props: { resource: resource.value } }
-  } else if (isAnimationResource(resource.value)) {
-    return { viewerComponent: animationComponent, props: { resource: resource.value } }
-  } else if (isAnimationStepResource(resource.value)) {
-    return { viewerComponent: animationStepComponent, props: { resource: resource.value } }
-  } else if (isPaletteResource(resource.value)) {
-    return { viewerComponent: paletteComponent, props: { resource: resource.value } }
-  } else if (isLevelBackgroundLayoutResource(resource.value)) {
-    return { viewerComponent: levelBackgroundLayoutComponent, props: { resource: resource.value } }
-  } else if (isLevelEnemyLayoutResource(resource.value)) {
-    return { viewerComponent: levelEnemyLayoutComponent, props: { resource: resource.value } }
-  } else if (isLevelTitleCardResource(resource.value)) {
-    return { viewerComponent: levelTitleCardComponent, props: { resource: resource.value } }
+  return filteredResources.value[listIndex.value - 1]?.address ?? null
+})
+const nextInList = computed(() => {
+  const nextIndex = listIndex.value + 1
+  if (nextIndex <= 0) {
+    return null
+  }
+  return filteredResources.value[nextIndex]?.address ?? null
+})
+
+const relatedAddresses = computed(() => {
+  const addresses = new Set<number>()
+  for (const entry of referencesWithKind.value) {
+    addresses.add(entry.resource.baseAddress)
+  }
+  for (const entry of referencedByWithKind.value) {
+    addresses.add(entry.resource.baseAddress)
+  }
+  return Array.from(addresses).sort((a, b) => a - b)
+})
+
+const relatedIndex = computed(() =>
+  relatedAddresses.value.findIndex((address) => address === resourceAddress.value),
+)
+const relatedPosition = computed(() =>
+  relatedAddresses.value.length === 0
+    ? 'none'
+    : relatedIndex.value === -1
+      ? `0 / ${relatedAddresses.value.length}`
+      : `${relatedIndex.value + 1} / ${relatedAddresses.value.length}`,
+)
+const previousRelated = computed(() => {
+  if (relatedIndex.value > 0) {
+    return relatedAddresses.value[relatedIndex.value - 1] ?? null
   }
   return null
 })
+const nextRelated = computed(() => {
+  if (relatedIndex.value === -1) {
+    return relatedAddresses.value[0] ?? null
+  }
+  return relatedAddresses.value[relatedIndex.value + 1] ?? null
+})
+
+const canCompare = computed(() => resource.value !== null && isVisualResourceType(resource.value.type))
+
+watch(
+  () => resource.value?.type,
+  (type) => {
+    if (type === undefined || !isVisualResourceType(type)) {
+      compareEnabled.value = false
+    }
+  },
+)
+
+function goToListOffset(offset: number) {
+  const target = offset < 0 ? previousInList.value : nextInList.value
+  if (target !== null) {
+    void navigateToAddress(target)
+  }
+}
+
+function goToRelated(offset: number) {
+  const target = offset < 0 ? previousRelated.value : nextRelated.value
+  if (target !== null) {
+    void navigateToAddress(target)
+  }
+}
+
+if (import.meta.client) {
+  useEventListener(window, 'keydown', (event) => {
+    if (!event.altKey || event.defaultPrevented) {
+      return
+    }
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault()
+      void goBack()
+    } else if (event.key === 'ArrowRight') {
+      event.preventDefault()
+      void goForward()
+    }
+  })
+}
 </script>

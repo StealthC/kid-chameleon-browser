@@ -14,7 +14,7 @@
         </GlassPanel>
         <div class="flex-1 flex items-center justify-center">
           <GlassPanel>
-            <nav class="grid grid-cols-3 gap-2">
+            <nav class="grid grid-cols-4 gap-2">
               <NuxtLink v-for="item in navItems" :key="item.to" :to="item.to" custom>
                 <template #default="{ navigate, href, isActive }">
                   <Button :variant="isActive ? 'secondary' : 'ghost'" size="sm" as-child>
@@ -46,16 +46,11 @@
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
-import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
-import { Card, CardContent } from '~/components/ui/card'
-import useRomStore from '~/stores/romStore'
-
-const { rom } = storeToRefs(useRomStore())
 
 const navItems = [
   { to: '/', label: 'Home', icon: 'heroicons:home-solid' },
+  { to: '/levels', label: 'Levels', icon: 'heroicons:map-solid' },
   { to: '/resources', label: 'Resources', icon: 'heroicons:squares-2x2-solid' },
   { to: '/about', label: 'About', icon: 'heroicons:information-circle-solid' },
 ]

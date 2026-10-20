@@ -1,11 +1,12 @@
 <template>
   <div class="md-cart">
-    <div @click="onToggle" class="cursor-pointer pt-4">
+    <button type="button" class="w-full cursor-pointer pt-4 text-inherit" :aria-expanded="!inserted" aria-controls="rom-loader-content" @click="onToggle">
       <header class="mx-auto w-9/12 p-2 text-center text-white">
         <slot name="header">{{ header }}</slot>
       </header>
-    </div>
+    </button>
     <div
+      id="rom-loader-content"
       :class="{
         'max-h-0': inserted,
         'max-h-72': !inserted,

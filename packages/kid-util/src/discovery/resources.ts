@@ -789,7 +789,7 @@ function findAssetTableResources(kd: KidDiscovery) {
   }
 }
 
-function isColorAssetType(type: unknown): type is string {
+function isColorAssetType(type: unknown): type is `Color(${number})` {
   return typeof type === 'string' && /^Color\(\d+\)$/.test(type)
 }
 

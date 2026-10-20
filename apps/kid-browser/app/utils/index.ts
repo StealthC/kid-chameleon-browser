@@ -16,7 +16,7 @@ export function getByteSize(value: number): string {
 
 export function getAddressNumber(address: string | number): number {
   if (typeof address === 'string') {
-    const cleanAddress = address.trim().replace(/^[\$]|^0x/g, '')
+    const cleanAddress = address.trim().replace(/^[ $]|^0x/g, '')
     address = parseInt(cleanAddress, 16)
   }
   return address

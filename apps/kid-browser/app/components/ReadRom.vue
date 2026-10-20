@@ -35,12 +35,15 @@
         </div>
       </div>
       <div class="flex flex-wrap items-center justify-center gap-2">
-        <ReadFile @load="onFileRead" />
+        <ReadFile @load="onFileRead" @error="loadError = $event" />
         <Button v-if="rom" variant="outline" :disabled="isBusy" @click="unloadRom">
           <Icon name="heroicons:bookmark-slash" class="size-4" />
           Unload
         </Button>
       </div>
+      <p v-if="romLoading" class="mt-2 text-center text-sm text-amber-200" role="status" aria-live="polite">Loading and analyzing ROM…</p>
+      <p v-else-if="loadError || errorMessage" class="mt-2 text-center text-sm text-red-300" role="alert">{{ loadError || errorMessage }}</p>
+      <p v-else-if="rom" class="mt-2 text-center text-xs text-gray-300">Stored only in this browser. Select Unload to remove it from local storage.</p>
     </div>
 
     <template #footer>
@@ -57,13 +60,13 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
-import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import useRomStore from '~/stores/romStore'
 
-const { rom, romDetails, romFullLoaded, romLoading, status } = storeToRefs(useRomStore())
+const { rom, romDetails, romFullLoaded, romLoading, status, errorMessage } = storeToRefs(useRomStore())
 const { loadRom, unloadRom } = useRomStore()
 const inserted = ref<boolean>(!!rom.value)
+const loadError = ref<string | null>(null)
 const isBusy = computed(() => status.value === 'loading' || status.value === 'restoring')
 
 watch(
@@ -83,11 +86,8 @@ watch(rom, (value, previousValue) => {
 })
 
 const onFileRead = async (bytes: ArrayBuffer) => {
-  try {
-    await loadRom(new Uint8Array(bytes))
-    inserted.value = true
-  } catch (e) {
-    console.error(e)
-  }
+  loadError.value = null
+  await loadRom(new Uint8Array(bytes))
+  if (status.value === 'ready') inserted.value = true
 }
 </script>

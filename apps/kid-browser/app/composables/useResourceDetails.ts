@@ -1,9 +1,9 @@
-import { isLoadedResource } from '@repo/kid-util'
 import { storeToRefs } from 'pinia'
 import { computed, unref, type MaybeRef } from 'vue'
 import { useResourceLoader } from '~/composables/useResourceLoader'
 import useRomStore from '~/stores/romStore'
 import { addressFormat, getNameForType } from '~/utils/index'
+import { getResourceSize } from '~/utils/resourceSearch'
 
 export function useResourceDetails(resourceAddress: MaybeRef<number>) {
   const { rom } = storeToRefs(useRomStore())
@@ -58,31 +58,23 @@ export function useResourceDetails(resourceAddress: MaybeRef<number>) {
   const hexData = computed(() => {
     if (!resource.value || !rom.value) return null
 
-    if (isLoadedResource(resource.value)) {
-      return {
-        inputData: rom.value.bytes.subarray(
-          resource.value.baseAddress,
-          resource.value.baseAddress + resource.value.inputSize,
-        ),
-        inputAddress: resource.value.baseAddress,
-      }
+    const declaredSize = getResourceSize(resource.value)
+    if (declaredSize === null || declaredSize <= 0) {
+      return null
     }
 
-    if (
-      resource.value.type === 'unknown' &&
-      'possibleSize' in resource.value &&
-      typeof resource.value.possibleSize === 'number'
-    ) {
-      return {
-        inputData: rom.value.bytes.subarray(
-          resource.value.baseAddress,
-          resource.value.baseAddress + resource.value.possibleSize,
-        ),
-        inputAddress: resource.value.baseAddress,
-      }
+    const start = resource.value.baseAddress
+    const end = Math.min(rom.value.bytes.length, start + declaredSize)
+    if (end <= start) {
+      return null
     }
 
-    return null
+    return {
+      inputData: rom.value.bytes.subarray(start, end),
+      inputAddress: start,
+      declaredSize,
+      truncated: end - start < declaredSize,
+    }
   })
 
   return {
