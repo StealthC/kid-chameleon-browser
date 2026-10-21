@@ -1,4 +1,5 @@
 import type { Rom } from './kid-rom'
+import { loadLevelGraphics, type LevelGraphics } from './level-graphics'
 import {
   type AllRomResourcesLoaded,
   type LevelBackgroundLayoutRomResourceLoaded,
@@ -580,6 +581,10 @@ export type LevelMap = {
   enemiesError?: string
   background?: LevelBackgroundLayoutRomResourceLoaded
   backgroundError?: string
+  /** Real ROM tile/palette art for the foreground and background. */
+  graphics?: LevelGraphics
+  /** Set when the ROM art could not be decoded; the viewer then keeps its generated colours. */
+  graphicsError?: string
 }
 
 /** Upper bound when a block stream has no inferred size; the stream ends with a 0x1F marker. */
@@ -663,6 +668,18 @@ export async function loadLevelMap(rom: Rom, headerAddress: number): Promise<Lev
     enemiesError = enemyLayout.error
   }
 
+  let graphics: LevelGraphics | undefined
+  let graphicsError: string | undefined
+  if (layout) {
+    try {
+      graphics = await loadLevelGraphics(rom, header, layout, blockStream, background.resource)
+    } catch (error) {
+      graphicsError = error instanceof Error ? error.message : String(error)
+    }
+  } else {
+    graphicsError = 'foreground layout is unavailable'
+  }
+
   return {
     headerAddress,
     header,
@@ -678,5 +695,7 @@ export async function loadLevelMap(rom: Rom, headerAddress: number): Promise<Lev
     enemiesError,
     background: background.resource,
     backgroundError: background.error,
+    graphics,
+    graphicsError,
   }
 }

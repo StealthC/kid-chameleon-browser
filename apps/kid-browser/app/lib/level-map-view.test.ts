@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import type { LevelMap } from '@repo/kid-util'
 import {
+  GRID_MIN_CELL_PIXELS,
+  LEVEL_MAP_LAYERS,
+  blockBorderColor,
   blockKindColor,
+  createDefaultLevelMapLayers,
   findLevelBlockAt,
   levelCellAtPixel,
+  shouldDrawGrid,
   summarizeLevelMap,
   terrainColor,
 } from './level-map-view'
@@ -174,5 +179,31 @@ describe('map lookups', () => {
     expect(terrainColor(7)).toMatch(/^hsl/)
     expect(terrainColor(7)).toBe(terrainColor(7))
     expect(terrainColor(0)).toBe('#1e293b')
+  })
+})
+
+describe('layer controls', () => {
+  it('exposes grid and block-border layers as independent defaults', () => {
+    const ids = LEVEL_MAP_LAYERS.map((layer) => layer.id)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(ids).toContain('grid')
+    expect(ids).toContain('blockBorders')
+
+    const layers = createDefaultLevelMapLayers()
+    expect(layers.grid).toBe(true)
+    expect(layers.blockBorders).toBe(true)
+  })
+
+  it('shows block border colours only while the border layer is on', () => {
+    const layers = createDefaultLevelMapLayers()
+    expect(blockBorderColor(layers, 0x09)).toBe(blockKindColor(0x09))
+    expect(blockBorderColor({ ...layers, blockBorders: false }, 0x09)).toBeNull()
+  })
+
+  it('only draws the grid when enabled and cells are large enough', () => {
+    const layers = createDefaultLevelMapLayers()
+    expect(shouldDrawGrid(layers, GRID_MIN_CELL_PIXELS)).toBe(true)
+    expect(shouldDrawGrid(layers, GRID_MIN_CELL_PIXELS - 1)).toBe(false)
+    expect(shouldDrawGrid({ ...layers, grid: false }, GRID_MIN_CELL_PIXELS * 4)).toBe(false)
   })
 })

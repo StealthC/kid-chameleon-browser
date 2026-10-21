@@ -1,4 +1,5 @@
 import { LEVEL_CELL_SIZE, type LevelMap } from '@repo/kid-util'
+import type { LevelMapTextures } from './level-map-textures'
 import {
   BACKGROUND_MARKER_COLOR,
   EMPTY_ROW_COLOR,
@@ -6,7 +7,9 @@ import {
   FLAG_MARKER_COLOR,
   MISSING_DATA_COLOR,
   PLAYER_MARKER_COLOR,
+  blockBorderColor,
   blockKindColor,
+  shouldDrawGrid,
   terrainColor,
   type LevelMapLayerState,
 } from './level-map-view'
@@ -39,14 +42,16 @@ function levelDimensions(map: LevelMap) {
 }
 
 /**
- * Draws one level-map frame: terrain grid, block placements, enemies, spawn/flag markers and
- * background anchors. Colours are the generated index ramp from `level-map-view`, not ROM art.
+ * Draws one level-map frame: ROM background art, ROM terrain tiles (or the generated colour ramp
+ * when the ROM art is unavailable or hidden), block placements, enemies, spawn/flag markers and
+ * background anchors.
  */
 export function renderLevelMap(
   context: CanvasRenderingContext2D,
   map: LevelMap,
   layers: LevelMapLayerState,
   view: LevelMapRenderView,
+  textures: LevelMapTextures = {},
 ): void {
   const { cssWidth, cssHeight, devicePixelRatio: dpr, scale, offsetX, offsetY, hover } = view
   const { widthBlocks, heightBlocks, worldWidth, worldHeight } = levelDimensions(map)
@@ -60,8 +65,20 @@ export function renderLevelMap(
   context.setTransform(dpr * scale, 0, 0, dpr * scale, -offsetX * dpr * scale, -offsetY * dpr * scale)
   const lineWidth = 1 / scale
 
-  context.fillStyle = '#0b1220'
-  context.fillRect(0, 0, worldWidth, worldHeight)
+  if (layers.background && textures.background) {
+    context.fillStyle = textures.backdrop ?? '#0b1220'
+    context.fillRect(0, 0, worldWidth, worldHeight)
+    context.save()
+    context.beginPath()
+    context.rect(0, 0, worldWidth, worldHeight)
+    context.clip()
+    context.imageSmoothingEnabled = false
+    context.drawImage(textures.background, 0, 0)
+    context.restore()
+  } else {
+    context.fillStyle = '#0b1220'
+    context.fillRect(0, 0, worldWidth, worldHeight)
+  }
 
   const viewWidth = cssWidth / scale
   const viewHeight = cssHeight / scale
@@ -70,7 +87,13 @@ export function renderLevelMap(
   const rowStart = clamp(Math.floor(offsetY / LEVEL_CELL_SIZE), 0, heightBlocks)
   const rowEnd = clamp(Math.ceil((offsetY + viewHeight) / LEVEL_CELL_SIZE), 0, heightBlocks)
 
-  if (layers.terrain && map.layout) {
+  // ROM tiles and the generated colour ramp are independent layers. `terrain` only gates the
+  // fallback, so leaving it unchecked keeps the ROM foreground visible.
+  const hasRomTiles = layers.graphics && !!textures.foreground
+  if (hasRomTiles && textures.foreground) {
+    context.imageSmoothingEnabled = false
+    context.drawImage(textures.foreground, 0, 0)
+  } else if (layers.terrain && map.layout) {
     const grid = map.layout
     const streamStart = grid.emptyRowCount * grid.widthBlocks
     const streamEnd = streamStart + grid.copiedByteCount
@@ -102,7 +125,12 @@ export function renderLevelMap(
     }
   }
 
-  if (layers.background) {
+  if (hasRomTiles && layers.blocks && textures.blocks) {
+    context.imageSmoothingEnabled = false
+    context.drawImage(textures.blocks, 0, 0)
+  }
+
+  if (layers.backgroundAnchors) {
     const markerRadius = 4 / scale
     context.strokeStyle = BACKGROUND_MARKER_COLOR
     context.lineWidth = lineWidth
@@ -134,6 +162,29 @@ export function renderLevelMap(
       }
       const x = block.x * LEVEL_CELL_SIZE
       const y = block.y * LEVEL_CELL_SIZE
+      if (hasRomTiles) {
+        if (!layers.blockBorders) {
+          continue
+        }
+        const borderColor = blockBorderColor(layers, block.kind)
+        if (!borderColor) {
+          continue
+        }
+        context.globalAlpha = block.isHidden ? 0.6 : 0.9
+        context.strokeStyle = borderColor
+        context.lineWidth = 1.5 / scale
+        if (block.isHidden) {
+          context.setLineDash([3 / scale, 2 / scale])
+        }
+        if (block.kind === 0x10) {
+          context.strokeRect(x + 5, y + 5, LEVEL_CELL_SIZE - 10, LEVEL_CELL_SIZE - 10)
+        } else {
+          context.strokeRect(x + 1, y + 1, LEVEL_CELL_SIZE - 2, LEVEL_CELL_SIZE - 2)
+        }
+        context.setLineDash([])
+        context.globalAlpha = 1
+        continue
+      }
       context.globalAlpha = block.isHidden ? 0.35 : 0.85
       context.fillStyle = blockKindColor(block.kind)
       if (block.kind === 0x10) {
@@ -142,12 +193,15 @@ export function renderLevelMap(
         context.fillRect(x + 1, y + 1, LEVEL_CELL_SIZE - 2, LEVEL_CELL_SIZE - 2)
       }
       context.globalAlpha = 1
-      context.strokeStyle = block.isHidden ? '#f8fafc' : 'rgba(2, 6, 23, 0.8)'
-      if (block.isHidden) {
-        context.setLineDash([3 / scale, 2 / scale])
+      const borderColor = blockBorderColor(layers, block.kind)
+      if (borderColor) {
+        context.strokeStyle = block.isHidden ? '#f8fafc' : borderColor
+        if (block.isHidden) {
+          context.setLineDash([3 / scale, 2 / scale])
+        }
+        context.strokeRect(x + 1, y + 1, LEVEL_CELL_SIZE - 2, LEVEL_CELL_SIZE - 2)
+        context.setLineDash([])
       }
-      context.strokeRect(x + 1, y + 1, LEVEL_CELL_SIZE - 2, LEVEL_CELL_SIZE - 2)
-      context.setLineDash([])
     }
   }
 
@@ -190,7 +244,7 @@ export function renderLevelMap(
     )
   }
 
-  if (scale * LEVEL_CELL_SIZE >= 9) {
+  if (shouldDrawGrid(layers, scale * LEVEL_CELL_SIZE)) {
     context.strokeStyle = 'rgba(148, 163, 184, 0.14)'
     context.lineWidth = lineWidth
     context.beginPath()

@@ -10,12 +10,21 @@ import {
  * Presentation helpers for the level map viewer. Kept out of the SFCs so the canvas and the
  * legend share one source of colours, layer ids and summaries.
  *
- * The terrain colours are a generated ramp keyed by the layout byte (the theme block skin
- * index). They are deliberately not ROM palette colours: kid-util does not decode the theme
- * block map or its graphics yet.
+ * `graphics` draws the ROM theme tile sheet with the level theme palette; `terrain` is only the
+ * generated colour ramp used when the ROM art is unavailable or its layer is off. Keeping them
+ * separate lets the generated colours be hidden without hiding the ROM tiles.
  */
 
-export type LevelMapLayerId = 'terrain' | 'blocks' | 'enemies' | 'markers' | 'background'
+export type LevelMapLayerId =
+  | 'graphics'
+  | 'terrain'
+  | 'blocks'
+  | 'blockBorders'
+  | 'grid'
+  | 'enemies'
+  | 'markers'
+  | 'background'
+  | 'backgroundAnchors'
 
 export type LevelMapLayerState = Record<LevelMapLayerId, boolean>
 
@@ -27,14 +36,31 @@ export type LevelMapLayerDefinition = {
 
 export const LEVEL_MAP_LAYERS: LevelMapLayerDefinition[] = [
   {
+    id: 'graphics',
+    label: 'ROM tiles',
+    description:
+      'Theme tile sheet drawn with the level palette (VDP metatiles and special-block dictionary).',
+  },
+  {
     id: 'terrain',
     label: 'Foreground layout',
-    description: 'One cell per 16x16 block, from the decompressed level-tiles stream.',
+    description:
+      'Generated colour ramp keyed by the layout byte. Fallback only: it never hides ROM tiles.',
   },
   {
     id: 'blocks',
     label: 'Blocks',
-    description: 'Placed blocks from the level block bitstream (rock, prize, lift, ...).',
+    description: 'Placed blocks from the bitstream (rock, prize, lift, ...).',
+  },
+  {
+    id: 'blockBorders',
+    label: 'Block outlines',
+    description: 'Show or hide the colour-coded outlines around special blocks.',
+  },
+  {
+    id: 'grid',
+    label: 'Grid',
+    description: 'Cell grid lines, drawn only when cells are large enough on screen.',
   },
   {
     id: 'enemies',
@@ -48,6 +74,11 @@ export const LEVEL_MAP_LAYERS: LevelMapLayerDefinition[] = [
   },
   {
     id: 'background',
+    label: 'Background art',
+    description: 'Composed chunked/layered background, drawn with its own ROM palette.',
+  },
+  {
+    id: 'backgroundAnchors',
     label: 'Background anchors',
     description: 'Chunk placement anchors from the background layout (background-map tiles).',
   },
@@ -55,11 +86,15 @@ export const LEVEL_MAP_LAYERS: LevelMapLayerDefinition[] = [
 
 export function createDefaultLevelMapLayers(): LevelMapLayerState {
   return {
+    graphics: true,
     terrain: true,
     blocks: true,
+    blockBorders: true,
+    grid: true,
     enemies: true,
     markers: true,
-    background: false,
+    background: true,
+    backgroundAnchors: false,
   }
 }
 
@@ -105,6 +140,17 @@ export const BLOCK_KIND_COLORS: Record<number, string> = {
 
 export function blockKindColor(kind: number): string {
   return BLOCK_KIND_COLORS[kind] ?? '#ef4444'
+}
+
+export function blockBorderColor(layers: LevelMapLayerState, kind: number): string | null {
+  return layers.blockBorders ? blockKindColor(kind) : null
+}
+
+/** Cell size below which grid lines would cover the terrain instead of framing it. */
+export const GRID_MIN_CELL_PIXELS = 9
+
+export function shouldDrawGrid(layers: LevelMapLayerState, cellPixelSize: number): boolean {
+  return layers.grid && cellPixelSize >= GRID_MIN_CELL_PIXELS
 }
 
 export const ENEMY_COLOR = '#fb7185'

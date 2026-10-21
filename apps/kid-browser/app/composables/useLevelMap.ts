@@ -40,6 +40,27 @@ export function useLevelIndex() {
   }
 }
 
+/**
+ * Lets the pending overlay paint before the synchronous level composition blocks the main thread.
+ * The timer covers background tabs, where animation frames are not delivered.
+ */
+function nextAnimationFrame(): Promise<void> {
+  return new Promise((resolve) => {
+    let settled = false
+    const finish = () => {
+      if (settled) {
+        return
+      }
+      settled = true
+      resolve()
+    }
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(finish)
+    }
+    setTimeout(finish, 50)
+  })
+}
+
 /** Composes header, foreground grid, block stream, enemy layout and background layout. */
 export function useLevelMap(headerAddress: MaybeRef<number | null>) {
   const { rom, romSessionKey, romFullLoaded } = storeToRefs(useRomStore())
@@ -47,19 +68,24 @@ export function useLevelMap(headerAddress: MaybeRef<number | null>) {
 
   const query = useQuery({
     queryKey: computed(() => ['level-map', romSessionKey.value, address.value] as const),
-    queryFn: () => {
+    queryFn: async () => {
       const currentRom = rom.value as unknown as Rom | null
+      const levelAddress = address.value
       if (!currentRom) {
         throw new Error('ROM not loaded')
       }
-      if (address.value === null) {
+      if (levelAddress === null) {
         throw new Error('No level selected')
       }
-      return loadLevelMap(currentRom, address.value)
+      await nextAnimationFrame()
+      return loadLevelMap(currentRom, levelAddress)
     },
     // Wait for discovery: loading a header before the resources exist would raise instead of
     // resolving once the ROM finishes.
     enabled: computed(() => romFullLoaded.value && !!rom.value && address.value !== null),
+    // Each composed map now carries indexed foreground/background pixel buffers (1-5 MB); keep
+    // only recently inspected levels instead of the whole session's browsing history.
+    gcTime: 30_000,
   })
 
   return query

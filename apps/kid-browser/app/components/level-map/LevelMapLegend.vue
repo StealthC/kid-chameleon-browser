@@ -23,13 +23,55 @@
       </label>
     </section>
 
+    <section v-if="map.graphics" class="flex flex-col gap-2">
+      <h2 class="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+        ROM theme {{ map.graphics.theme.themeIndex }}
+      </h2>
+      <div class="flex flex-wrap gap-1">
+        <span
+          v-for="(color, index) in map.graphics.theme.palette.rgba"
+          :key="index"
+          class="border-border/40 size-5 shrink-0 rounded-sm border"
+          :style="{
+            backgroundColor: `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${color[3] / 255})`,
+            backgroundImage:
+              color[3] === 0
+                ? 'repeating-conic-gradient(rgba(148,163,184,0.35) 0% 25%, transparent 0% 50%) 50% / 6px 6px'
+                : undefined,
+          }"
+          :title="`#${index} · CRAM ${index === 0 ? 'transparent/backdrop' : `0x${(map.graphics.theme.palette.rawColors[index - 1] ?? 0).toString(16).padStart(4, '0')}`}`"
+        />
+      </div>
+      <p class="text-muted-foreground font-mono text-[11px] leading-tight">
+        palette 0x{{ map.graphics.theme.palette.address.toString(16) }} ·
+        {{ map.graphics.theme.palette.rawColors.length }} colors ·
+        {{ map.graphics.theme.palette.pixelRemap ? 'ROM palette map' : 'identity map' }}
+      </p>
+      <p class="text-muted-foreground text-[11px] leading-tight">
+        {{ map.graphics.theme.tileSet.tiles.length }} theme tiles ·
+        {{ map.graphics.theme.commonBlocks.tileSet.tiles.length }} block tiles ·
+        {{ map.graphics.theme.mappingEntryCount }} metatiles decoded.
+      </p>
+      <p v-if="map.graphics.background" class="text-muted-foreground text-[11px] leading-tight">
+        Background: {{ map.graphics.background.format }} · type
+        {{ map.graphics.background.backgroundType }} ·
+        {{ map.graphics.background.widthTiles }}×{{ map.graphics.background.heightTiles }} tiles
+        <span v-if="map.graphics.background.missingTileCount > 0">
+          · {{ map.graphics.background.missingTileCount }} tiles unresolved
+        </span>
+      </p>
+      <p v-else class="text-muted-foreground text-[11px] leading-tight">
+        Background art unavailable; background anchors remain available as a layer.
+      </p>
+    </section>
+
     <section v-if="summary" class="flex flex-col gap-2">
       <h2 class="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
-        Foreground cells
+        Foreground layout
       </h2>
       <p class="text-muted-foreground text-[11px] leading-tight">
-        Generated colours keyed by the layout byte (theme block skin index). The browser does not
-        decode the theme block map, ROM block graphics or palettes yet.
+        Generated colour ramp keyed by the layout byte (theme block skin index). This is the
+        fallback used when the ROM theme tiles cannot be decoded.
       </p>
       <div class="flex flex-col gap-1">
         <div
@@ -170,7 +212,11 @@ function layerCount(id: LevelMapLayerId): string {
       return `${current?.enemyCount ?? 0}`
     case 'markers':
       return '2'
+    case 'graphics':
+      return props.map.graphics ? 'ROM' : '—'
     case 'background':
+      return props.map.graphics?.background?.format ?? '—'
+    case 'backgroundAnchors':
       return `${current?.backgroundPlacements ?? 0}`
     default:
       return ''
@@ -184,6 +230,22 @@ const gaps = computed(() => {
 
   if (map.layoutError) {
     list.push(`Foreground layout: ${map.layoutError}`)
+  }
+  if (map.graphicsError) {
+    list.push(`ROM tile graphics: ${map.graphicsError}. Showing generated colours.`)
+  }
+  if (map.graphics?.backgroundError) {
+    list.push(`Background art: ${map.graphics.backgroundError}`)
+  }
+  if (map.graphics && !map.graphics.background) {
+    list.push(
+      'Background art could not be composed for this level; use the background-anchor layer for placement data.',
+    )
+  }
+  if (map.graphics?.background && map.graphics.background.missingTileCount > 0) {
+    list.push(
+      `${map.graphics.background.missingTileCount} background tiles have no graphic in the theme sheets.`,
+    )
   }
   if (map.layout && !map.layout.consistent) {
     list.push(
@@ -213,14 +275,14 @@ const gaps = computed(() => {
   if (map.backgroundError) {
     list.push(`Background layout: ${map.backgroundError}`)
   }
-  if (map.background?.isPacked) {
-    list.push(
-      'Packed (type 1) background: the game unpacks Enigma planes, so there are no chunk placements to draw.',
-    )
-  }
   if (map.background?.indirect) {
     list.push(
-      `Background uses an indirect reference (x shift ${map.background.indirect.xShiftRaw}, y shift ${map.background.indirect.yShiftRaw}); anchors are drawn unshifted.`,
+      `Background uses an indirect reference (x shift ${map.background.indirect.xShiftRaw}, y shift ${map.background.indirect.yShiftRaw}); art applies the shift, anchors are drawn unshifted.`,
+    )
+  }
+  if (map.graphics?.background) {
+    list.push(
+      'Background art is drawn from the map origin; the ROM scrolls it vertically at 1/4 of the camera speed.',
     )
   }
   if (current && current.undecodedBlockKinds.length > 0) {

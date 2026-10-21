@@ -27,7 +27,7 @@
 
 <script setup lang="ts">
 import { computed, toRefs } from 'vue'
-import type { PaletteRomResourceLoaded } from '@repo/kid-util'
+import { mdColorToRgba, type PaletteRomResourceLoaded } from '@repo/kid-util'
 import { Badge } from '~/components/ui/badge'
 
 interface Props {
@@ -38,13 +38,7 @@ const props = defineProps<Props>()
 const { resource } = toRefs(props)
 
 const toRgbHex = (mdColor: number) => {
-  const r3 = (mdColor >> 1) & 0x7
-  const g3 = (mdColor >> 5) & 0x7
-  const b3 = (mdColor >> 9) & 0x7
-  const to8 = (v: number) => Math.round((v / 7) * 255)
-  const r = to8(r3)
-  const g = to8(g3)
-  const b = to8(b3)
+  const [r, g, b] = mdColorToRgba(mdColor)
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
 }
 

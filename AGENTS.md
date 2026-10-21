@@ -54,6 +54,8 @@ This repository does **not** ship proprietary game assets. It provides reverse-e
 
 - `packages/kid-util/src/kid-graphics.ts` contains indexed tile logic and conversions.
 - `KidImageData` is the core helper for sheet/sprite/plane composition.
+- `packages/kid-util/src/level-graphics.ts` composes level theme tiles, the block dictionary and
+  backgrounds from discovery tables; see `docs/level-map-graphics.md`.
 - `createCanvas()` supports browser and Node (uses `canvas` in Node).
 
 ### 4) Frontend App (`apps/kid-browser`)

@@ -39,10 +39,7 @@
       </aside>
 
       <section class="flex min-h-0 flex-col gap-3">
-        <div
-          v-if="map"
-          class="border-border/60 flex flex-wrap items-center gap-2 rounded-lg border bg-slate-900/60 px-3 py-2"
-        >
+        <div v-if="map" class="border-border/60 flex flex-wrap items-center gap-2 rounded-lg border bg-slate-900/60 px-3 py-2">
           <div class="min-w-0 flex-1">
             <p class="truncate text-sm font-semibold">{{ levelTitle }}</p>
             <p class="text-muted-foreground font-mono text-[11px]">
@@ -54,8 +51,12 @@
           <Badge variant="outline">0x{{ map.header.levelIndex.toString(16).toUpperCase().padStart(2, '0') }}</Badge>
           <Badge variant="outline">{{ map.header.width }}×{{ map.header.height }} screens</Badge>
           <Badge variant="outline">theme {{ map.header.themeIndex }}</Badge>
+          <Badge v-if="map.graphics" variant="outline">ROM tiles</Badge>
+          <Badge v-else-if="map.graphicsError" variant="outline">colour fallback</Badge>
           <Badge variant="outline">background {{ map.header.backgroundType }}</Badge>
-          <Badge v-if="map.header.backgroundIsPacked" variant="outline">packed background</Badge>
+          <Badge v-if="map.graphics?.background" variant="outline">
+            {{ map.graphics.background.format }} background
+          </Badge>
           <Badge v-if="map.header.murderWall" variant="outline">
             murder wall {{ map.header.murderWallVariant ? 'right' : 'left' }}
           </Badge>
@@ -68,11 +69,36 @@
           </NuxtLink>
         </div>
 
+        <div v-if="map" class="grid min-h-0 flex-1 gap-3 xl:grid-cols-[minmax(0,1fr)_21rem]">
+          <div class="min-h-[26rem] xl:min-h-0">
+            <LevelMapViewer
+              :map="map"
+              :layers="layers"
+              :loading="mapLoading"
+              @update:layers="layers = $event"
+            />
+          </div>
+          <div class="min-h-[20rem] xl:min-h-0">
+            <LevelMapLegend :map="map" :layers="layers" @update:layers="layers = $event" />
+          </div>
+        </div>
         <div
-          v-if="mapLoading"
-          class="border-border/60 flex min-h-[24rem] flex-1 items-center justify-center rounded-lg border bg-slate-900/40"
+          v-else-if="mapLoading"
+          class="border-border/60 flex min-h-[24rem] flex-1 items-center justify-center rounded-lg border bg-slate-900/40 p-4"
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
         >
-          <p class="text-muted-foreground text-sm">Decoding level map...</p>
+          <div class="flex flex-col items-center gap-3 text-center">
+            <span
+              class="size-8 animate-spin rounded-full border-2 border-slate-600 border-t-slate-200"
+              aria-hidden="true"
+            />
+            <p class="text-sm font-medium">Decoding level map…</p>
+            <p class="text-muted-foreground max-w-sm text-xs">
+              Header, foreground layout, blocks, enemies and ROM tile art are being composed.
+            </p>
+          </div>
         </div>
         <div
           v-else-if="mapError"
@@ -81,14 +107,6 @@
           <div>
             <p class="text-sm font-semibold">Could not decode this level</p>
             <p class="text-muted-foreground mt-1 text-xs">{{ mapError }}</p>
-          </div>
-        </div>
-        <div v-else-if="map" class="grid min-h-0 flex-1 gap-3 xl:grid-cols-[minmax(0,1fr)_21rem]">
-          <div class="min-h-[26rem] xl:min-h-0">
-            <LevelMapViewer :map="map" :layers="layers" />
-          </div>
-          <div class="min-h-[20rem] xl:min-h-0">
-            <LevelMapLegend :map="map" :layers="layers" @update:layers="layers = $event" />
           </div>
         </div>
         <div
@@ -155,7 +173,7 @@ function selectLevel(levelIndex: number) {
 
 const mapQuery = useLevelMap(computed(() => selectedLevel.value?.address ?? null))
 const map = computed(() => mapQuery.data.value ?? null)
-const mapLoading = computed(() => mapQuery.isLoading.value)
+const mapLoading = computed(() => mapQuery.isLoading.value || mapQuery.isFetching.value)
 const mapError = computed(() =>
   mapQuery.error.value ? mapQuery.error.value.message : null,
 )

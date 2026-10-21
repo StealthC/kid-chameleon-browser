@@ -812,7 +812,9 @@ export function loadLevelBackgroundLayoutRomResource(
       inputSize,
       backgroundType,
       isPacked,
-      format: 'chunked',
+      // Types 3/5/7/9 are the layered/strip format (the header flag is historically called
+      // "packed"), not a chunk-placement list. ROM: background-rendering-and-parallax.md §1.
+      format: 'layered',
       placements: [],
     }
   }
@@ -856,7 +858,7 @@ export function loadLevelBackgroundLayoutRomResource(
     inputSize,
     backgroundType,
     isPacked,
-    format: 'layered',
+    format: 'chunked',
     indirect,
     placements,
   }

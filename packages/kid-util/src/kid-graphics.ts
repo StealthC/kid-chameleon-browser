@@ -7,6 +7,29 @@ import type {
 export type RGBA = [number, number, number, number]
 
 /**
+ * Mega Drive VDP DAC levels for a 3-bit channel value. The VDP expands each 3-bit channel through
+ * these fixed levels, not by a linear 0..7 * 255/7 ramp.
+ *
+ * ROM: `/rom.bin` CRAM words are `0BBBGGGRRR`; this is the same table used by `utils/go-kid`
+ * `data/palette.go` `BrightnessModeIndex[0]` and documented in
+ * `research-docs/graphics/palette-format-specification.md`.
+ */
+export const MD_BRIGHTNESS_LUT = [0, 52, 87, 116, 144, 172, 206, 255] as const
+
+/** Converts a Mega Drive CRAM word (`0BBBGGGRRR`) to an opaque RGBA color. */
+export function mdColorToRgba(color: number): RGBA {
+  const r = MD_BRIGHTNESS_LUT[(color >> 1) & 0x7] ?? 0
+  const g = MD_BRIGHTNESS_LUT[(color >> 5) & 0x7] ?? 0
+  const b = MD_BRIGHTNESS_LUT[(color >> 9) & 0x7] ?? 0
+  return [r, g, b, 255]
+}
+
+/** Converts a list of Mega Drive CRAM words to opaque RGBA colors. */
+export function mdPaletteToRgba(colors: number[]): RGBA[] {
+  return colors.map(mdColorToRgba)
+}
+
+/**
  * A palette can be an array of RGBA colors or a function that returns the RGBA color given an
  * index.
  */
@@ -46,19 +69,12 @@ function usePalette(palette: Palette): (n: number) => RGBA {
   } else {
     return (n: number) => {
       const color = palette.colors[n]
-      if (!color) {
+      if (color === undefined) {
         return [0, 0, 0, 255]
       }
-      return MDColorToRGBA(color)
+      return mdColorToRgba(color)
     }
   }
-}
-
-function MDColorToRGBA(byte: number): RGBA {
-  const r = byte & 0x0f
-  const g = (byte >> 4) & 0x0f
-  const b = (byte >> 8) & 0x0f
-  return [r * 17, g * 17, b * 17, 255]
 }
 
 /**
