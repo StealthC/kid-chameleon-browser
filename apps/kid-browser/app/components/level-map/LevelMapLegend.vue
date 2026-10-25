@@ -131,7 +131,7 @@
       <h2 class="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Enemy types</h2>
       <div class="flex flex-wrap gap-x-3 gap-y-1 font-mono text-[11px]">
         <span v-for="type in summary.enemyTypes.slice(0, 10)" :key="type.value">
-          0x{{ type.value.toString(16) }}: {{ type.count }}
+          {{ type.label }} (0x{{ type.value.toString(16) }}): {{ type.count }}
         </span>
         <span v-if="summary.enemyTypes.length > 10" class="text-muted-foreground">
           +{{ summary.enemyTypes.length - 10 }} more

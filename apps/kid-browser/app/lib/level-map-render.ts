@@ -4,6 +4,7 @@ import {
   BACKGROUND_MARKER_COLOR,
   EMPTY_ROW_COLOR,
   ENEMY_COLOR,
+  enemyTypeName,
   FLAG_MARKER_COLOR,
   MISSING_DATA_COLOR,
   PLAYER_MARKER_COLOR,
@@ -225,6 +226,11 @@ export function renderLevelMap(
       context.fill()
       context.strokeStyle = 'rgba(255, 255, 255, 0.8)'
       context.stroke()
+      if (scale > 0.3) {
+        context.font = `${10 / scale}px ui-monospace, monospace`
+        context.fillStyle = ENEMY_COLOR
+        context.fillText(enemyTypeName(object.enemyTypeOrKind), x + radius, y - radius)
+      }
     }
   }
 

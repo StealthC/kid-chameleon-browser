@@ -93,6 +93,7 @@ import { renderLevelMap } from '~/lib/level-map-render'
 import { getLevelMapTextures, type LevelMapTextures } from '~/lib/level-map-textures'
 import {
   findLevelBlockAt,
+  enemyTypeName,
   type LevelMapLayerId,
   type LevelMapLayerState,
 } from '~/lib/level-map-view'
@@ -231,7 +232,10 @@ const hoverText = computed(() => {
       Math.floor(object.yPosition / LEVEL_PIXEL_SIZE) === y,
   )
   if (enemiesHere.length > 0) {
-    parts.push(`enemy type 0x${enemiesHere[0]?.enemyTypeOrKind.toString(16)}`)
+    const enemy = enemiesHere[0]
+    if (enemy) {
+      parts.push(`${enemyTypeName(enemy.enemyTypeOrKind)} (0x${enemy.enemyTypeOrKind.toString(16)})`)
+    }
   }
   return parts.join(' · ')
 })

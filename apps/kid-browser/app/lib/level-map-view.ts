@@ -154,6 +154,20 @@ export function shouldDrawGrid(layers: LevelMapLayerState, cellPixelSize: number
 }
 
 export const ENEMY_COLOR = '#fb7185'
+// Object IDs and names from research-docs/graphics/enemy-sprites-catalog.md.
+export const ENEMY_NAMES: Record<number, string> = {
+  0: 'FireDemon', 1: 'Crystal', 3: 'Robot', 4: 'Armadillo', 5: 'TarMonster',
+  6: 'Sphere', 7: 'Archer', 8: 'Orca', 9: 'Crab', 10: 'Tank',
+  11: 'CannonTank', 12: 'FlyingDragon', 13: 'Dragon', 14: 'Cloud', 15: 'Alien',
+  16: 'Goat', 17: 'Ninja', 18: 'Lion', 19: 'Scorpion', 20: 'Twins',
+  22: 'Drips', 23: 'Hand', 24: 'Tornado', 25: 'Fireball', 26: 'Driller',
+  27: 'EmoRock', 28: 'MiniHoppingSkull', 29: 'BigHoppingSkull', 32: 'LastBoss',
+  33: 'BossBullet', 34: 'Boss1', 35: 'Boss2', 36: 'Boss3',
+}
+
+export function enemyTypeName(type: number): string {
+  return ENEMY_NAMES[type] ?? `Unknown enemy 0x${type.toString(16).padStart(2, '0')}`
+}
 export const PLAYER_MARKER_COLOR = '#4ade80'
 export const FLAG_MARKER_COLOR = '#fbbf24'
 export const BACKGROUND_MARKER_COLOR = '#22d3ee'
@@ -183,7 +197,7 @@ export type LevelMapSummary = {
   undecodedBlockKinds: number[]
   blockCount: number
   enemyCount: number
-  enemyTypes: CountedValue[]
+  enemyTypes: (CountedValue & { label: string })[]
   backgroundPlacements: number
   playerStart: { x: number; y: number }
   flag: { x: number; y: number }
@@ -237,7 +251,7 @@ export function summarizeLevelMap(map: LevelMap): LevelMapSummary {
     )
   }
   const enemyTypes = Array.from(enemyTypeCounts.entries())
-    .map(([value, count]) => ({ value, count }))
+    .map(([value, count]) => ({ value, count, label: enemyTypeName(value) }))
     .sort((a, b) => b.count - a.count || a.value - b.value)
 
   const undecodedBlockKinds = blockKinds
