@@ -9,7 +9,9 @@ type LoadTestRomOptions = {
 }
 
 export async function loadTestRom(options: LoadTestRomOptions = {}): Promise<Rom | null> {
-  const { path = DEFAULT_TEST_ROM_PATH, context = 'ROM-dependent tests' } = options
+  const configuredPath = options.path === undefined ? process.env.KID_ROM_PATH : undefined
+  const path = options.path ?? configuredPath ?? DEFAULT_TEST_ROM_PATH
+  const { context = 'ROM-dependent tests' } = options
 
   try {
     const bytes = await openFsFile(path)
@@ -17,7 +19,7 @@ export async function loadTestRom(options: LoadTestRomOptions = {}): Promise<Rom
   } catch (error) {
     const code = (error as NodeJS.ErrnoException).code
 
-    if (code === 'ENOENT') {
+    if (code === 'ENOENT' && configuredPath === undefined) {
       console.warn(`⚠️ Warning: Could not open ROM file at "${path}". Skipping ${context}.`)
       return null
     }

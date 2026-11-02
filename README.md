@@ -44,7 +44,8 @@ The workspace structure is based on a monorepo using PNPM and Turbo:
 1. **Install dependencies:**
 
    ```sh
-   pnpm install
+   corepack enable
+   pnpm install --frozen-lockfile
    ```
 
 2. **Development:**
@@ -65,11 +66,25 @@ The workspace structure is based on a monorepo using PNPM and Turbo:
 
 4. **Tests:**
 
-   Run unit and integration tests:
+   Build the workspace packages first, then run unit and integration tests:
 
    ```sh
+   pnpm build-packages
    pnpm test
    ```
+
+   ROM-dependent tests use `packages/kid-util/rom/kid.bin` by default and skip
+   when it is missing. To use your own shared copy without copying it into the
+   repository, provide its absolute path explicitly:
+
+   ```sh
+   KID_ROM_PATH=/absolute/path/to/kid.bin pnpm test
+   ```
+
+   An invalid `KID_ROM_PATH` fails the tests. The optional hack ROM test uses
+   its own path and is not affected by this variable. See the
+   [ROM test notes](packages/kid-util/rom/readme.md) for reference hashes.
+   Never commit or distribute proprietary ROM files.
 
 ## Credits & Licenses
 

@@ -1,4 +1,8 @@
-Put the ROM file there to be used in unit tests named as "kid.bin"
+Place your own ROM here as `kid.bin` for ROM-dependent tests, or set
+`KID_ROM_PATH` to an absolute path outside the repository when running
+`pnpm test`. The default ROM is optional; an explicitly configured missing ROM
+is an error. The separate optional hack ROM test does not use `KID_ROM_PATH`.
+Do not commit or distribute ROM files. The expected original ROM hashes are:
 MD5     756E603B6CF9B3EBBB1B0F79D9447E43
 SHA-1   28B904000B2863B6760531807760B571F1A5FC1D
 SHA-256 BC08B0188FB715AE469806843A8418D4937D2098B66D04227668865B3D4D5BAA
