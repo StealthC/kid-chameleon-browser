@@ -154,7 +154,7 @@ describe('summarizeLevelMap', () => {
     expect(summary.blockKinds.map((kind) => kind.value).sort()).toEqual([0, 8])
     expect(summary.undecodedBlockKinds).toEqual([0x08])
     expect(summary.enemyCount).toBe(1)
-    expect(summary.enemyTypes).toEqual([{ value: 13, count: 1 }])
+    expect(summary.enemyTypes).toEqual([{ value: 13, count: 1, label: 'Dragon' }])
   })
 
   it('exposes header markers and background placement count', () => {
