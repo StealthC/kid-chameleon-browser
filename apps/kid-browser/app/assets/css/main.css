@@ -1,71 +1,93 @@
 @import 'tailwindcss';
-@import 'tw-animate-css';
-@plugin '@tailwindcss/typography';
+@import '@nuxt/ui';
 
 @theme {
-  --scale-200: 2;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans:
+    'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --font-mono:
+    'JetBrains Mono', 'SFMono-Regular', ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo,
+    Consolas, monospace;
 }
 
 :root {
-  --radius: 0.75rem;
-  --background: oklch(21.191% 0.04477 239.711);
-  --foreground: oklch(0.98 0.01 200);
-  --card: oklch(0.23 0.02 238);
-  --card-foreground: oklch(0.98 0.01 200);
-  --popover: oklch(0.2 0.02 238);
-  --popover-foreground: oklch(0.98 0.01 200);
-  --primary: oklch(0.74 0.14 169);
-  --primary-foreground: oklch(0.2 0.02 238);
-  --secondary: oklch(0.31 0.02 236);
-  --secondary-foreground: oklch(0.98 0.01 200);
-  --muted: oklch(0.27 0.015 238);
-  --muted-foreground: oklch(0.78 0.015 210);
-  --accent: oklch(0.32 0.03 192);
-  --accent-foreground: oklch(0.98 0.01 200);
-  --destructive: oklch(0.68 0.19 25);
-  --border: oklch(0.44 0.03 215 / 0.6);
-  --input: oklch(0.33 0.02 225);
-  --ring: oklch(0.72 0.12 170);
+  --ui-radius: 0.5rem;
+  --ui-header-height: 3.25rem;
+  --ui-container: 96rem;
+}
+
+.dark {
+  /* A cool, low-contrast workbench palette that keeps the focus on the data. */
+  --ui-bg: oklch(17.5% 0.022 250);
+  --ui-bg-muted: oklch(21% 0.024 250);
+  --ui-bg-elevated: oklch(23% 0.026 250);
+  --ui-bg-accented: oklch(28% 0.028 250);
+  --ui-bg-inverted: oklch(96% 0.005 250);
+
+  --ui-text-dimmed: oklch(58% 0.02 250);
+  --ui-text-muted: oklch(70% 0.018 250);
+  --ui-text-toned: oklch(80% 0.014 250);
+  --ui-text: oklch(90% 0.01 250);
+  --ui-text-highlighted: oklch(98% 0.005 250);
+
+  --ui-border: oklch(30% 0.024 250);
+  --ui-border-muted: oklch(26% 0.022 250);
+  --ui-border-accented: oklch(37% 0.03 250);
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-
   html,
   body,
   #__nuxt {
-    @apply h-full w-full overflow-hidden;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  html {
+    color-scheme: dark;
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
-    color-scheme: dark;
+    background-color: var(--ui-bg);
+    color: var(--ui-text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklab, var(--ui-primary) 35%, transparent);
+    color: var(--ui-text-highlighted);
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--ui-border-accented) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background-color: var(--ui-border-accented);
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: var(--ui-text-dimmed);
+  }
+}
+
+/* Nuxt UI surfaces are used across the workbench; keep scrollable panes quiet. */
+@utility scrollbar-none {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
   }
 }

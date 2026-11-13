@@ -1,52 +1,66 @@
 <template>
-  <div class="border-border/60 rounded-md border bg-slate-900/60 p-3 text-sm">
-    <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-      <h2 class="font-semibold">Resource metadata</h2>
-      <span class="text-muted-foreground text-xs">Standardized fields; copy or follow linked addresses</span>
-    </div>
+  <section class="border-default bg-elevated/30 overflow-hidden rounded-lg border">
+    <header class="border-default flex h-9 items-center gap-2 border-b px-3">
+      <UIcon name="i-heroicons-information-circle" class="text-primary size-4" />
+      <h2 class="text-muted text-[11px] font-semibold tracking-wider uppercase">
+        Resource metadata
+      </h2>
+      <span class="text-dimmed ms-auto hidden text-[10px] sm:inline">
+        Standardized fields; copy or follow linked addresses
+      </span>
+    </header>
 
-    <div class="grid gap-3 md:grid-cols-2">
+    <div class="grid gap-x-4 gap-y-3 p-3 md:grid-cols-2 xl:grid-cols-3">
       <section v-for="section in sections" :key="section.id">
-        <h3 class="text-muted-foreground mb-1 text-[11px] font-semibold uppercase tracking-wide">
+        <h3 class="text-dimmed mb-1 text-[10px] font-semibold tracking-widest uppercase">
           {{ section.title }}
         </h3>
-        <dl class="grid grid-cols-[minmax(7rem,auto)_minmax(0,1fr)] gap-x-3 gap-y-1">
+        <dl class="grid grid-cols-[minmax(6.5rem,auto)_minmax(0,1fr)] gap-x-3 gap-y-1">
           <template v-for="item in section.items" :key="`${section.id}-${item.label}`">
-            <dt class="text-muted-foreground">{{ item.label }}</dt>
+            <dt class="text-muted text-xs">{{ item.label }}</dt>
             <dd class="flex min-w-0 items-start gap-1">
               <div class="min-w-0">
                 <NuxtLink
                   v-if="item.linkAddress !== undefined && isResourceAddress(item.linkAddress)"
                   :to="getResourceRoute(item.linkAddress)"
-                  class="text-primary font-mono underline decoration-dotted underline-offset-2"
+                  class="text-primary font-mono text-xs underline decoration-dotted underline-offset-2"
                 >
                   {{ item.value }}
                 </NuxtLink>
-                <span v-else :class="item.mono ? 'font-mono' : ''">{{ item.value }}</span>
-                <span v-if="item.hint" class="text-muted-foreground block text-[11px] leading-tight">
+                <span v-else class="text-highlighted text-xs" :class="item.mono ? 'font-mono' : ''">
+                  {{ item.value }}
+                </span>
+                <span v-if="item.hint" class="text-dimmed block text-[10px] leading-tight">
                   {{ item.hint }}
                 </span>
               </div>
-              <Button
-                v-if="item.copyValue"
-                size="icon-sm"
-                variant="ghost"
-                class="size-6 shrink-0"
-                :title="`Copy ${item.label}`"
-                @click="copyItem(item.copyValue, item.label)"
-              >
-                <Icon name="heroicons:clipboard-document-solid" class="size-3.5" />
-              </Button>
+              <UTooltip v-if="item.copyValue" :text="`Copy ${item.label}`">
+                <UButton
+                  icon="i-heroicons-clipboard-document"
+                  color="neutral"
+                  variant="ghost"
+                  size="xs"
+                  square
+                  class="size-5 shrink-0"
+                  :aria-label="`Copy ${item.label}`"
+                  @click="copyItem(item.copyValue, item.label)"
+                />
+              </UTooltip>
             </dd>
           </template>
         </dl>
       </section>
     </div>
 
-    <p v-if="copyMessage" class="pt-2" :class="copyMessageIsError ? 'text-amber-300' : 'text-emerald-300'">
+    <p
+      v-if="copyMessage"
+      class="border-default border-t px-3 py-1.5 text-[11px]"
+      :class="copyMessageIsError ? 'text-warning' : 'text-success'"
+      role="status"
+    >
       {{ copyMessage }}
     </p>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">
@@ -54,7 +68,6 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import type { AllRomResources } from '@repo/kid-util'
 import useRomStore from '~/stores/romStore'
-import { Button } from '~/components/ui/button'
 import { getResourceRoute } from '~/utils/index'
 import { buildResourceMetadata } from '~/utils/resourceMetadata'
 

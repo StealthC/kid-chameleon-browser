@@ -1,7 +1,7 @@
 <template>
   <div
     ref="containerRef"
-    class="border-border/60 relative h-full min-h-0 w-full overflow-hidden rounded-lg border bg-slate-950/70"
+    class="border-default bg-muted/20 relative h-full min-h-0 w-full overflow-hidden rounded-lg border"
     :aria-busy="showLoading"
   >
     <canvas
@@ -19,26 +19,37 @@
 
     <div
       v-if="showLoading"
-      class="absolute inset-0 z-10 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
+      class="bg-default/60 absolute inset-0 z-10 flex items-center justify-center p-4 backdrop-blur-sm"
       role="status"
       aria-live="polite"
     >
-      <div class="flex items-center gap-2 rounded-md bg-slate-950/90 px-3 py-2 shadow-lg">
+      <div class="bg-default/90 flex items-center gap-2 rounded-md px-3 py-2 shadow-lg">
         <span
-          class="size-4 shrink-0 animate-spin rounded-full border-2 border-slate-500 border-t-slate-100"
+          class="border-accented border-t-primary size-4 shrink-0 animate-spin rounded-full border-2"
           aria-hidden="true"
         />
-        <span class="text-xs font-medium text-slate-100">Composing level map…</span>
+        <span class="text-highlighted text-xs font-medium">Composing level map…</span>
       </div>
     </div>
 
-    <div class="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-2">
-      <div class="pointer-events-auto flex items-center gap-1 rounded-md bg-slate-950/80 p-1 backdrop-blur">
-        <Button variant="ghost" size="sm" title="Zoom out" @click="zoomBy(1 / 1.3)">−</Button>
-        <Button variant="ghost" size="sm" title="Zoom in" @click="zoomBy(1.3)">+</Button>
-        <Button variant="ghost" size="sm" title="Fit level" @click="fitToView">Fit</Button>
-        <span class="mx-1 h-4 w-px bg-white/10" aria-hidden="true" />
-        <Button
+    <div
+      class="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-2"
+    >
+      <div
+        class="bg-default/80 pointer-events-auto flex items-center gap-1 rounded-md p-1 backdrop-blur"
+      >
+        <UButton color="neutral" variant="ghost" size="sm" title="Zoom out" @click="zoomBy(1 / 1.3)"
+          >−</UButton
+        >
+        <UButton color="neutral" variant="ghost" size="sm" title="Zoom in" @click="zoomBy(1.3)"
+          >+</UButton
+        >
+        <UButton color="neutral" variant="ghost" size="sm" title="Fit level" @click="fitToView"
+          >Fit</UButton
+        >
+        <span class="bg-elevated mx-1 h-4 w-px" aria-hidden="true" />
+        <UButton
+          color="neutral"
           variant="ghost"
           size="sm"
           title="Toggle cell grid"
@@ -47,8 +58,9 @@
           @click="toggleLayer('grid')"
         >
           Grid
-        </Button>
-        <Button
+        </UButton>
+        <UButton
+          color="neutral"
           variant="ghost"
           size="sm"
           title="Toggle colour-coded block outlines"
@@ -57,30 +69,34 @@
           @click="toggleLayer('blockBorders')"
         >
           Outlines
-        </Button>
+        </UButton>
       </div>
-      <span class="rounded-md bg-slate-950/80 px-2 py-1 font-mono text-[11px] text-slate-300 backdrop-blur">
+      <span
+        class="bg-default/80 text-muted rounded-md px-2 py-1 font-mono text-[11px] backdrop-blur"
+      >
         {{ zoomLabel }} · {{ widthBlocks }}×{{ heightBlocks }} cells
       </span>
     </div>
 
     <div
       v-if="!hasLayout"
-      class="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/70 p-4 text-center"
+      class="bg-muted/20 pointer-events-none absolute inset-0 flex items-center justify-center p-4 text-center"
     >
       <div class="max-w-sm">
         <p class="text-sm font-semibold">Foreground layout unavailable</p>
-        <p class="text-muted-foreground mt-1 text-xs">
+        <p class="text-muted mt-1 text-xs">
           {{ map.layoutError ?? 'The level-tiles resource could not be decoded.' }}
         </p>
-        <p v-if="map.blockStream || map.enemies" class="text-muted-foreground mt-2 text-xs">
+        <p v-if="map.blockStream || map.enemies" class="text-muted mt-2 text-xs">
           Blocks and entities still use the level header dimensions.
         </p>
       </div>
     </div>
 
-    <div class="pointer-events-none absolute inset-x-0 bottom-0 border-t border-white/5 bg-slate-950/85 px-2 py-1">
-      <p class="truncate font-mono text-[11px] text-slate-300">{{ hoverText }}</p>
+    <div
+      class="border-default bg-default/85 pointer-events-none absolute inset-x-0 bottom-0 border-t px-2 py-1"
+    >
+      <p class="text-muted truncate font-mono text-[11px]">{{ hoverText }}</p>
     </div>
   </div>
 </template>
@@ -88,7 +104,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { LEVEL_CELL_SIZE, levelBlockKindName, type LevelMap } from '@repo/kid-util'
-import { Button } from '~/components/ui/button'
 import { renderLevelMap } from '~/lib/level-map-render'
 import { getLevelMapTextures, type LevelMapTextures } from '~/lib/level-map-textures'
 import {
@@ -124,7 +139,7 @@ const composingTextures = ref(false)
 const showLoading = computed(() => props.loading || composingTextures.value)
 
 function layerButtonClass(active: boolean): string {
-  return active ? 'bg-white/10 text-slate-50' : 'opacity-60'
+  return active ? 'bg-elevated text-highlighted' : 'opacity-60'
 }
 
 function toggleLayer(id: LevelMapLayerId) {
@@ -183,9 +198,7 @@ async function composeTextures() {
 
 const layout = computed(() => props.map.layout)
 const hasLayout = computed(() => !!layout.value)
-const widthBlocks = computed(
-  () => layout.value?.widthBlocks ?? props.map.header.widthInBlocks,
-)
+const widthBlocks = computed(() => layout.value?.widthBlocks ?? props.map.header.widthInBlocks)
 const heightBlocks = computed(
   () =>
     layout.value?.heightBlocks ??
@@ -224,7 +237,9 @@ const hoverText = computed(() => {
       block.kind === 0x01 ? `prize ${block.prize}` : '',
       block.kind === 0x04 ? `warp map ${block.warpMap}` : '',
     ].filter(Boolean)
-    parts.push(`block ${levelBlockKindName(block.kind)}${flags.length ? ` (${flags.join(', ')})` : ''}`)
+    parts.push(
+      `block ${levelBlockKindName(block.kind)}${flags.length ? ` (${flags.join(', ')})` : ''}`,
+    )
   }
   const enemiesHere = (props.map.enemies?.objects ?? []).filter(
     (object) =>
@@ -234,7 +249,9 @@ const hoverText = computed(() => {
   if (enemiesHere.length > 0) {
     const enemy = enemiesHere[0]
     if (enemy) {
-      parts.push(`${enemyTypeName(enemy.enemyTypeOrKind)} (0x${enemy.enemyTypeOrKind.toString(16)})`)
+      parts.push(
+        `${enemyTypeName(enemy.enemyTypeOrKind)} (0x${enemy.enemyTypeOrKind.toString(16)})`,
+      )
     }
   }
   return parts.join(' · ')
@@ -322,7 +339,8 @@ function updateHover(event: PointerEvent) {
   const worldY = offset.value.y + (event.clientY - rect.top) / scale.value
   const x = Math.floor(worldX / LEVEL_PIXEL_SIZE)
   const y = Math.floor(worldY / LEVEL_PIXEL_SIZE)
-  hover.value = x >= 0 && y >= 0 && x < widthBlocks.value && y < heightBlocks.value ? { x, y } : null
+  hover.value =
+    x >= 0 && y >= 0 && x < widthBlocks.value && y < heightBlocks.value ? { x, y } : null
 }
 
 function onPointerDown(event: PointerEvent) {
@@ -454,9 +472,7 @@ watch(
   },
 )
 
-watch(
-  [() => props.map, () => props.layers, size, scale, offset, hover],
-  scheduleDraw,
-  { deep: true },
-)
+watch([() => props.map, () => props.layers, size, scale, offset, hover], scheduleDraw, {
+  deep: true,
+})
 </script>

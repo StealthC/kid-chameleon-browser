@@ -22,7 +22,7 @@ None of the proprietary resources from the original game are included in this pr
   Allows navigation between related resources, facilitating the identification and correlation of data extracted from the ROM.
 
 - **Modern Interface:**  
-  Utilizes PrimeVue and Tailwind CSS for a responsive and intuitive user experience.
+  Built with Nuxt UI (Tailwind CSS) as the primary component library. A compact workbench layout with collapsible navigation and contextual side panels keeps the data front and center on every screen size.
 
 ## Project Structure
 

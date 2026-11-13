@@ -1,5 +1,5 @@
 <template>
-  <div ref="host" class="h-full w-full overflow-hidden rounded-md bg-slate-950/70" />
+  <div ref="host" class="bg-muted/20 h-full w-full overflow-hidden rounded-md" />
 </template>
 
 <script setup lang="ts">
@@ -82,7 +82,11 @@ function buildImageLayer(image: KidImageData, palette?: Palette): Container {
     throw new Error('Could not create 2D context for Pixi plane rendering')
   }
 
-  fullContext.putImageData(new ImageData(image.getRGBAData(palette), image.width, image.height), 0, 0)
+  fullContext.putImageData(
+    new ImageData(image.getRGBAData(palette), image.width, image.height),
+    0,
+    0,
+  )
 
   for (let y = 0; y < image.height; y += chunkSize) {
     for (let x = 0; x < image.width; x += chunkSize) {
@@ -129,7 +133,12 @@ function drawSelection() {
   if (!selectionLayer) return
   selectionLayer.clear()
   if (!props.showSelection || !selection) return
-  selectionLayer.rect(selection.x * selection.tileSize, selection.y * selection.tileSize, selection.tileSize, selection.tileSize)
+  selectionLayer.rect(
+    selection.x * selection.tileSize,
+    selection.y * selection.tileSize,
+    selection.tileSize,
+    selection.tileSize,
+  )
   selectionLayer.stroke({ color: 0xffd166, width: 1, alpha: 0.95 })
 }
 
@@ -193,7 +202,8 @@ async function renderPlane(options?: { preserveView?: boolean; preserveSelection
         scaleY: viewport.scale.y,
       }
     : null
-  const previousSelection = preserveSelection && selection ? { x: selection.x, y: selection.y } : null
+  const previousSelection =
+    preserveSelection && selection ? { x: selection.x, y: selection.y } : null
 
   const image = KidImageData.fromPlane(props.plane, props.sheet, props.columns)
   if (token !== renderToken) return
@@ -228,7 +238,12 @@ async function renderPlane(options?: { preserveView?: boolean; preserveSelection
   }
   drawSelection()
 
-  viewport.resize(host.value.clientWidth || 1, host.value.clientHeight || 1, worldWidth, worldHeight)
+  viewport.resize(
+    host.value.clientWidth || 1,
+    host.value.clientHeight || 1,
+    worldWidth,
+    worldHeight,
+  )
   viewport.hitArea = new Rectangle(0, 0, worldWidth, worldHeight)
   const worldSizeChanged = worldWidth !== previousWorldWidth || worldHeight !== previousWorldHeight
   if (
@@ -253,7 +268,12 @@ async function renderPlane(options?: { preserveView?: boolean; preserveSelection
 async function initPixi() {
   if (!host.value || app) return
   app = new Application()
-  await app.init({ resizeTo: host.value, background: '#0b1220', antialias: false, preference: 'webgl' })
+  await app.init({
+    resizeTo: host.value,
+    background: '#0b1220',
+    antialias: false,
+    preference: 'webgl',
+  })
   host.value.replaceChildren(app.canvas)
   viewport = new Viewport({
     screenWidth: Math.max(1, host.value.clientWidth),
@@ -325,14 +345,20 @@ watch(
   },
 )
 
-watch(() => props.showGrid, () => {
-  const rows = Math.max(1, Math.ceil(props.plane.tiles.length / props.columns))
-  drawGrid(props.columns, rows)
-})
+watch(
+  () => props.showGrid,
+  () => {
+    const rows = Math.max(1, Math.ceil(props.plane.tiles.length / props.columns))
+    drawGrid(props.columns, rows)
+  },
+)
 
-watch(() => props.showSelection, () => {
-  drawSelection()
-})
+watch(
+  () => props.showSelection,
+  () => {
+    drawSelection()
+  },
+)
 
 onMounted(async () => {
   await initPixi()

@@ -1,5 +1,5 @@
 <template>
-  <div ref="host" class="h-full w-full overflow-hidden rounded-md bg-slate-950/70" />
+  <div ref="host" class="bg-muted/20 h-full w-full overflow-hidden rounded-md" />
 </template>
 
 <script setup lang="ts">
@@ -80,7 +80,11 @@ function buildImageLayer(image: KidImageData, palette?: Palette): Container {
     throw new Error('Could not create 2D context for Pixi image rendering')
   }
 
-  fullContext.putImageData(new ImageData(image.getRGBAData(palette), image.width, image.height), 0, 0)
+  fullContext.putImageData(
+    new ImageData(image.getRGBAData(palette), image.width, image.height),
+    0,
+    0,
+  )
 
   for (let y = 0; y < image.height; y += chunkSize) {
     for (let x = 0; x < image.width; x += chunkSize) {
@@ -171,7 +175,11 @@ function resizeRendererToHost() {
   applyViewportBounds()
 }
 
-async function renderImage(options?: { preserveView?: boolean; preserveSelection?: boolean; forceFit?: boolean }) {
+async function renderImage(options?: {
+  preserveView?: boolean
+  preserveSelection?: boolean
+  forceFit?: boolean
+}) {
   const token = ++renderToken
   if (!host.value || !viewport || !world || !props.image) return
 
@@ -187,7 +195,8 @@ async function renderImage(options?: { preserveView?: boolean; preserveSelection
         scaleY: viewport.scale.y,
       }
     : null
-  const previousSelection = preserveSelection && selection ? { x: selection.x, y: selection.y } : null
+  const previousSelection =
+    preserveSelection && selection ? { x: selection.x, y: selection.y } : null
 
   const image = props.image
   if (token !== renderToken) return
@@ -209,13 +218,23 @@ async function renderImage(options?: { preserveView?: boolean; preserveSelection
     const rows = Math.max(1, Math.ceil((props.selectableCount || props.columns) / props.columns))
     const x = Math.min(previousSelection.x, props.columns - 1)
     const y = Math.min(previousSelection.y, rows - 1)
-    selection = { x: Math.max(0, x), y: Math.max(0, y), cellSize: props.cellSize, columns: props.columns }
+    selection = {
+      x: Math.max(0, x),
+      y: Math.max(0, y),
+      cellSize: props.cellSize,
+      columns: props.columns,
+    }
   } else {
     selection = null
   }
   drawSelection()
 
-  viewport.resize(host.value.clientWidth || 1, host.value.clientHeight || 1, worldWidth, worldHeight)
+  viewport.resize(
+    host.value.clientWidth || 1,
+    host.value.clientHeight || 1,
+    worldWidth,
+    worldHeight,
+  )
   viewport.hitArea = new Rectangle(0, 0, worldWidth, worldHeight)
   const worldSizeChanged = worldWidth !== previousWorldWidth || worldHeight !== previousWorldHeight
 
@@ -242,7 +261,12 @@ async function renderImage(options?: { preserveView?: boolean; preserveSelection
 async function initPixi() {
   if (!host.value || app) return
   app = new Application()
-  await app.init({ resizeTo: host.value, background: '#0b1220', antialias: false, preference: 'webgl' })
+  await app.init({
+    resizeTo: host.value,
+    background: '#0b1220',
+    antialias: false,
+    preference: 'webgl',
+  })
   host.value.replaceChildren(app.canvas)
   viewport = new Viewport({
     screenWidth: Math.max(1, host.value.clientWidth),

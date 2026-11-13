@@ -15,62 +15,75 @@
         @cell-select="onCellSelect"
         @clear-selection="onClearSelection"
       />
-      <div v-else class="flex h-full min-h-[280px] items-center justify-center text-xs text-slate-300">
-        Select a sheet to preview this sprite frame.
+      <div v-else class="text-muted flex h-full min-h-40 items-center justify-center text-xs">
+        {{
+          needSheet
+            ? 'Select a sheet to preview this sprite frame.'
+            : 'No graphics available for this frame.'
+        }}
       </div>
     </template>
 
     <template #sidebar>
       <div class="flex items-center justify-between gap-2">
-        <p class="text-sm font-semibold">Sprite Frame — {{ resourceName }}</p>
-        <Badge variant="outline">{{ needSheet ? 'Needs sheet' : 'Embedded' }}</Badge>
+        <p class="text-highlighted text-xs font-semibold">Sprite Frame · {{ resourceName }}</p>
+        <UBadge
+          :color="needSheet ? 'warning' : 'neutral'"
+          variant="subtle"
+          size="sm"
+          :label="needSheet ? 'Needs sheet' : 'Embedded'"
+        />
       </div>
 
       <ViewerSidebarSection title="Inspector">
-        <p class="font-mono text-xs text-emerald-300">{{ selectedCellText }}</p>
+        <p class="text-primary font-mono text-xs">{{ selectedCellText }}</p>
       </ViewerSidebarSection>
 
       <ViewerSidebarSection title="Layers">
-        <label class="flex items-center gap-2 text-xs">
-          <input v-model="showGrid" type="checkbox" />
-          <span>Grid</span>
-        </label>
-        <label class="flex items-center gap-2 text-xs">
-          <input v-model="showSelection" type="checkbox" />
-          <span>Selection</span>
-        </label>
+        <div class="flex items-center justify-between gap-2 text-xs">
+          <span class="text-muted">Grid</span>
+          <USwitch v-model="showGrid" size="sm" />
+        </div>
+        <div class="flex items-center justify-between gap-2 text-xs">
+          <span class="text-muted">Selection</span>
+          <USwitch v-model="showSelection" size="sm" />
+        </div>
       </ViewerSidebarSection>
 
-      <Select v-if="needSheet" v-model="sheetString">
-        <SelectTrigger>
-          <SelectValue placeholder="Select a tile sheet" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem v-for="s in sheets" :key="s.key" :value="String(s.value)">{{ s.name }}</SelectItem>
-        </SelectContent>
-      </Select>
+      <ViewerSidebarSection v-if="needSheet" title="Tile sheet">
+        <USelect
+          v-model="sheetString"
+          :items="sheetSelectItems"
+          size="sm"
+          class="w-full"
+          placeholder="Select a tile sheet"
+          aria-label="Select tile sheet"
+        />
+      </ViewerSidebarSection>
 
-      <Select v-if="paletteOptions.length > 1" v-model="selectedPaletteKey">
-        <SelectTrigger>
-          <SelectValue placeholder="Select palette" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem v-for="option in paletteOptions" :key="option.key" :value="option.key">
-            {{ option.label }}
-          </SelectItem>
-        </SelectContent>
-      </Select>
+      <ViewerSidebarSection v-if="paletteOptions.length > 1" title="Palette">
+        <USelect
+          v-model="selectedPaletteKey"
+          :items="paletteSelectItems"
+          size="sm"
+          class="w-full"
+          placeholder="Select palette"
+          aria-label="Select palette"
+        />
+      </ViewerSidebarSection>
 
-      <div class="border-border/60 rounded border bg-slate-950/60 p-2">
-        <Table>
-          <TableBody>
-            <TableRow v-for="row in rows" :key="row.label">
-              <TableCell class="text-muted-foreground text-xs">{{ row.label }}</TableCell>
-              <TableCell class="font-mono text-xs">{{ row.value }}</TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </div>
+      <ViewerSidebarSection title="Frame">
+        <dl class="border-default overflow-hidden rounded-md border">
+          <div
+            v-for="row in rows"
+            :key="row.label"
+            class="border-default grid grid-cols-[7rem_minmax(0,1fr)] border-b last:border-b-0"
+          >
+            <dt class="bg-muted/30 text-muted px-2 py-1 text-[11px]">{{ row.label }}</dt>
+            <dd class="text-highlighted px-2 py-1 font-mono text-[11px]">{{ row.value }}</dd>
+          </div>
+        </dl>
+      </ViewerSidebarSection>
     </template>
   </ExpandableViewerLayout>
 </template>
@@ -86,15 +99,6 @@ import {
   type SpriteFrameRomResourceLoaded,
 } from '@repo/kid-util'
 import { computed, ref, toRefs, watch } from 'vue'
-import { Badge } from '~/components/ui/badge'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '~/components/ui/select'
-import { Table, TableBody, TableCell, TableRow } from '~/components/ui/table'
 import { addressFormat, getNormalizedName } from '~/utils/index'
 import { useResourceLoader } from '~/composables/useResourceLoader'
 
@@ -115,7 +119,10 @@ const resourceLoader = useResourceLoader()
 const sheetList = resourceLoader.getResourceListOfTypeQuery('sheet')
 const isSheetSelected = computed(() => sheet.value !== null)
 const loadedSheet = resourceLoader.useGetResourceLoadedQuery(sheet, isSheetSelected)
-const selectedSheetReferences = resourceLoader.getReferencesResourcesLoadedQuery(sheet, isSheetSelected)
+const selectedSheetReferences = resourceLoader.getReferencesResourcesLoadedQuery(
+  sheet,
+  isSheetSelected,
+)
 const spriteReferences = resourceLoader.getReferencesResourcesLoadedQuery(
   computed(() => resource.value.baseAddress),
 )
@@ -135,7 +142,11 @@ const sheets = computed(() => {
   }))
 })
 
-const resourceName = computed(() => `0x${resource.value.baseAddress.toString(16)}`)
+const sheetSelectItems = computed(() =>
+  sheets.value.map((entry) => ({ label: entry.name, value: String(entry.value) })),
+)
+
+const resourceName = computed(() => addressFormat(resource.value.baseAddress))
 const needSheet = computed(() => !isLinkedSpriteFrameResource(resource.value))
 const tileId = computed(() =>
   !isLinkedSpriteFrameResource(resource.value) ? resource.value.tileId : 0,
@@ -160,7 +171,12 @@ const image = computed(() => {
   if (!bytes.value) {
     return null
   }
-  return KidImageData.fromSprite(bytes.value, resource.value.width, resource.value.height, tileId.value)
+  return KidImageData.fromSprite(
+    bytes.value,
+    resource.value.width,
+    resource.value.height,
+    tileId.value,
+  )
 })
 
 const availablePalettes = computed<PaletteRomResourceLoaded[]>(() => {
@@ -187,6 +203,10 @@ const paletteOptions = computed(() => {
     })),
   ]
 })
+
+const paletteSelectItems = computed(() =>
+  paletteOptions.value.map((option) => ({ label: option.label, value: option.key })),
+)
 
 watch(
   paletteOptions,
@@ -226,8 +246,9 @@ const palette = computed<PaletteRomResourceLoaded | null>(() => {
     return null
   }
   return (
-    availablePalettes.value.find((candidate) => String(candidate.baseAddress) === selectedPaletteKey.value) ??
-    null
+    availablePalettes.value.find(
+      (candidate) => String(candidate.baseAddress) === selectedPaletteKey.value,
+    ) ?? null
   )
 })
 
@@ -240,12 +261,12 @@ const selectedCellText = computed(() => {
 
 const rows = computed(() => [
   { label: 'CRC32', value: addressFormat(resource.value.hash) },
-  { label: 'Resource Index', value: addressFormat(resource.value.tableIndex ?? 0) },
+  { label: 'Resource index', value: addressFormat(resource.value.tableIndex ?? 0) },
   { label: 'Tile ID', value: addressFormat(tileId.value) },
   { label: 'Width', value: String(resource.value.width) },
   { label: 'Height', value: String(resource.value.height) },
-  { label: 'X Offset', value: String(resource.value.xOffset) },
-  { label: 'Y Offset', value: String(resource.value.yOffset) },
+  { label: 'X offset', value: String(resource.value.xOffset) },
+  { label: 'Y offset', value: String(resource.value.yOffset) },
 ])
 
 function onCellSelect(payload: { index: number }) {

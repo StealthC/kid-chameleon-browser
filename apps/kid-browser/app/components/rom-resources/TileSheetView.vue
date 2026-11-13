@@ -15,53 +15,82 @@
         @cell-select="onCellSelect"
         @clear-selection="onClearSelection"
       />
+      <div v-else class="text-muted flex h-full items-center justify-center text-xs">
+        This sheet has no renderable tiles.
+      </div>
     </template>
 
     <template #sidebar>
       <ViewerSidebarSection title="Inspector">
-        <p class="font-mono text-xs text-emerald-300">{{ selectedTileText }}</p>
+        <p class="text-primary font-mono text-xs">{{ selectedTileText }}</p>
+        <p class="text-muted mt-1 text-[11px]">
+          {{ values?.columns ?? 0 }} × {{ values?.rows ?? 0 }} tiles ·
+          {{ values?.cellsTotal ?? 0 }} total
+        </p>
       </ViewerSidebarSection>
 
       <ViewerSidebarSection title="Layers">
-        <label class="flex items-center gap-2 text-xs">
-          <input v-model="showGrid" type="checkbox" />
-          <span>Grid</span>
-        </label>
-        <label class="flex items-center gap-2 text-xs">
-          <input v-model="showSelection" type="checkbox" />
-          <span>Selection</span>
-        </label>
+        <div class="flex items-center justify-between gap-2 text-xs">
+          <span class="text-muted">Grid</span>
+          <USwitch v-model="showGrid" size="sm" />
+        </div>
+        <div class="flex items-center justify-between gap-2 text-xs">
+          <span class="text-muted">Selection</span>
+          <USwitch v-model="showSelection" size="sm" />
+        </div>
       </ViewerSidebarSection>
 
       <ViewerSidebarSection title="Layout">
-        <div class="gap-2 items-stretch flex flex-col">
-          <Button variant="outline" size="sm" @click="useColumns = !useColumns">
-            <Icon name="heroicons:adjustments-horizontal-solid" class="size-4" />
-            {{ useColumns ? 'Columns mode' : 'Rows mode' }}
-          </Button>
-          <div class="col-span-2 flex flex-row items-center justify-end gap-2 md:col-span-1">
-            <Input type="number" v-model.number="value" class="text-center" :min="1" :max="255" />
-            <Button size="icon-sm" variant="secondary" @click="value++">
-              <Icon name="heroicons:plus-solid" class="size-4" />
-            </Button>
-            <Button size="icon-sm" variant="secondary" @click="value = Math.max(1, value - 1)">
-              <Icon name="heroicons:minus-solid" class="size-4" />
-            </Button>
-          </div>
+        <UButton
+          :icon="useColumns ? 'i-heroicons-table-cells' : 'i-heroicons-view-columns'"
+          color="neutral"
+          variant="soft"
+          size="sm"
+          block
+          @click="useColumns = !useColumns"
+        >
+          {{ useColumns ? 'Columns mode' : 'Rows mode' }}
+        </UButton>
+        <div class="flex items-center gap-1">
+          <UInput
+            v-model.number="value"
+            type="number"
+            size="xs"
+            class="min-w-0 flex-1 text-center font-mono"
+            :min="1"
+            :max="255"
+            aria-label="Tile count per row or column"
+          />
+          <UButton
+            icon="i-heroicons-plus"
+            color="neutral"
+            variant="soft"
+            size="xs"
+            square
+            aria-label="Increase count"
+            @click="value++"
+          />
+          <UButton
+            icon="i-heroicons-minus"
+            color="neutral"
+            variant="soft"
+            size="xs"
+            square
+            aria-label="Decrease count"
+            @click="value = Math.max(1, value - 1)"
+          />
         </div>
       </ViewerSidebarSection>
 
       <ViewerSidebarSection v-if="paletteOptions.length > 1" title="Palette">
-        <Select v-model="selectedPaletteKey">
-          <SelectTrigger class="w-full">
-            <SelectValue placeholder="Select palette" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem v-for="option in paletteOptions" :key="option.key" :value="option.key">
-              {{ option.label }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
+        <USelect
+          v-model="selectedPaletteKey"
+          :items="paletteSelectItems"
+          size="sm"
+          class="w-full"
+          placeholder="Select palette"
+          aria-label="Select palette"
+        />
       </ViewerSidebarSection>
     </template>
   </ExpandableViewerLayout>
@@ -76,15 +105,6 @@ import {
   type PaletteRomResourceLoaded,
   type SheetRomResourceLoaded,
 } from '@repo/kid-util'
-import { Button } from '~/components/ui/button'
-import { Input } from '~/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '~/components/ui/select'
 import { useResourceLoader } from '~/composables/useResourceLoader'
 import { getNormalizedName } from '~/utils/index'
 
@@ -106,7 +126,9 @@ const showSelection = ref(true)
 const isExpanded = ref(false)
 const selectedTileIndex = ref<number | null>(null)
 const loader = useResourceLoader()
-const references = loader.getReferencesResourcesLoadedQuery(computed(() => resource.value.baseAddress))
+const references = loader.getReferencesResourcesLoadedQuery(
+  computed(() => resource.value.baseAddress),
+)
 
 const availablePalettes = computed(() => {
   const related = references.data.value ?? []
@@ -125,6 +147,10 @@ const paletteOptions = computed(() => {
     })),
   ]
 })
+
+const paletteSelectItems = computed(() =>
+  paletteOptions.value.map((option) => ({ label: option.label, value: option.key })),
+)
 
 watch(
   paletteOptions,
@@ -163,7 +189,9 @@ const selectedPalette = computed<PaletteRomResourceLoaded | undefined>(() => {
   if (selectedPaletteKey.value === 'uv') {
     return undefined
   }
-  return availablePalettes.value.find((palette) => String(palette.baseAddress) === selectedPaletteKey.value)
+  return availablePalettes.value.find(
+    (palette) => String(palette.baseAddress) === selectedPaletteKey.value,
+  )
 })
 
 const values = computed(() => {

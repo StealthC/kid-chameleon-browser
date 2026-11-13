@@ -1,6 +1,4 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
-import tailwindcss from '@tailwindcss/vite'
-
 export default defineNuxtConfig({
   ssr: false,
   compatibilityDate: '2025-07-15',
@@ -12,10 +10,18 @@ export default defineNuxtConfig({
       { path: '~/components/rom-resources', pathPrefix: false },
     ],
   },
-  modules: ['shadcn-nuxt', '@pinia/nuxt', '@nuxt/icon'],
-  shadcn: {
-    prefix: '',
-    componentDir: '@/components/ui',
+  modules: ['@nuxt/ui', '@pinia/nuxt', '@nuxt/icon'],
+  ui: {
+    // The app is dark-only and intentionally offline-friendly.
+    colorMode: false,
+    fonts: false,
+  },
+  icon: {
+    serverBundle: 'local',
+    clientBundle: {
+      scan: true,
+      sizeLimitKb: 512,
+    },
   },
   app: {
     head: {
@@ -37,8 +43,5 @@ export default defineNuxtConfig({
     public: {
       appVersion: process.env.npm_package_version ?? '0.0.0',
     },
-  },
-  vite: {
-    plugins: [tailwindcss()],
   },
 })

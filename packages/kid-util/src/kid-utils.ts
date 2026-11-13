@@ -28,10 +28,13 @@ export type UnpackResults = {
  * @returns
  */
 export async function ExecuteInNextTick(fn: () => unknown): Promise<unknown> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     setTimeout(() => {
-      const value = fn()
-      resolve(value)
+      try {
+        resolve(fn())
+      } catch (error) {
+        reject(error instanceof Error ? error : new Error(String(error)))
+      }
     }, 0)
   })
 }

@@ -13,50 +13,70 @@
         @tile-select="onTileSelect"
         @clear-selection="onClearSelection"
       />
-      <div v-else class="flex h-full min-h-[280px] items-center justify-center text-xs text-slate-300">
+      <div v-else class="text-muted flex h-full min-h-40 items-center justify-center text-xs">
         Plane has no related sheet to render.
       </div>
     </template>
 
     <template #sidebar>
       <ViewerSidebarSection title="Inspector">
-        <p class="font-mono text-xs text-emerald-300">{{ selectedTileText }}</p>
+        <p class="text-primary font-mono text-xs">{{ selectedTileText }}</p>
+        <p class="text-muted mt-1 text-[11px]">
+          {{ resource.width ? `${resource.width} tiles wide` : `${columns} columns` }}
+        </p>
       </ViewerSidebarSection>
 
       <ViewerSidebarSection title="Layers">
-        <label class="flex items-center gap-2 text-xs">
-          <input v-model="showGrid" type="checkbox" />
-          <span>Grid</span>
-        </label>
-        <label class="flex items-center gap-2 text-xs">
-          <input v-model="showSelection" type="checkbox" />
-          <span>Selection</span>
-        </label>
+        <div class="flex items-center justify-between gap-2 text-xs">
+          <span class="text-muted">Grid</span>
+          <USwitch v-model="showGrid" size="sm" />
+        </div>
+        <div class="flex items-center justify-between gap-2 text-xs">
+          <span class="text-muted">Selection</span>
+          <USwitch v-model="showSelection" size="sm" />
+        </div>
       </ViewerSidebarSection>
 
       <ViewerSidebarSection title="Options">
-        <template v-if="useColumns">
-          <div class="flex items-center gap-2">
-            <Input type="number" v-model.number="columns" class="w-24 text-center" :min="1" :max="255" />
-            <Button size="icon-sm" variant="secondary" @click="columns++">
-              <Icon name="heroicons:plus-solid" class="size-4" />
-            </Button>
-            <Button size="icon-sm" variant="secondary" @click="columns = Math.max(1, columns - 1)">
-              <Icon name="heroicons:minus-solid" class="size-4" />
-            </Button>
-          </div>
-        </template>
+        <div v-if="useColumns" class="flex items-center gap-1">
+          <UInput
+            v-model.number="columns"
+            type="number"
+            size="xs"
+            class="min-w-0 flex-1 text-center font-mono"
+            :min="1"
+            :max="255"
+            aria-label="Number of columns"
+          />
+          <UButton
+            icon="i-heroicons-plus"
+            color="neutral"
+            variant="soft"
+            size="xs"
+            square
+            aria-label="Increase columns"
+            @click="columns++"
+          />
+          <UButton
+            icon="i-heroicons-minus"
+            color="neutral"
+            variant="soft"
+            size="xs"
+            square
+            aria-label="Decrease columns"
+            @click="columns = Math.max(1, columns - 1)"
+          />
+        </div>
 
-        <Select v-if="paletteOptions.length > 1" v-model="selectedPaletteKey">
-          <SelectTrigger class="w-full">
-            <SelectValue placeholder="Select palette" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem v-for="option in paletteOptions" :key="option.key" :value="option.key">
-              {{ option.label }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
+        <USelect
+          v-if="paletteOptions.length > 1"
+          v-model="selectedPaletteKey"
+          :items="paletteSelectItems"
+          size="sm"
+          class="w-full"
+          placeholder="Select palette"
+          aria-label="Select palette"
+        />
       </ViewerSidebarSection>
     </template>
   </ExpandableViewerLayout>
@@ -72,17 +92,8 @@ import {
   type PlaneRomResourceTile,
   type SheetRomResourceLoaded,
 } from '@repo/kid-util'
-import { Button } from '~/components/ui/button'
-import { Input } from '~/components/ui/input'
 import { getNormalizedName } from '~/utils/index'
 import { useResourceLoader } from '~/composables/useResourceLoader'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '~/components/ui/select'
 
 export type Props = {
   resource: PlaneRomResourceLoaded
@@ -100,9 +111,12 @@ const previousNonUvCount = ref(0)
 const showGrid = ref(true)
 const showSelection = ref(true)
 const isExpanded = ref(false)
-const selectedTile = ref<{ x: number; y: number; index: number; tile: PlaneRomResourceTile } | null>(
-  null,
-)
+const selectedTile = ref<{
+  x: number
+  y: number
+  index: number
+  tile: PlaneRomResourceTile
+} | null>(null)
 const loader = useResourceLoader()
 const resourceAddress = computed(() => resource.value.baseAddress)
 const related = loader.getReferencesResourcesLoadedQuery(resourceAddress)
@@ -110,7 +124,7 @@ const related = loader.getReferencesResourcesLoadedQuery(resourceAddress)
 const selectedSheet = computed(() => {
   if (sheet.value) return sheet.value
   if (related.data.value) {
-    const relatedSheet = related.data.value.find((r) => r.type === 'sheet')
+    const relatedSheet = related.data.value.find((entry) => entry.type === 'sheet')
     return relatedSheet ? (relatedSheet as SheetRomResourceLoaded) : null
   }
   return null
@@ -120,7 +134,9 @@ const selectedPalette = computed(() => {
   if (selectedPaletteKey.value === 'uv') {
     return undefined
   }
-  return availablePalettes.value.find((palette) => String(palette.baseAddress) === selectedPaletteKey.value)
+  return availablePalettes.value.find(
+    (palette) => String(palette.baseAddress) === selectedPaletteKey.value,
+  )
 })
 
 const availablePalettes = computed<PaletteRomResourceLoaded[]>(() => {
@@ -139,6 +155,10 @@ const paletteOptions = computed(() => {
     })),
   ]
 })
+
+const paletteSelectItems = computed(() =>
+  paletteOptions.value.map((option) => ({ label: option.label, value: option.key })),
+)
 
 watch(
   paletteOptions,
@@ -180,14 +200,21 @@ const selectedTileText = computed(() => {
   const { x, y, index, tile } = selectedTile.value
   return `tile(${x},${y}) idx=${index} tile=0x${tile.tileIndex
     .toString(16)
-    .toUpperCase()} pal=${tile.palette} pri=${tile.priority ? 1 : 0} xFlip=${tile.xFlip ? 1 : 0} yFlip=${tile.yFlip ? 1 : 0}`
+    .toUpperCase()} pal=${tile.palette} pri=${tile.priority ? 1 : 0} xFlip=${
+    tile.xFlip ? 1 : 0
+  } yFlip=${tile.yFlip ? 1 : 0}`
 })
 
-const onTileSelect = (payload: { x: number; y: number; index: number; tile: PlaneRomResourceTile }) => {
+function onTileSelect(payload: {
+  x: number
+  y: number
+  index: number
+  tile: PlaneRomResourceTile
+}) {
   selectedTile.value = payload
 }
 
-const onClearSelection = () => {
+function onClearSelection() {
   selectedTile.value = null
 }
 </script>

@@ -1,30 +1,41 @@
 <template>
-  <div class="border-border/60 flex h-full min-h-0 flex-col gap-3 rounded-lg border bg-slate-900/60 p-3">
-    <div class="flex flex-wrap items-center gap-2">
-      <Badge variant="outline">Level: {{ resource.levelIndex }}</Badge>
-      <Badge variant="outline">Effective: {{ resource.effectiveLevelIndex }}</Badge>
-      <Badge variant="outline">Act: {{ resource.act }}</Badge>
+  <AppPanel title="Level title card" icon="i-heroicons-identification" class="h-full">
+    <div class="mb-2 flex flex-wrap items-center gap-1.5">
+      <UBadge color="neutral" variant="subtle" :label="`Level: ${resource.levelIndex}`" />
+      <UBadge
+        color="neutral"
+        variant="subtle"
+        :label="`Effective: ${resource.effectiveLevelIndex}`"
+      />
+      <UBadge color="neutral" variant="subtle" :label="`Act: ${resource.act}`" />
     </div>
 
-    <div class="border-border/60 rounded border bg-slate-950/60 p-3">
-      <p class="text-muted-foreground text-xs">Resolved Title</p>
-      <p class="font-semibold tracking-wide">{{ resource.titleText }}</p>
-    </div>
+    <div class="space-y-2">
+      <div class="border-default bg-muted/20 rounded-md border p-3">
+        <p class="text-dimmed text-[10px] tracking-widest uppercase">Resolved Title</p>
+        <p class="text-highlighted mt-1 text-base font-semibold tracking-wide">
+          {{ resource.titleText }}
+        </p>
+      </div>
 
-    <div class="border-border/60 rounded border bg-slate-950/60 p-3">
-      <p class="text-muted-foreground mb-2 text-xs">Lines</p>
-      <ul class="space-y-1">
-        <li v-for="(line, index) in resource.lines" :key="index" class="font-mono text-sm">
-          {{ line }}
-        </li>
-      </ul>
+      <div class="border-default bg-muted/20 rounded-md border p-3">
+        <p class="text-dimmed mb-2 text-[10px] tracking-widest uppercase">Lines</p>
+        <ul class="space-y-1">
+          <li
+            v-for="(line, index) in resource.lines"
+            :key="index"
+            class="text-default font-mono text-sm"
+          >
+            {{ line }}
+          </li>
+        </ul>
+      </div>
     </div>
-  </div>
+  </AppPanel>
 </template>
 
 <script setup lang="ts">
 import type { LevelTitleCardRomResourceLoaded } from '@repo/kid-util'
-import { Badge } from '~/components/ui/badge'
 
 defineProps<{ resource: LevelTitleCardRomResourceLoaded }>()
 </script>

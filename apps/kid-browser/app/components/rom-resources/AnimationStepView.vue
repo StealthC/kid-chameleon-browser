@@ -1,55 +1,35 @@
 <template>
-  <div class="border-border/60 flex h-full min-h-0 flex-col gap-3 rounded-lg border bg-slate-900/60 p-3">
-    <div class="flex items-center gap-2">
-      <Badge variant="outline">{{ kindName }}</Badge>
-      <Badge variant="outline">Delay: {{ resource.delay }}</Badge>
+  <AppPanel title="Animation step" icon="i-heroicons-film" class="h-full">
+    <div class="mb-2 flex flex-wrap items-center gap-1.5">
+      <UBadge color="primary" variant="subtle" :label="kindName" />
+      <UBadge color="neutral" variant="subtle" :label="`Delay: ${resource.delay}`" />
     </div>
 
-    <div class="border-border/60 rounded border bg-slate-950/60 p-2">
-      <Table>
-        <TableBody>
-          <TableRow>
-            <TableCell class="text-muted-foreground text-xs">Animation Script</TableCell>
-            <TableCell class="font-mono text-xs">
-              <NuxtLink v-if="resource.animationAddress" :to="getResourceRoute(resource.animationAddress)">
-                {{ addressFormat(resource.animationAddress) }}
-              </NuxtLink>
-              <span v-else>-</span>
-            </TableCell>
-          </TableRow>
-          <TableRow>
-            <TableCell class="text-muted-foreground text-xs">Sprite Offset</TableCell>
-            <TableCell class="font-mono text-xs">{{ formatValue(resource.spriteOffset) }}</TableCell>
-          </TableRow>
-          <TableRow>
-            <TableCell class="text-muted-foreground text-xs">Sprite Address</TableCell>
-            <TableCell class="font-mono text-xs">
-              <NuxtLink v-if="resource.spriteAddress" :to="getResourceRoute(resource.spriteAddress)">
-                {{ addressFormat(resource.spriteAddress) }}
-              </NuxtLink>
-              <span v-else>-</span>
-            </TableCell>
-          </TableRow>
-          <TableRow>
-            <TableCell class="text-muted-foreground text-xs">Next Step</TableCell>
-            <TableCell class="font-mono text-xs">
-              <NuxtLink v-if="resource.nextFrameAddress" :to="getResourceRoute(resource.nextFrameAddress)">
-                {{ addressFormat(resource.nextFrameAddress) }}
-              </NuxtLink>
-              <span v-else>-</span>
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
-    </div>
-  </div>
+    <dl class="border-default overflow-hidden rounded-md border">
+      <div
+        v-for="row in rows"
+        :key="row.label"
+        class="border-default grid grid-cols-[9rem_minmax(0,1fr)] border-b last:border-b-0"
+      >
+        <dt class="bg-muted/30 text-muted px-2.5 py-1.5 text-xs">{{ row.label }}</dt>
+        <dd class="text-highlighted px-2.5 py-1.5 font-mono text-[11px]">
+          <NuxtLink
+            v-if="row.link !== undefined"
+            :to="getResourceRoute(row.link)"
+            class="text-primary hover:underline"
+          >
+            {{ addressFormat(row.link) }}
+          </NuxtLink>
+          <span v-else>{{ row.value }}</span>
+        </dd>
+      </div>
+    </dl>
+  </AppPanel>
 </template>
 
 <script setup lang="ts">
 import { computed, toRefs } from 'vue'
 import { type AnimationStepRomResourceLoaded } from '@repo/kid-util'
-import { Badge } from '~/components/ui/badge'
-import { Table, TableBody, TableCell, TableRow } from '~/components/ui/table'
 import { addressFormat, getResourceRoute } from '~/utils/index'
 
 interface Props {
@@ -66,8 +46,27 @@ const kindName = computed(() => {
   return `Unknown Step (${resource.value.kind})`
 })
 
-const formatValue = (value?: number) => {
-  if (value === undefined) return '-'
-  return addressFormat(value)
-}
+const rows = computed(() => [
+  {
+    label: 'Animation script',
+    value: resource.value.animationAddress ? addressFormat(resource.value.animationAddress) : '-',
+    link: resource.value.animationAddress,
+  },
+  {
+    label: 'Sprite offset',
+    value:
+      resource.value.spriteOffset === undefined ? '-' : addressFormat(resource.value.spriteOffset),
+    link: undefined,
+  },
+  {
+    label: 'Sprite address',
+    value: resource.value.spriteAddress ? addressFormat(resource.value.spriteAddress) : '-',
+    link: resource.value.spriteAddress,
+  },
+  {
+    label: 'Next step',
+    value: resource.value.nextFrameAddress ? addressFormat(resource.value.nextFrameAddress) : '-',
+    link: resource.value.nextFrameAddress,
+  },
+])
 </script>

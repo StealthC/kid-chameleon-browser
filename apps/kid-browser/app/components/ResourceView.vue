@@ -1,217 +1,371 @@
 <template>
-  <div class="h-full overflow-auto">
-    <GlassPanel class="h-full" :header="title">
-      <div v-if="isPending" class="flex h-full w-full items-center justify-center text-center">
-        <div class="border-primary h-12 w-12 animate-spin rounded-full border-4 border-t-transparent"></div>
+  <div class="bg-default flex h-full min-h-0 flex-col">
+    <header
+      class="border-default flex h-11 shrink-0 items-center gap-1.5 overflow-hidden border-b px-2.5"
+    >
+      <div class="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto">
+        <span class="text-primary font-mono text-xs font-medium">
+          {{ addressFormat(resourceAddress) }}
+        </span>
+        <UBadge
+          v-if="resource"
+          color="neutral"
+          variant="subtle"
+          size="sm"
+          :label="getNameForType(resource.type)"
+        />
+        <UBadge
+          v-if="resource?.name"
+          color="neutral"
+          variant="outline"
+          size="sm"
+          :label="resource.name"
+          class="hidden max-w-40 lg:inline-flex"
+        />
+        <UBadge
+          v-if="resource?.confidence === 'possible'"
+          color="warning"
+          variant="subtle"
+          size="sm"
+          label="Possible"
+          class="hidden md:inline-flex"
+          title="Heuristic discovery; verify references before relying on this resource."
+        />
+        <UBadge
+          v-if="resource?.loaded"
+          color="neutral"
+          variant="subtle"
+          size="sm"
+          label="Decoded"
+          class="hidden md:inline-flex"
+        />
       </div>
-      <div v-else-if="isError" class="rounded bg-red-900/50 p-3 text-red-300">
-        Error loading resource:
-        <div class="mt-1 font-mono text-white">{{ error?.message }}</div>
+
+      <div class="ms-auto flex shrink-0 items-center gap-1">
+        <div class="flex items-center gap-0.5">
+          <UTooltip text="History back (Alt+Left)">
+            <UButton
+              icon="i-heroicons-arrow-left"
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              square
+              :disabled="!canGoBack"
+              aria-label="History back"
+              @click="goBack"
+            />
+          </UTooltip>
+          <span class="text-dimmed hidden font-mono text-[10px] sm:inline">
+            {{ historyPosition }}
+          </span>
+          <UTooltip text="History forward (Alt+Right)">
+            <UButton
+              icon="i-heroicons-arrow-right"
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              square
+              :disabled="!canGoForward"
+              aria-label="History forward"
+              @click="goForward"
+            />
+          </UTooltip>
+        </div>
+
+        <USeparator orientation="vertical" class="h-4" />
+
+        <div class="flex items-center gap-0.5">
+          <UTooltip text="Previous in filtered list">
+            <UButton
+              icon="i-heroicons-chevron-up"
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              square
+              :disabled="previousInList === null"
+              aria-label="Previous resource in filtered list"
+              @click="goToListOffset(-1)"
+            />
+          </UTooltip>
+          <span class="text-dimmed hidden font-mono text-[10px] sm:inline">{{ listPosition }}</span>
+          <UTooltip text="Next in filtered list">
+            <UButton
+              icon="i-heroicons-chevron-down"
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              square
+              :disabled="nextInList === null"
+              aria-label="Next resource in filtered list"
+              @click="goToListOffset(1)"
+            />
+          </UTooltip>
+        </div>
+
+        <USeparator orientation="vertical" class="h-4" />
+
+        <div class="flex items-center gap-0.5">
+          <UTooltip text="Previous related resource">
+            <UButton
+              icon="i-heroicons-arrow-uturn-left"
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              square
+              :disabled="previousRelated === null"
+              aria-label="Previous related resource"
+              @click="goToRelated(-1)"
+            />
+          </UTooltip>
+          <span class="text-dimmed hidden font-mono text-[10px] sm:inline">{{
+            relatedPosition
+          }}</span>
+          <UTooltip text="Next related resource">
+            <UButton
+              icon="i-heroicons-arrow-uturn-right"
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              square
+              :disabled="nextRelated === null"
+              aria-label="Next related resource"
+              @click="goToRelated(1)"
+            />
+          </UTooltip>
+        </div>
+
+        <USeparator orientation="vertical" class="h-4" />
+
+        <UTooltip v-if="canCompare" :text="compareEnabled ? 'Close comparison' : 'Compare with…'">
+          <UButton
+            icon="i-heroicons-arrows-right-left"
+            :color="compareEnabled ? 'primary' : 'neutral'"
+            :variant="compareEnabled ? 'soft' : 'ghost'"
+            size="xs"
+            square
+            :aria-pressed="compareEnabled"
+            aria-label="Toggle comparison"
+            @click="compareEnabled = !compareEnabled"
+          />
+        </UTooltip>
+
+        <UTooltip :text="dockOpen ? 'Hide data dock' : 'Show data dock'">
+          <UButton
+            icon="i-heroicons-table-cells"
+            :color="dockOpen ? 'primary' : 'neutral'"
+            :variant="dockOpen ? 'soft' : 'ghost'"
+            size="xs"
+            square
+            :aria-pressed="dockOpen"
+            aria-label="Toggle data dock"
+            @click="dockOpen = !dockOpen"
+          />
+        </UTooltip>
       </div>
-      <ScrollArea v-else class="h-full pe-3">
-        <div class="flex h-full flex-col items-stretch justify-start gap-3">
-          <div class="border-border/60 flex flex-wrap items-center justify-between gap-2 rounded-md border bg-slate-900/60 px-3 py-2">
-            <div class="flex min-w-0 flex-wrap items-center gap-2">
-              <p class="text-muted-foreground font-mono text-sm">{{ addressFormat(resourceAddress) }}</p>
-              <Badge v-if="resource" variant="outline">
-                {{ getNameForType(resource.type) }}
-              </Badge>
-              <Badge
-                v-if="resource?.confidence === 'possible'"
-                variant="outline"
-                class="border-amber-400/50 text-amber-200 uppercase"
-                title="Heuristic discovery; verify references before relying on this resource."
-              >
-                Possible
-              </Badge>
-              <Badge v-if="resource?.loaded" variant="secondary" class="uppercase">Decoded</Badge>
-            </div>
+    </header>
 
-            <div class="flex flex-wrap items-center gap-1">
-              <Button
-                size="icon-sm"
-                variant="ghost"
-                :disabled="!canGoBack"
-                aria-label="History back"
-                title="History back (Alt+Left)"
-                @click="goBack"
-              >
-                <Icon name="heroicons:arrow-left-solid" class="size-4" />
-              </Button>
-              <span class="text-muted-foreground px-1 text-[10px]">History {{ historyPosition }}</span>
-              <Button
-                size="icon-sm"
-                variant="ghost"
-                :disabled="!canGoForward"
-                aria-label="History forward"
-                title="History forward (Alt+Right)"
-                @click="goForward"
-              >
-                <Icon name="heroicons:arrow-right-solid" class="size-4" />
-              </Button>
+    <div class="min-h-0 flex-1 overflow-hidden p-2">
+      <div v-if="isPending" class="flex h-full items-center justify-center">
+        <div class="flex flex-col items-center gap-2">
+          <UIcon name="i-heroicons-arrow-path" class="text-primary size-7 animate-spin" />
+          <p class="text-muted text-xs">Decoding resource…</p>
+        </div>
+      </div>
 
-              <span class="mx-1 h-4 w-px bg-white/15"></span>
+      <UAlert
+        v-else-if="isError"
+        color="error"
+        variant="subtle"
+        icon="i-heroicons-exclamation-triangle"
+        title="Error loading resource"
+        :description="error?.message"
+        class="m-2"
+      />
 
-              <Button
-                size="icon-sm"
-                variant="ghost"
-                :disabled="previousInList === null"
-                aria-label="Previous resource in filtered list"
-                title="Previous in filtered list"
-                @click="goToListOffset(-1)"
-              >
-                <Icon name="heroicons:chevron-up-solid" class="size-4" />
-              </Button>
-              <span class="text-muted-foreground px-1 text-[10px]">List {{ listPosition }}</span>
-              <Button
-                size="icon-sm"
-                variant="ghost"
-                :disabled="nextInList === null"
-                aria-label="Next resource in filtered list"
-                title="Next in filtered list"
-                @click="goToListOffset(1)"
-              >
-                <Icon name="heroicons:chevron-down-solid" class="size-4" />
-              </Button>
+      <div v-else-if="resource" class="flex h-full min-h-0 flex-col">
+        <div
+          class="min-h-0 flex-1"
+          :class="
+            compareEnabled && canCompare
+              ? 'grid grid-rows-2 gap-2 xl:grid-cols-2 xl:grid-rows-1'
+              : ''
+          "
+        >
+          <section
+            class="border-default bg-elevated/20 h-full min-h-0 overflow-hidden rounded-lg border p-1.5"
+          >
+            <VisualResourceView :resource="resource" />
+          </section>
+          <section
+            v-if="compareEnabled && canCompare"
+            class="border-default bg-elevated/20 h-full min-h-0 overflow-hidden rounded-lg border p-1.5"
+          >
+            <ResourceComparePanel :current-resource="resource" />
+          </section>
+        </div>
+      </div>
 
-              <span class="mx-1 h-4 w-px bg-white/15"></span>
+      <UEmpty
+        v-else
+        icon="i-heroicons-cursor-arrow-rays"
+        title="Select a resource"
+        description="Pick a resource from the browser to inspect its preview, metadata and raw bytes."
+        class="h-full"
+      />
+    </div>
 
-              <span class="text-muted-foreground text-[10px]">Related</span>
-              <Button
-                size="icon-sm"
-                variant="ghost"
-                :disabled="previousRelated === null"
-                aria-label="Previous related resource"
-                title="Previous related resource"
-                @click="goToRelated(-1)"
-              >
-                <Icon name="heroicons:arrow-uturn-left-solid" class="size-4" />
-              </Button>
-              <span class="text-muted-foreground px-1 text-[10px]">{{ relatedPosition }}</span>
-              <Button
-                size="icon-sm"
-                variant="ghost"
-                :disabled="nextRelated === null"
-                aria-label="Next related resource"
-                title="Next related resource"
-                @click="goToRelated(1)"
-              >
-                <Icon name="heroicons:arrow-uturn-right-solid" class="size-4" />
-              </Button>
-            </div>
-          </div>
+    <section
+      v-if="dockOpen"
+      class="border-default bg-muted/20 flex h-[40%] max-h-[34rem] min-h-[15rem] shrink-0 flex-col border-t"
+    >
+      <div class="border-default flex h-9 shrink-0 items-center gap-2 border-b px-2">
+        <UTabs
+          :model-value="dockTab"
+          :items="dockTabs"
+          :content="false"
+          size="xs"
+          variant="link"
+          class="min-w-0 flex-1"
+          @update:model-value="setDockTab"
+        />
+        <UButton
+          icon="i-heroicons-chevron-down"
+          color="neutral"
+          variant="ghost"
+          size="xs"
+          square
+          aria-label="Hide data dock"
+          @click="dockOpen = false"
+        />
+      </div>
 
-          <div class="border-border/60 rounded-md border bg-indigo-950/55 p-3">
-            <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-              <p class="text-sm font-semibold">Preview</p>
-              <Button
-                v-if="canCompare"
-                size="sm"
-                :variant="compareEnabled ? 'secondary' : 'ghost'"
-                @click="compareEnabled = !compareEnabled"
-              >
-                {{ compareEnabled ? 'Close comparison' : 'Compare…' }}
-              </Button>
-            </div>
-            <div :class="compareEnabled ? 'grid gap-3 2xl:grid-cols-2' : ''">
-              <VisualResourceView v-if="resource" :resource="resource" />
-              <div v-else class="text-muted-foreground flex h-full items-center justify-center text-sm">
-                No dedicated viewer for this resource type.
-              </div>
-              <ResourceComparePanel v-if="compareEnabled && resource" :current-resource="resource" />
-            </div>
-          </div>
+      <div class="min-h-0 flex-1 overflow-hidden">
+        <div v-if="dockTab === 'data'" class="h-full overflow-auto p-2">
+          <HexView
+            v-if="hexData"
+            title="Input data"
+            :data="hexData.inputData"
+            :address="hexData.inputAddress"
+            :declared-size="hexData.declaredSize"
+            class="h-full"
+          />
+          <p v-else class="text-muted p-3 text-xs">
+            No byte range is declared for this resource, so hex inspection is unavailable.
+          </p>
+        </div>
 
+        <div v-else-if="dockTab === 'metadata'" class="h-full overflow-auto p-2">
           <ResourceMetadataPanel
             v-if="resource"
             :resource="resource"
             :reference-count="referencesWithKind.length"
             :referenced-by-count="referencedByWithKind.length"
           />
-
-          <div class="grid gap-3 lg:grid-cols-2">
-            <HexView
-              v-if="hexData"
-              title="Input Data"
-              :data="hexData.inputData"
-              :address="hexData.inputAddress"
-              :declared-size="hexData.declaredSize"
-            />
-            <GlassPanel v-else class="h-auto">
-              <p class="text-muted-foreground p-2 text-sm">
-                No byte range is declared for this resource, so hex inspection is unavailable.
-              </p>
-            </GlassPanel>
-
-            <div class="flex flex-col gap-3">
-              <GlassPanel header="References" class="h-auto max-h-64">
-                <ScrollArea class="h-full pe-3">
-                  <ul class="space-y-1">
-                    <li v-for="reference in referencesWithKind" :key="`${reference.resource.baseAddress}-${reference.kind}`"
-                      class="hover:bg-accent rounded-md px-2 py-1">
-                      <div class="flex items-center justify-between gap-2">
-                        <NuxtLink class="block min-w-0 truncate text-sm"
-                          :to="getResourceRoute(reference.resource.baseAddress)">
-                          {{ getNormalizedName(reference.resource) }}
-                        </NuxtLink>
-                        <Badge variant="outline" class="px-1.5 py-0 text-[10px] uppercase tracking-wide">
-                          {{ reference.kind }}
-                        </Badge>
-                      </div>
-                    </li>
-                    <li v-if="referencesWithKind.length === 0" class="text-muted-foreground text-sm">
-                      No references mapped.
-                    </li>
-                  </ul>
-                </ScrollArea>
-              </GlassPanel>
-              <GlassPanel header="Referenced By" class="h-auto max-h-64">
-                <ScrollArea class="h-full pe-3">
-                  <ul class="space-y-1">
-                    <li v-for="reference in referencedByWithKind" :key="`${reference.resource.baseAddress}-${reference.kind}`"
-                      class="hover:bg-accent rounded-md px-2 py-1">
-                      <div class="flex items-center justify-between gap-2">
-                        <NuxtLink class="block min-w-0 truncate text-sm"
-                          :to="getResourceRoute(reference.resource.baseAddress)">
-                          {{ getNormalizedName(reference.resource) }}
-                        </NuxtLink>
-                        <Badge variant="outline" class="px-1.5 py-0 text-[10px] uppercase tracking-wide">
-                          {{ reference.kind }}
-                        </Badge>
-                      </div>
-                    </li>
-                    <li v-if="referencedByWithKind.length === 0" class="text-muted-foreground text-sm">
-                      No resources point to this address.
-                    </li>
-                  </ul>
-                </ScrollArea>
-              </GlassPanel>
-            </div>
-          </div>
         </div>
-      </ScrollArea>
-    </GlassPanel>
+
+        <div v-else class="grid h-full gap-2 overflow-auto p-2 lg:grid-cols-2">
+          <AppPanel title="References" icon="i-heroicons-arrow-up-right" :padded="false">
+            <template #actions>
+              <UBadge
+                color="neutral"
+                variant="subtle"
+                size="sm"
+                :label="String(referencesWithKind.length)"
+              />
+            </template>
+            <ul class="divide-default min-h-0 flex-1 divide-y overflow-y-auto">
+              <li
+                v-for="reference in referencesWithKind"
+                :key="`${reference.resource.baseAddress}-${reference.kind}`"
+                class="hover:bg-elevated/60"
+              >
+                <NuxtLink
+                  class="flex items-center justify-between gap-2 px-3 py-1.5"
+                  :to="getResourceRoute(reference.resource.baseAddress)"
+                >
+                  <span class="text-default min-w-0 truncate text-xs">
+                    {{ getNormalizedName(reference.resource) }}
+                  </span>
+                  <UBadge color="neutral" variant="outline" size="sm" :label="reference.kind" />
+                </NuxtLink>
+              </li>
+              <li v-if="referencesWithKind.length === 0" class="text-muted px-3 py-4 text-xs">
+                No references mapped.
+              </li>
+            </ul>
+          </AppPanel>
+
+          <AppPanel title="Referenced by" icon="i-heroicons-arrow-down-left" :padded="false">
+            <template #actions>
+              <UBadge
+                color="neutral"
+                variant="subtle"
+                size="sm"
+                :label="String(referencedByWithKind.length)"
+              />
+            </template>
+            <ul class="divide-default min-h-0 flex-1 divide-y overflow-y-auto">
+              <li
+                v-for="reference in referencedByWithKind"
+                :key="`${reference.resource.baseAddress}-${reference.kind}`"
+                class="hover:bg-elevated/60"
+              >
+                <NuxtLink
+                  class="flex items-center justify-between gap-2 px-3 py-1.5"
+                  :to="getResourceRoute(reference.resource.baseAddress)"
+                >
+                  <span class="text-default min-w-0 truncate text-xs">
+                    {{ getNormalizedName(reference.resource) }}
+                  </span>
+                  <UBadge color="neutral" variant="outline" size="sm" :label="reference.kind" />
+                </NuxtLink>
+              </li>
+              <li v-if="referencedByWithKind.length === 0" class="text-muted px-3 py-4 text-xs">
+                No resources point to this address.
+              </li>
+            </ul>
+          </AppPanel>
+        </div>
+      </div>
+    </section>
+
+    <button
+      v-else
+      type="button"
+      class="border-default hover:bg-elevated/50 flex h-8 shrink-0 items-center justify-between gap-2 border-t px-3 text-left transition-colors"
+      @click="dockOpen = true"
+    >
+      <span class="text-muted flex items-center gap-2 text-[11px]">
+        <UIcon name="i-heroicons-table-cells" class="size-3.5" />
+        Data dock
+      </span>
+      <span class="text-dimmed flex items-center gap-2 font-mono text-[10px]">
+        {{ hexData ? `${hexData.inputData.length.toLocaleString()} bytes` : 'no byte range' }}
+        <UIcon name="i-heroicons-chevron-up" class="size-3.5" />
+      </span>
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, toRefs, watch } from 'vue'
-import { useEventListener } from '@vueuse/core'
+import { useEventListener, useStorage } from '@vueuse/core'
 import { useResourceDetails } from '~/composables/useResourceDetails'
 import { useResourceNavigation } from '~/composables/useResourceNavigation'
 import { useResourcesIndex } from '~/composables/useResourcesIndex'
-import { Badge } from '~/components/ui/badge'
-import { Button } from '~/components/ui/button'
-import { ScrollArea } from '~/components/ui/scroll-area'
 import { addressFormat, getNameForType, getNormalizedName, getResourceRoute } from '~/utils/index'
 import { isVisualResourceType } from '~/utils/resourceVisuals'
+
+type DockTab = 'data' | 'metadata' | 'references'
 
 interface Props {
   resourceAddress: number
 }
+
 const props = defineProps<Props>()
+
 const { resourceAddress } = toRefs(props)
-const { resource, error, referencesWithKind, referencedByWithKind, isError, isPending, title, hexData } =
+const { resource, error, referencesWithKind, referencedByWithKind, isError, isPending, hexData } =
   useResourceDetails(resourceAddress)
 
 const { filteredResources } = useResourcesIndex()
@@ -225,7 +379,19 @@ const {
   goForward,
 } = useResourceNavigation()
 
+const dockOpen = useStorage('kid-browser-data-dock', true)
+const dockTab = useStorage<DockTab>('kid-browser-data-tab', 'data')
 const compareEnabled = ref(false)
+
+const dockTabs = [
+  { label: 'Data', value: 'data', icon: 'i-heroicons-code-bracket-square' },
+  { label: 'Metadata', value: 'metadata', icon: 'i-heroicons-information-circle' },
+  { label: 'References', value: 'references', icon: 'i-heroicons-link' },
+]
+
+function setDockTab(value: unknown) {
+  dockTab.value = value as DockTab
+}
 
 watch(resourceAddress, (address) => recordVisit(address), { immediate: true })
 
@@ -233,7 +399,9 @@ const listIndex = computed(() =>
   filteredResources.value.findIndex((entry) => entry.address === resourceAddress.value),
 )
 const listPosition = computed(() =>
-  listIndex.value === -1 ? 'not filtered in' : `${listIndex.value + 1} / ${filteredResources.value.length}`,
+  listIndex.value === -1
+    ? 'not filtered in'
+    : `${listIndex.value + 1} / ${filteredResources.value.length}`,
 )
 const previousInList = computed(() => {
   if (listIndex.value <= 0) {
@@ -283,7 +451,9 @@ const nextRelated = computed(() => {
   return relatedAddresses.value[relatedIndex.value + 1] ?? null
 })
 
-const canCompare = computed(() => resource.value !== null && isVisualResourceType(resource.value.type))
+const canCompare = computed(
+  () => resource.value !== null && isVisualResourceType(resource.value.type),
+)
 
 watch(
   () => resource.value?.type,

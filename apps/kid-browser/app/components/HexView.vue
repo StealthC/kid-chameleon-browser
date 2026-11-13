@@ -1,181 +1,280 @@
 <template>
-  <GlassPanel :header="title" class="flex flex-col overflow-hidden font-mono text-xs">
-    <div class="flex flex-wrap items-center justify-between gap-2 pb-2">
-      <div class="text-muted-foreground space-y-0.5">
-        <p>Range: {{ rangeLabel }}</p>
-        <p>
-          Size: {{ data.length }} bytes
-          <span v-if="data.length > 0"> (0x{{ data.length.toString(16).toUpperCase() }})</span>
-        </p>
-        <p v-if="declaredSize !== undefined && declaredSize !== data.length" class="text-amber-300">
-          Declared size: {{ declaredSize }} bytes; only {{ data.length }} bytes are available in the ROM.
-        </p>
-      </div>
-      <div class="flex flex-wrap items-center gap-1">
-        <Button size="sm" variant="ghost" @click="copyAll">{{ copiedAll ? 'Copied' : 'Copy all hex' }}</Button>
-      </div>
-    </div>
+  <AppPanel
+    :title="title"
+    icon="i-heroicons-code-bracket-square"
+    :padded="false"
+    class="font-mono text-xs"
+  >
+    <template #actions>
+      <UButton
+        :label="copiedAll ? 'Copied' : 'Copy all'"
+        icon="i-heroicons-clipboard-document"
+        color="neutral"
+        variant="ghost"
+        size="xs"
+        @click="copyAll"
+      />
+    </template>
 
-    <div class="mb-2 grid gap-2 md:grid-cols-2">
-      <div class="border-border/60 rounded-md border bg-slate-950/40 p-2">
-        <label class="text-muted-foreground text-[10px] uppercase tracking-wide" for="hex-jump-offset">
-          Jump to offset (hex)
-        </label>
-        <div class="mt-1 flex items-center gap-1">
-          <Input
-            id="hex-jump-offset"
-            v-model="offsetInput"
-            class="h-8 font-mono text-xs"
-            placeholder="e.g. 1A0, $1A0 or 0x1A0"
-            @keydown.enter.prevent="jumpToOffset"
-          />
-          <Button size="sm" variant="secondary" :disabled="data.length === 0" @click="jumpToOffset">Go</Button>
-        </div>
-      </div>
-
-      <div class="border-border/60 rounded-md border bg-slate-950/40 p-2">
-        <label class="text-muted-foreground text-[10px] uppercase tracking-wide" for="hex-jump-address">
-          Jump to address (hex)
-        </label>
-        <div class="mt-1 flex items-center gap-1">
-          <Input
-            id="hex-jump-address"
-            v-model="addressInput"
-            class="h-8 font-mono text-xs"
-            :placeholder="`${addressFormat(baseAddress)}–${addressFormat(rangeEndInclusive)}`"
-            @keydown.enter.prevent="jumpToAddress"
-          />
-          <Button size="sm" variant="secondary" :disabled="data.length === 0" @click="jumpToAddress">Go</Button>
-        </div>
-      </div>
-
-      <div class="border-border/60 rounded-md border bg-slate-950/40 p-2 md:col-span-2">
-        <label class="text-muted-foreground text-[10px] uppercase tracking-wide" for="hex-search">
-          Search byte sequence
-        </label>
-        <div class="mt-1 flex flex-wrap items-center gap-1">
-          <Input
-            id="hex-search"
-            v-model="searchInput"
-            class="h-8 min-w-48 flex-1 font-mono text-xs"
-            placeholder="e.g. DE AD BE EF or 0xDEADBEEF"
-            @keydown.enter.prevent="runSearch"
-          />
-          <Button size="sm" variant="secondary" :disabled="data.length === 0" @click="runSearch">Find</Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            :disabled="searchMatches.length === 0"
-            title="Previous match"
-            @click="stepMatch(-1)"
+    <div class="flex h-full min-h-0 flex-col">
+      <div class="border-default shrink-0 space-y-2 border-b p-2.5">
+        <div class="text-muted flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px]">
+          <span
+            >Range: <span class="text-highlighted">{{ rangeLabel }}</span></span
           >
-            Prev
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            :disabled="searchMatches.length === 0"
-            title="Next match"
-            @click="stepMatch(1)"
+          <span>
+            Size: <span class="text-highlighted">{{ data.length }}</span> bytes
+            <span v-if="data.length > 0"> (0x{{ data.length.toString(16).toUpperCase() }})</span>
+          </span>
+          <span
+            v-if="declaredSize !== undefined && declaredSize !== data.length"
+            class="text-warning"
           >
-            Next
-          </Button>
-          <Button v-if="searchMatches.length > 0 || searchError" size="sm" variant="ghost" @click="clearSearch">
-            Clear
-          </Button>
-        </div>
-        <p v-if="searchError" class="mt-1 text-amber-300">{{ searchError }}</p>
-        <p v-else-if="searchMatches.length > 0" class="text-muted-foreground mt-1">
-          Match {{ activeMatch + 1 }} / {{ searchMatches.length }} for {{ searchedSequence }} at
-          {{ addressFormat(baseAddress + searchMatches[activeMatch]) }}
-        </p>
-        <p v-else-if="searchedSequence" class="mt-1 text-amber-300">
-          No matches for {{ searchedSequence }} in this range.
-        </p>
-      </div>
-
-      <div v-if="jumpError" class="rounded-md border border-amber-400/40 bg-amber-950/30 p-2 text-amber-200 md:col-span-2">
-        {{ jumpError }}
-      </div>
-      <div v-if="jumpStatus" class="text-muted-foreground md:col-span-2">{{ jumpStatus }}</div>
-    </div>
-
-    <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-      <div class="flex items-center gap-1">
-        <Button size="sm" variant="ghost" :disabled="!pageState.hasPrevious" @click="goToPage(0)">
-          First
-        </Button>
-        <Button size="sm" variant="ghost" :disabled="!pageState.hasPrevious" @click="goToPage(pageState.page - 1)">
-          Prev page
-        </Button>
-        <span class="text-muted-foreground px-1">
-          Page {{ pageState.page + 1 }} / {{ pageState.pageCount }}
-        </span>
-        <Button size="sm" variant="ghost" :disabled="!pageState.hasNext" @click="goToPage(pageState.page + 1)">
-          Next page
-        </Button>
-        <Button size="sm" variant="ghost" :disabled="!pageState.hasNext" @click="goToPage(pageState.pageCount - 1)">
-          Last
-        </Button>
-      </div>
-      <div class="flex flex-wrap items-center gap-1">
-        <span v-if="selection" class="text-muted-foreground">
-          Selected {{ selectionLength(selection) }} byte(s) at
-          {{ formatHexRange(baseAddress + selection.start, selectionLength(selection)) }}
-        </span>
-        <Button size="sm" variant="ghost" :disabled="!selection" @click="copySelection">Copy selected</Button>
-        <Button size="sm" variant="ghost" :disabled="!selection" @click="clearSelection">Clear selection</Button>
-        <Button size="sm" variant="ghost" :disabled="data.length === 0" @click="selectPage">Select page</Button>
-      </div>
-    </div>
-
-    <ScrollArea class="max-h-72">
-      <div v-if="rows.length > 0" class="min-w-max rounded-md border border-border/60 bg-slate-950/55 p-2">
-        <div class="text-muted-foreground mb-1 flex gap-3 px-1 text-[10px] uppercase tracking-wide">
-          <span class="w-14 shrink-0">Address</span>
-          <span>Bytes</span>
-          <span class="ml-auto">ASCII</span>
-        </div>
-        <div
-          v-for="row in rows"
-          :key="row.offset"
-          class="hover:bg-white/5 flex items-center gap-3 rounded px-1 leading-5"
-        >
-          <span class="text-muted-foreground w-14 shrink-0 select-none">
-            {{ addressFormat(row.address, 6) }}
+            Declared {{ declaredSize }} bytes; {{ data.length }} available.
           </span>
-          <span class="flex gap-px">
-            <button
-              v-for="byte in row.bytes"
-              :key="byte.index"
-              type="button"
-              class="w-6 rounded text-center transition-colors"
-              :class="byteClass(byte.index)"
-              :aria-label="`Byte ${byte.index} at ${addressFormat(baseAddress + byte.index)}`"
-              @mousedown.prevent="selectByte(byte.index, $event)"
-            >
-              {{ byte.hex }}
-            </button>
+        </div>
+
+        <div class="grid gap-2 lg:grid-cols-3">
+          <div class="border-default bg-muted/30 rounded-md border p-2">
+            <label class="text-dimmed text-[10px] tracking-wide uppercase" for="hex-jump-offset">
+              Jump to offset
+            </label>
+            <div class="mt-1 flex items-center gap-1">
+              <UInput
+                id="hex-jump-offset"
+                v-model="offsetInput"
+                size="xs"
+                class="min-w-0 flex-1 font-mono"
+                placeholder="1A0, $1A0, 0x1A0"
+                @keydown.enter.prevent="jumpToOffset"
+              />
+              <UButton
+                label="Go"
+                color="primary"
+                variant="soft"
+                size="xs"
+                :disabled="data.length === 0"
+                @click="jumpToOffset"
+              />
+            </div>
+          </div>
+
+          <div class="border-default bg-muted/30 rounded-md border p-2">
+            <label class="text-dimmed text-[10px] tracking-wide uppercase" for="hex-jump-address">
+              Jump to address
+            </label>
+            <div class="mt-1 flex items-center gap-1">
+              <UInput
+                id="hex-jump-address"
+                v-model="addressInput"
+                size="xs"
+                class="min-w-0 flex-1 font-mono"
+                :placeholder="`${addressFormat(baseAddress)}–${addressFormat(rangeEndInclusive)}`"
+                @keydown.enter.prevent="jumpToAddress"
+              />
+              <UButton
+                label="Go"
+                color="primary"
+                variant="soft"
+                size="xs"
+                :disabled="data.length === 0"
+                @click="jumpToAddress"
+              />
+            </div>
+          </div>
+
+          <div class="border-default bg-muted/30 rounded-md border p-2 lg:col-span-1">
+            <label class="text-dimmed text-[10px] tracking-wide uppercase" for="hex-search">
+              Search bytes
+            </label>
+            <div class="mt-1 flex items-center gap-1">
+              <UInput
+                id="hex-search"
+                v-model="searchInput"
+                size="xs"
+                class="min-w-0 flex-1 font-mono"
+                placeholder="DE AD BE EF"
+                @keydown.enter.prevent="runSearch"
+              />
+              <UButton
+                icon="i-heroicons-magnifying-glass"
+                color="primary"
+                variant="soft"
+                size="xs"
+                square
+                aria-label="Search byte sequence"
+                :disabled="data.length === 0"
+                @click="runSearch"
+              />
+              <UButton
+                icon="i-heroicons-chevron-left"
+                color="neutral"
+                variant="ghost"
+                size="xs"
+                square
+                aria-label="Previous match"
+                :disabled="searchMatches.length === 0"
+                @click="stepMatch(-1)"
+              />
+              <UButton
+                icon="i-heroicons-chevron-right"
+                color="neutral"
+                variant="ghost"
+                size="xs"
+                square
+                aria-label="Next match"
+                :disabled="searchMatches.length === 0"
+                @click="stepMatch(1)"
+              />
+            </div>
+            <p v-if="searchError" class="text-warning mt-1 text-[10px]">{{ searchError }}</p>
+            <p v-else-if="searchMatches.length > 0" class="text-muted mt-1 text-[10px]">
+              {{ activeMatch + 1 }} / {{ searchMatches.length }} at
+              {{ addressFormat(baseAddress + searchMatches[activeMatch]) }}
+            </p>
+            <p v-else-if="searchedSequence" class="text-warning mt-1 text-[10px]">
+              No matches for {{ searchedSequence }}.
+            </p>
+          </div>
+        </div>
+
+        <p v-if="jumpError" class="text-warning text-[11px]">{{ jumpError }}</p>
+        <p v-else-if="jumpStatus" class="text-muted text-[11px]">{{ jumpStatus }}</p>
+      </div>
+
+      <div
+        class="border-default flex shrink-0 flex-wrap items-center justify-between gap-2 border-b px-2.5 py-1.5"
+      >
+        <div class="flex items-center gap-0.5">
+          <UButton
+            icon="i-heroicons-chevron-double-left"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            square
+            aria-label="First page"
+            :disabled="!pageState.hasPrevious"
+            @click="goToPage(0)"
+          />
+          <UButton
+            icon="i-heroicons-chevron-left"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            square
+            aria-label="Previous page"
+            :disabled="!pageState.hasPrevious"
+            @click="goToPage(pageState.page - 1)"
+          />
+          <span class="text-muted px-1 text-[10px]">
+            Page {{ pageState.page + 1 }} / {{ pageState.pageCount }}
           </span>
-          <span class="text-muted-foreground ml-auto select-none tracking-widest">{{ row.ascii }}</span>
+          <UButton
+            icon="i-heroicons-chevron-right"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            square
+            aria-label="Next page"
+            :disabled="!pageState.hasNext"
+            @click="goToPage(pageState.page + 1)"
+          />
+          <UButton
+            icon="i-heroicons-chevron-double-right"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            square
+            aria-label="Last page"
+            :disabled="!pageState.hasNext"
+            @click="goToPage(pageState.pageCount - 1)"
+          />
+        </div>
+
+        <div class="flex flex-wrap items-center gap-1">
+          <span v-if="selection" class="text-muted mr-1 text-[10px]">
+            {{ selectionLength(selection) }} byte(s) at
+            {{ formatHexRange(baseAddress + selection.start, selectionLength(selection)) }}
+          </span>
+          <UButton
+            label="Copy selection"
+            icon="i-heroicons-clipboard-document"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            :disabled="!selection"
+            @click="copySelection"
+          />
+          <UButton
+            label="Clear"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            :disabled="!selection"
+            @click="clearSelection"
+          />
+          <UButton
+            label="Select page"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            :disabled="data.length === 0"
+            @click="selectPage"
+          />
         </div>
       </div>
-      <div v-else>
-        <p class="text-muted-foreground p-2">No data available for this resource.</p>
-      </div>
-    </ScrollArea>
 
-    <div v-if="copyMessage" class="pt-2" :class="copyMessageIsError ? 'text-amber-300' : 'text-emerald-300'">
-      {{ copyMessage }}
+      <div class="min-h-0 flex-1 overflow-auto">
+        <div v-if="rows.length > 0" class="min-w-max p-2">
+          <div
+            class="bg-default/90 text-dimmed sticky top-0 z-10 mb-1 flex gap-3 px-1 py-0.5 text-[10px] tracking-wide uppercase backdrop-blur"
+          >
+            <span class="w-14 shrink-0">Address</span>
+            <span>Bytes</span>
+            <span class="ml-auto">ASCII</span>
+          </div>
+          <div
+            v-for="row in rows"
+            :key="row.offset"
+            class="hover:bg-elevated/60 flex items-center gap-3 rounded px-1 leading-5"
+          >
+            <span class="text-muted w-14 shrink-0 select-none">
+              {{ formatHexAddress(row.address, 6) }}
+            </span>
+            <span class="flex gap-px">
+              <button
+                v-for="byte in row.bytes"
+                :key="byte.index"
+                type="button"
+                class="w-6 rounded text-center transition-colors"
+                :class="byteClass(byte.index)"
+                :aria-label="`Byte ${byte.index} at ${addressFormat(baseAddress + byte.index)}`"
+                @mousedown.prevent="selectByte(byte.index, $event)"
+              >
+                {{ byte.hex }}
+              </button>
+            </span>
+            <span class="text-muted ml-auto tracking-widest select-none">{{ row.ascii }}</span>
+          </div>
+        </div>
+        <div v-else class="p-3">
+          <p class="text-muted text-xs">No data available for this resource.</p>
+        </div>
+      </div>
+
+      <p
+        v-if="copyMessage"
+        class="border-default shrink-0 border-t px-2.5 py-1 text-[11px]"
+        :class="copyMessageIsError ? 'text-warning' : 'text-success'"
+      >
+        {{ copyMessage }}
+      </p>
     </div>
-  </GlassPanel>
+  </AppPanel>
 </template>
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { Button } from '~/components/ui/button'
-import { Input } from '~/components/ui/input'
-import { ScrollArea } from '~/components/ui/scroll-area'
 import { addressFormat } from '~/utils/index'
 import {
   bytesToHex,
@@ -293,7 +392,11 @@ const selection = computed<HexSelection | null>(() => {
   if (anchorIndex.value === null) {
     return null
   }
-  return normalizeSelection(anchorIndex.value, focusIndex.value ?? anchorIndex.value, props.data.length)
+  return normalizeSelection(
+    anchorIndex.value,
+    focusIndex.value ?? anchorIndex.value,
+    props.data.length,
+  )
 })
 
 const searchInput = ref('')
@@ -311,15 +414,15 @@ function isSelected(index: number): boolean {
 
 function byteClass(index: number): string {
   if (isSelected(index)) {
-    return 'bg-primary/60 text-primary-foreground'
+    return 'bg-primary text-inverted'
   }
   if (index === activeMatchOffset.value) {
-    return 'bg-amber-300 text-slate-950'
+    return 'bg-warning text-inverted'
   }
   if (matchSet.value.has(index)) {
-    return 'bg-amber-500/30 text-amber-100'
+    return 'bg-warning/25 text-warning'
   }
-  return 'text-slate-200 hover:bg-white/15'
+  return 'text-default hover:bg-elevated'
 }
 
 function selectByte(index: number, event: MouseEvent) {
@@ -431,7 +534,11 @@ function stepMatch(direction: number) {
   }
   const count = searchMatches.value.length
   activeMatch.value = (activeMatch.value + direction + count) % count
-  page.value = pageForIndex(searchMatches.value[activeMatch.value], pageSize.value, props.data.length)
+  page.value = pageForIndex(
+    searchMatches.value[activeMatch.value],
+    pageSize.value,
+    props.data.length,
+  )
 }
 
 const copyMessage = ref('')
@@ -463,7 +570,10 @@ async function copyText(text: string, label: string) {
     await navigator.clipboard.writeText(text)
     showCopyMessage(`${label} copied (${text.length} characters).`)
   } catch (error) {
-    showCopyMessage(`Copy failed: ${error instanceof Error ? error.message : 'unknown error'}`, true)
+    showCopyMessage(
+      `Copy failed: ${error instanceof Error ? error.message : 'unknown error'}`,
+      true,
+    )
   }
 }
 
@@ -481,10 +591,7 @@ function copySelection() {
     showCopyMessage('Select one or more bytes first.', true)
     return
   }
-  const bytes = props.data.subarray(
-    selection.value.start,
-    selection.value.end + 1,
-  )
+  const bytes = props.data.subarray(selection.value.start, selection.value.end + 1)
   void copyText(bytesToHex(bytes), 'Selected bytes')
 }
 

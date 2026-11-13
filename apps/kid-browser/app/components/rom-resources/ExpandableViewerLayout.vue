@@ -2,38 +2,78 @@
   <div
     :class="
       expanded
-        ? 'fixed inset-4 z-50 rounded-xl border border-white/20 bg-slate-950/95 p-3 shadow-2xl'
+        ? 'bg-default/95 fixed inset-0 z-50 flex flex-col p-2 backdrop-blur-sm sm:p-4'
         : 'h-full w-full'
     "
   >
-    <div class="grid h-full w-full grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_320px]">
-      <div class="border-border/60 relative rounded-md border bg-slate-950/60 p-2">
-        <Button
-          size="icon-sm"
-          variant="secondary"
-          class="absolute top-3 right-3 z-20"
-          :title="expanded ? 'Restore' : 'Expand'"
-          @click="expanded = !expanded"
+    <div class="flex h-full min-h-0 flex-col gap-2 lg:flex-row">
+      <div
+        class="border-default bg-muted/20 relative min-h-0 flex-1 overflow-hidden rounded-lg border p-1.5"
+      >
+        <div
+          class="border-default bg-default/85 absolute top-2 right-2 z-20 flex items-center gap-1 rounded-md border p-0.5 backdrop-blur"
         >
-          <Icon
-            :name="
-              expanded ? 'heroicons:arrows-pointing-in-solid' : 'heroicons:arrows-pointing-out-solid'
-            "
-            class="size-4"
-          />
-        </Button>
+          <UTooltip :text="sidebarOpen ? 'Hide viewer controls' : 'Show viewer controls'">
+            <UButton
+              :icon="sidebarOpen ? 'i-heroicons-x-mark' : 'i-heroicons-adjustments-horizontal'"
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              square
+              :aria-pressed="sidebarOpen"
+              aria-label="Toggle viewer controls"
+              @click="sidebarOpen = !sidebarOpen"
+            />
+          </UTooltip>
+          <UTooltip :text="expanded ? 'Restore panel size' : 'Expand viewer'">
+            <UButton
+              :icon="
+                expanded ? 'i-heroicons-arrows-pointing-in' : 'i-heroicons-arrows-pointing-out'
+              "
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              square
+              :aria-label="expanded ? 'Restore panel size' : 'Expand viewer'"
+              @click="expanded = !expanded"
+            />
+          </UTooltip>
+        </div>
+
         <slot name="viewer" :expanded="expanded" />
       </div>
 
-      <div class="flex flex-col gap-3 overflow-auto rounded-md border border-white/15 bg-black/20 p-3 text-sm text-slate-200">
-        <slot name="sidebar" :expanded="expanded" />
-      </div>
+      <aside
+        v-if="sidebarOpen"
+        class="border-default bg-elevated/30 flex h-52 shrink-0 flex-col overflow-hidden rounded-lg border lg:h-auto lg:w-80"
+      >
+        <header class="border-default flex h-9 shrink-0 items-center gap-2 border-b px-3">
+          <UIcon name="i-heroicons-adjustments-horizontal" class="text-primary size-4" />
+          <p class="text-muted text-[10px] font-semibold tracking-widest uppercase">
+            Viewer controls
+          </p>
+          <UButton
+            icon="i-heroicons-x-mark"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            square
+            class="ms-auto"
+            aria-label="Hide viewer controls"
+            @click="sidebarOpen = false"
+          />
+        </header>
+        <div class="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
+          <slot name="sidebar" :expanded="expanded" />
+        </div>
+      </aside>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Button } from '~/components/ui/button'
+import { useStorage } from '@vueuse/core'
 
 const expanded = defineModel<boolean>('expanded', { default: false })
+const sidebarOpen = useStorage('kid-browser-viewer-controls', true)
 </script>

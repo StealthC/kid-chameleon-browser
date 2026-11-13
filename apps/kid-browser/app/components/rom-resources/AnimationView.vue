@@ -1,43 +1,66 @@
 <template>
-  <div class="border-border/60 flex h-full min-h-0 flex-col gap-3 rounded-lg border bg-slate-900/60 p-3">
-    <div class="grid gap-2 sm:grid-cols-3">
-      <Badge variant="outline">Steps: {{ steps.length }}</Badge>
-      <Badge variant="outline">Total Frames: {{ resource.totalFrames }}</Badge>
-      <Badge variant="outline">Terminator: {{ formatAddress(resource.terminatorAddress) }}</Badge>
-    </div>
+  <AppPanel title="Animation" icon="i-heroicons-play" :padded="false" class="h-full">
+    <template #actions>
+      <UBadge color="neutral" variant="subtle" size="sm" :label="`${steps.length} steps`" />
+      <UBadge
+        color="neutral"
+        variant="subtle"
+        size="sm"
+        :label="`${resource.totalFrames} frames`"
+      />
+      <UBadge
+        color="neutral"
+        variant="subtle"
+        size="sm"
+        :label="`End ${formatAddress(resource.terminatorAddress)}`"
+      />
+    </template>
 
-    <div class="border-border/60 min-h-0 flex-1 overflow-auto rounded-md border bg-slate-950/60 p-2">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Address</TableHead>
-            <TableHead>Kind</TableHead>
-            <TableHead>Delay</TableHead>
-            <TableHead>Sprite</TableHead>
-            <TableHead>Preview</TableHead>
-            <TableHead>Next</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          <TableRow v-for="step in steps" :key="step.baseAddress">
-            <TableCell class="font-mono text-xs">
-              <NuxtLink :to="getResourceRoute(step.baseAddress)">
+    <div class="min-h-0 flex-1 overflow-auto">
+      <table class="w-full border-collapse text-left text-xs">
+        <thead
+          class="bg-elevated text-muted sticky top-0 z-10 text-[10px] tracking-wider uppercase"
+        >
+          <tr class="border-default border-b">
+            <th class="px-2.5 py-1.5 font-semibold">Address</th>
+            <th class="px-2.5 py-1.5 font-semibold">Kind</th>
+            <th class="px-2.5 py-1.5 font-semibold">Delay</th>
+            <th class="px-2.5 py-1.5 font-semibold">Sprite</th>
+            <th class="px-2.5 py-1.5 font-semibold">Preview</th>
+            <th class="px-2.5 py-1.5 font-semibold">Next</th>
+          </tr>
+        </thead>
+        <tbody class="divide-default divide-y">
+          <tr
+            v-for="step in steps"
+            :key="step.baseAddress"
+            class="hover:bg-elevated/60 transition-colors"
+          >
+            <td class="px-2.5 py-1.5 font-mono text-[11px]">
+              <NuxtLink
+                :to="getResourceRoute(step.baseAddress)"
+                class="text-primary hover:underline"
+              >
                 {{ addressFormat(step.baseAddress) }}
               </NuxtLink>
-            </TableCell>
-            <TableCell class="text-xs">{{ getKindName(step.kind) }}</TableCell>
-            <TableCell class="font-mono text-xs">{{ step.delay }}</TableCell>
-            <TableCell class="font-mono text-xs">
+            </td>
+            <td class="text-muted px-2.5 py-1.5">{{ getKindName(step.kind) }}</td>
+            <td class="text-highlighted px-2.5 py-1.5 font-mono text-[11px]">{{ step.delay }}</td>
+            <td class="px-2.5 py-1.5 font-mono text-[11px]">
               <NuxtLink
                 v-if="step.spriteAddress"
                 :to="getResourceRoute(step.spriteAddress)"
+                class="text-primary hover:underline"
               >
                 {{ addressFormat(step.spriteAddress) }}
               </NuxtLink>
-              <span v-else class="text-muted-foreground">-</span>
-            </TableCell>
-            <TableCell>
-              <div v-if="spritePreviewByStepAddress.get(step.baseAddress)" class="h-8 w-8 overflow-hidden rounded border border-white/20">
+              <span v-else class="text-dimmed">-</span>
+            </td>
+            <td class="px-2.5 py-1.5">
+              <div
+                v-if="spritePreviewByStepAddress.get(step.baseAddress)"
+                class="border-default size-8 overflow-hidden rounded border"
+              >
                 <SpriteRenderer
                   :bytes="spritePreviewByStepAddress.get(step.baseAddress)!.bytes"
                   :width="spritePreviewByStepAddress.get(step.baseAddress)!.width"
@@ -45,27 +68,28 @@
                   :tile-id="spritePreviewByStepAddress.get(step.baseAddress)!.tileId"
                 />
               </div>
-              <span v-else class="text-muted-foreground text-xs">-</span>
-            </TableCell>
-            <TableCell class="font-mono text-xs">
+              <span v-else class="text-dimmed text-xs">-</span>
+            </td>
+            <td class="px-2.5 py-1.5 font-mono text-[11px]">
               <NuxtLink
                 v-if="step.nextFrameAddress"
                 :to="getResourceRoute(step.nextFrameAddress)"
+                class="text-primary hover:underline"
               >
                 {{ addressFormat(step.nextFrameAddress) }}
               </NuxtLink>
-              <span v-else class="text-muted-foreground">-</span>
-            </TableCell>
-          </TableRow>
-          <TableRow v-if="steps.length === 0">
-            <TableCell colspan="6" class="text-muted-foreground text-sm">
+              <span v-else class="text-dimmed">-</span>
+            </td>
+          </tr>
+          <tr v-if="steps.length === 0">
+            <td colspan="6" class="text-muted px-3 py-6 text-center text-xs">
               No animation steps linked to this script.
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-  </div>
+  </AppPanel>
 </template>
 
 <script setup lang="ts">
@@ -78,8 +102,6 @@ import { computed, ref, toRefs, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import useRomStore from '~/stores/romStore'
 import { useResourceLoader } from '~/composables/useResourceLoader'
-import { Badge } from '~/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table'
 import { addressFormat, getResourceRoute } from '~/utils/index'
 import SpriteRenderer from './SpriteRenderer.vue'
 

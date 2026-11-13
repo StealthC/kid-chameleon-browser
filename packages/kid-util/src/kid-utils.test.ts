@@ -1,6 +1,6 @@
 //@ts-check
 import { describe, expect, test } from 'vitest'
-import { calculatePlayerSpriteDataSize } from './kid-utils'
+import { calculatePlayerSpriteDataSize, ExecuteInNextTick } from './kid-utils'
 
 describe('Data Utils Testing', () => {
   test('calculatePlayerSpriteDataSize', () => {
@@ -9,5 +9,13 @@ describe('Data Utils Testing', () => {
     expect(calculatePlayerSpriteDataSize(0x20, 0x22)).toBe(640)
     expect(calculatePlayerSpriteDataSize(0x2b, 0x3f)).toBe(1536)
     expect(calculatePlayerSpriteDataSize(0x23, 0x26)).toBe(800)
+  })
+
+  test('ExecuteInNextTick propagates callback errors', async () => {
+    await expect(
+      ExecuteInNextTick(() => {
+        throw new Error('deferred failure')
+      }),
+    ).rejects.toThrow('deferred failure')
   })
 })

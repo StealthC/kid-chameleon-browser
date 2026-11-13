@@ -10,13 +10,14 @@ This repository does **not** ship proprietary game assets. It provides reverse-e
 
 ## Monorepo Layout
 
-- `apps/kid-browser`: Nuxt 4 SPA (SSR disabled) for the interactive UI.
+- `apps/kid-browser`: Nuxt 4 SPA (SSR disabled) for the interactive UI, using Nuxt UI as the primary component library.
 - `packages/kid-util`: TypeScript library with ROM parsing, resource discovery/loading, and graphics helpers.
 - Root workspace uses `pnpm` + `turbo`.
 
 ## Key Technical Facts
 
 - Runtime requirements: Node `>=22`, pnpm `>=9.11.0`.
+- Frontend stack: Nuxt `4.6.x`, Nuxt UI `4.x`, Tailwind CSS v4, Pinia, TanStack Query, PixiJS.
 - Workspace: `pnpm-workspace.yaml` includes `apps/*` and `packages/*`.
 - Root scripts:
   - `pnpm dev` -> turbo dev (builds packages first, runs app dev server)

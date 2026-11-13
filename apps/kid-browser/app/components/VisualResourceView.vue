@@ -1,11 +1,8 @@
 <template>
   <div class="h-full min-h-0">
     <component v-if="viewer" :is="viewer.component" v-bind="viewer.props" />
-    <div
-      v-else
-      class="border-border/60 flex h-full min-h-48 items-center justify-center rounded-lg border bg-slate-900/60 p-4 text-center text-sm text-slate-300"
-    >
-      {{ emptyMessage }}
+    <div v-else class="flex h-full items-center justify-center p-4">
+      <UEmpty icon="i-heroicons-eye-slash" size="sm" :title="emptyMessage" />
     </div>
   </div>
 </template>

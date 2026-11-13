@@ -1,46 +1,64 @@
 <template>
-  <div class="border-border/60 flex h-full min-h-0 flex-col gap-3 rounded-lg border bg-slate-900/60 p-3">
-    <div class="flex flex-wrap items-center gap-2">
-      <Badge variant="outline">Objects: {{ resource.objectCount }}</Badge>
-      <Badge variant="outline">Header Byte: {{ resource.h1UnknownByte }}</Badge>
-    </div>
+  <AppPanel title="Level enemy layout" icon="i-heroicons-bug-ant" :padded="false" class="h-full">
+    <template #actions>
+      <UBadge
+        color="neutral"
+        variant="subtle"
+        size="sm"
+        :label="`${resource.objectCount} objects`"
+      />
+      <UBadge
+        color="neutral"
+        variant="subtle"
+        size="sm"
+        :label="`Header ${resource.h1UnknownByte}`"
+      />
+    </template>
 
-    <div class="border-border/60 min-h-0 flex-1 overflow-auto rounded-md border bg-slate-950/60 p-2">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>#</TableHead>
-            <TableHead>Type/Kind</TableHead>
-            <TableHead>Flags</TableHead>
-            <TableHead>HP+1</TableHead>
-            <TableHead>X</TableHead>
-            <TableHead>Y</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          <TableRow v-for="entry in resource.objects" :key="entry.index">
-            <TableCell class="font-mono text-xs">{{ entry.index }}</TableCell>
-            <TableCell class="font-mono text-xs">{{ entry.enemyTypeOrKind }}</TableCell>
-            <TableCell class="font-mono text-xs">0x{{ entry.behaviorFlags.toString(16) }}</TableCell>
-            <TableCell class="font-mono text-xs">{{ entry.hitPointsPlusOne }}</TableCell>
-            <TableCell class="font-mono text-xs">{{ entry.xPosition }}</TableCell>
-            <TableCell class="font-mono text-xs">{{ entry.yPosition }}</TableCell>
-          </TableRow>
-          <TableRow v-if="resource.objects.length === 0">
-            <TableCell colspan="6" class="text-muted-foreground text-sm">
+    <div class="min-h-0 flex-1 overflow-auto">
+      <table class="w-full border-collapse text-left text-xs">
+        <thead
+          class="bg-elevated text-muted sticky top-0 z-10 text-[10px] tracking-wider uppercase"
+        >
+          <tr class="border-default border-b">
+            <th class="px-2.5 py-1.5 font-semibold">#</th>
+            <th class="px-2.5 py-1.5 font-semibold">Type / Kind</th>
+            <th class="px-2.5 py-1.5 font-semibold">Flags</th>
+            <th class="px-2.5 py-1.5 font-semibold">HP+1</th>
+            <th class="px-2.5 py-1.5 font-semibold">X</th>
+            <th class="px-2.5 py-1.5 font-semibold">Y</th>
+          </tr>
+        </thead>
+        <tbody class="divide-default divide-y">
+          <tr
+            v-for="entry in resource.objects"
+            :key="entry.index"
+            class="hover:bg-elevated/60 transition-colors"
+          >
+            <td class="text-dimmed px-2.5 py-1.5 font-mono text-[11px]">{{ entry.index }}</td>
+            <td class="text-highlighted px-2.5 py-1.5 font-mono text-[11px]">
+              {{ entry.enemyTypeOrKind }}
+            </td>
+            <td class="px-2.5 py-1.5 font-mono text-[11px]">
+              0x{{ entry.behaviorFlags.toString(16) }}
+            </td>
+            <td class="px-2.5 py-1.5 font-mono text-[11px]">{{ entry.hitPointsPlusOne }}</td>
+            <td class="px-2.5 py-1.5 font-mono text-[11px]">{{ entry.xPosition }}</td>
+            <td class="px-2.5 py-1.5 font-mono text-[11px]">{{ entry.yPosition }}</td>
+          </tr>
+          <tr v-if="resource.objects.length === 0">
+            <td colspan="6" class="text-muted px-3 py-6 text-center text-xs">
               No enemy objects decoded for this layout.
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-  </div>
+  </AppPanel>
 </template>
 
 <script setup lang="ts">
 import type { LevelEnemyLayoutRomResourceLoaded } from '@repo/kid-util'
-import { Badge } from '~/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table'
 
 defineProps<{ resource: LevelEnemyLayoutRomResourceLoaded }>()
 </script>

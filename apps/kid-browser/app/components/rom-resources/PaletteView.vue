@@ -1,34 +1,40 @@
 <template>
-  <div class="border-border/60 flex h-full min-h-0 flex-col gap-3 rounded-lg border bg-slate-900/60 p-3">
-    <div class="flex items-center gap-2">
-      <Badge variant="outline">Entries: {{ resource.colors.length }}</Badge>
-      <Badge variant="outline">Data Size: {{ resource.inputSize }} bytes</Badge>
-    </div>
+  <AppPanel title="Palette" icon="i-heroicons-swatch" class="h-full">
+    <template #actions>
+      <UBadge
+        color="neutral"
+        variant="subtle"
+        size="sm"
+        :label="`${resource.colors.length} entries`"
+      />
+      <UBadge color="neutral" variant="subtle" size="sm" :label="`${resource.inputSize} bytes`" />
+    </template>
 
-    <div class="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
+    <div class="grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6">
       <div
         v-for="entry in paletteEntries"
         :key="entry.index"
-        class="border-border/60 flex items-center gap-2 rounded-md border bg-slate-950/70 p-2"
+        class="border-default bg-muted/20 flex items-center gap-2 rounded-md border p-1.5"
       >
         <div
-          class="h-7 w-7 shrink-0 rounded border border-white/20"
+          class="border-default size-7 shrink-0 rounded border"
           :style="{ backgroundColor: entry.rgbHex }"
         />
         <div class="min-w-0">
-          <p class="font-mono text-xs">#{{ entry.index.toString(16).toUpperCase().padStart(2, '0') }}</p>
-          <p class="text-muted-foreground font-mono text-[11px]">{{ entry.rawHex }}</p>
-          <p class="text-muted-foreground font-mono text-[11px]">{{ entry.rgbHex }}</p>
+          <p class="text-highlighted font-mono text-[11px]">
+            #{{ entry.index.toString(16).toUpperCase().padStart(2, '0') }}
+          </p>
+          <p class="text-muted font-mono text-[10px]">{{ entry.rawHex }}</p>
+          <p class="text-dimmed font-mono text-[10px]">{{ entry.rgbHex }}</p>
         </div>
       </div>
     </div>
-  </div>
+  </AppPanel>
 </template>
 
 <script setup lang="ts">
 import { computed, toRefs } from 'vue'
 import { mdColorToRgba, type PaletteRomResourceLoaded } from '@repo/kid-util'
-import { Badge } from '~/components/ui/badge'
 
 interface Props {
   resource: PaletteRomResourceLoaded

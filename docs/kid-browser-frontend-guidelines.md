@@ -51,6 +51,15 @@ These guidelines define how to keep the Nuxt frontend (`apps/kid-browser`) reada
   - route helpers centralize route object creation
 - Never let invalid route params propagate into domain logic.
 
+## UI Components and Layout
+
+- Nuxt UI is the primary component library. Prefer `UButton`, `UInput`, `USelect`, `UTabs`, `UBadge`, `UCard`, `UEmpty`, `USlideover` and `UDashboard*` components over ad-hoc controls.
+- The app shell uses `UDashboardGroup` + `UDashboardSidebar` in `app/layouts/default.vue`. The nav sidebar is collapsible/resizable and persists its state; keep contextual panes inside the page with `USplitter` so each workspace can expose its own collapsible browser.
+- Shared surface container: `AppPanel` (`app/components/AppPanel.vue`). It owns the compact panel header/body contract and semantic Nuxt UI color tokens.
+- Icons use the Heroicons collection (`i-heroicons-*`). Verify an icon exists in `@iconify-json/heroicons` before adding it; unknown names render as empty slots.
+- Prefer Nuxt UI semantic colors (`bg-default`, `bg-elevated`, `text-muted`, `text-highlighted`, `border-default`) over raw palette classes so theming stays centralized in `app.config.ts` and `assets/css/main.css`.
+- Keep the content area data-first: compact toolbars, collapsible data docks, and side panels that can minimize instead of permanently taking width.
+
 ## Component Structure
 
 - Components should primarily:

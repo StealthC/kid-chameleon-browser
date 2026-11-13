@@ -8,35 +8,31 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "format": "prettier --write app"
   },
   "dependencies": {
-    "@nuxt/icon": "2.2.1",
-    "@pinia/nuxt": "^0.11.3",
+    "@iconify-json/heroicons": "^1.2.3",
+    "@iconify-json/lucide": "^1.2.154",
+    "@nuxt/icon": "^2.6.2",
+    "@nuxt/ui": "^4.12.0",
+    "@pinia/nuxt": "^1.0.3",
     "@pixi/tilemap": "^5.0.2",
     "@repo/kid-util": "workspace:^",
-    "@tailwindcss/vite": "^4.2.1",
-    "@tanstack/vue-query": "^5.92.9",
-    "@tanstack/vue-table": "^8.21.3",
-    "@vueuse/core": "^14.2.1",
+    "@tanstack/vue-query": "^5.107.1",
+    "@vueuse/core": "^15.0.0",
     "byte-size": "^9.0.1",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
     "localforage": "^1.10.0",
-    "lucide-vue-next": "^0.575.0",
-    "nuxt": "^4.3.1",
-    "pinia": "^3.0.4",
+    "nuxt": "^4.6.4",
+    "pinia": "^4.1.0",
     "pixi-viewport": "^6.0.3",
     "pixi.js": "^8.16.0",
-    "reka-ui": "^2.8.2",
-    "shadcn-nuxt": "2.4.3",
-    "tailwind-merge": "^3.5.0",
-    "tailwindcss": "^4.2.1",
-    "vue": "^3.5.28",
-    "vue-router": "^5.0.3"
+    "tailwindcss": "^4.3.5",
+    "vue": "^3.5.45",
+    "vue-router": "^5.5.0"
   },
   "devDependencies": {
-    "@tailwindcss/typography": "^0.5.19",
-    "tw-animate-css": "^1.4.0"
+    "prettier": "^3.10.1",
+    "prettier-plugin-tailwindcss": "^0.8.1"
   }
 }
