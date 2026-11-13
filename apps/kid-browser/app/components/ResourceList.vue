@@ -12,24 +12,13 @@
       <div class="ms-auto flex items-center gap-1">
         <UTooltip v-if="collapsible" text="Collapse resource browser">
           <UButton
-            icon="i-heroicons-chevron-double-left"
+            icon="i-heroicons-x-mark"
             color="neutral"
             variant="ghost"
             size="xs"
             square
             aria-label="Collapse resource browser"
             @click="emit('collapse')"
-          />
-        </UTooltip>
-        <UTooltip v-if="hasActiveFilters" text="Clear filters">
-          <UButton
-            icon="i-heroicons-x-mark"
-            color="neutral"
-            variant="ghost"
-            size="xs"
-            square
-            aria-label="Clear filters"
-            @click="clearFilter"
           />
         </UTooltip>
       </div>

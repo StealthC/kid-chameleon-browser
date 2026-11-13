@@ -231,15 +231,17 @@
           class="min-w-0 flex-1"
           @update:model-value="setDockTab"
         />
-        <UButton
-          icon="i-heroicons-chevron-down"
-          color="neutral"
-          variant="ghost"
-          size="xs"
-          square
-          aria-label="Hide data dock"
-          @click="dockOpen = false"
-        />
+        <UTooltip text="Collapse data dock">
+          <UButton
+            icon="i-heroicons-x-mark"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            square
+            aria-label="Collapse data dock"
+            @click="dockOpen = false"
+          />
+        </UTooltip>
       </div>
 
       <div class="min-h-0 flex-1 overflow-hidden">

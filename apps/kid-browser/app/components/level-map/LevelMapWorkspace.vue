@@ -72,14 +72,14 @@
 
       <div class="flex shrink-0 items-center gap-1">
         <UButton
-          v-if="showLegendButton"
+          v-if="map"
+          class="xl:hidden"
           icon="i-heroicons-square-3-stack-3d"
           color="neutral"
-          :variant="legendOpen && isXl ? 'soft' : 'ghost'"
+          variant="ghost"
           size="xs"
-          :aria-pressed="isXl ? legendOpen : undefined"
-          aria-label="Toggle layers and legend"
-          @click="toggleLegend"
+          aria-label="Show layers and legend"
+          @click="mobileLegendOpen = true"
         >
           <span class="hidden sm:inline">Layers</span>
         </UButton>
@@ -129,19 +129,19 @@
       >
         <header class="border-default flex h-11 shrink-0 items-center gap-2 border-b px-3">
           <UIcon name="i-heroicons-square-3-stack-3d" class="text-primary size-4" />
-          <p class="text-muted text-[10px] font-semibold tracking-widest uppercase">
-            Layers &amp; legend
-          </p>
-          <UButton
-            icon="i-heroicons-x-mark"
-            color="neutral"
-            variant="ghost"
-            size="xs"
-            square
-            class="ms-auto"
-            aria-label="Hide layers and legend"
-            @click="legendOpen = false"
-          />
+          <h2 class="text-highlighted text-sm font-semibold">Layers &amp; legend</h2>
+          <UTooltip text="Collapse layers and legend">
+            <UButton
+              icon="i-heroicons-x-mark"
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              square
+              class="ms-auto"
+              aria-label="Collapse layers and legend"
+              @click="legendOpen = false"
+            />
+          </UTooltip>
         </header>
         <div class="min-h-0 flex-1 overflow-y-auto">
           <LevelMapLegend
@@ -153,24 +153,20 @@
         </div>
       </aside>
 
-      <aside
-        v-else-if="map"
-        class="border-default hidden w-11 shrink-0 flex-col items-center gap-2 border-s py-2 xl:flex"
-      >
-        <UTooltip text="Show layers and legend">
-          <UButton
-            icon="i-heroicons-square-3-stack-3d"
-            color="neutral"
-            variant="ghost"
-            size="xs"
-            square
-            aria-label="Show layers and legend"
-            @click="legendOpen = true"
-          />
-        </UTooltip>
-        <span class="text-dimmed text-[9px] tracking-widest uppercase [writing-mode:vertical-rl]">
-          Layers
-        </span>
+      <aside v-else-if="map" class="border-default hidden w-12 shrink-0 flex-col border-s xl:flex">
+        <button
+          type="button"
+          class="group hover:bg-elevated/50 flex h-full w-full flex-col items-center gap-3 py-3 transition-colors"
+          aria-label="Expand layers and legend"
+          @click="legendOpen = true"
+        >
+          <UIcon name="i-heroicons-square-3-stack-3d" class="text-primary size-4" />
+          <span
+            class="text-dimmed text-[9px] font-semibold tracking-widest uppercase [writing-mode:vertical-rl]"
+          >
+            Layers &amp; legend
+          </span>
+        </button>
       </aside>
     </div>
 
@@ -193,13 +189,13 @@
 </template>
 
 <script setup lang="ts">
-import { useMediaQuery, useStorage } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import { useStorage } from '@vueuse/core'
+import { ref } from 'vue'
 import type { LevelMap } from '@repo/kid-util'
 import type { LevelMapLayerState } from '~/lib/level-map-view'
 import { addressFormat, getResourceRoute } from '~/utils/index'
 
-const props = defineProps<{
+defineProps<{
   map: LevelMap | null
   layers: LevelMapLayerState
   title: string
@@ -211,17 +207,6 @@ const emit = defineEmits<{
   'update:layers': [layers: LevelMapLayerState]
 }>()
 
-const isXl = useMediaQuery('(min-width: 1280px)')
 const legendOpen = useStorage('kid-browser-levels-legend', true)
 const mobileLegendOpen = ref(false)
-
-const showLegendButton = computed(() => props.map !== null)
-
-function toggleLegend() {
-  if (isXl.value) {
-    legendOpen.value = !legendOpen.value
-  } else {
-    mobileLegendOpen.value = true
-  }
-}
 </script>

@@ -38,18 +38,19 @@
                   @navigate="onResourceNavigate"
                   @collapse="collapse()"
                 />
-                <div v-else class="flex h-full flex-col items-center gap-2 py-3">
-                  <UTooltip text="Expand resource browser">
-                    <UButton
-                      icon="i-heroicons-chevron-double-right"
-                      color="neutral"
-                      variant="ghost"
-                      size="xs"
-                      square
-                      aria-label="Expand resource browser"
-                      @click="expand()"
-                    />
-                  </UTooltip>
+                <button
+                  v-else
+                  type="button"
+                  class="group hover:bg-elevated/50 flex h-full w-full flex-col items-center gap-3 py-3 transition-colors"
+                  aria-label="Expand resource browser"
+                  @click="expand()"
+                >
+                  <UIcon name="i-heroicons-squares-2x2" class="text-primary size-4" />
+                  <span
+                    class="text-dimmed text-[9px] font-semibold tracking-widest uppercase [writing-mode:vertical-rl]"
+                  >
+                    Resources
+                  </span>
                   <UBadge
                     color="neutral"
                     variant="subtle"
@@ -57,18 +58,7 @@
                     :label="String(filteredCount)"
                     class="font-mono"
                   />
-                  <UTooltip text="Search resources">
-                    <UButton
-                      icon="i-heroicons-magnifying-glass"
-                      color="neutral"
-                      variant="ghost"
-                      size="xs"
-                      square
-                      aria-label="Search resources"
-                      @click="expand()"
-                    />
-                  </UTooltip>
-                </div>
+                </button>
               </aside>
             </template>
 

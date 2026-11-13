@@ -34,14 +34,26 @@
             </span>
           </span>
         </NuxtLink>
-        <div v-if="!collapsed" class="ms-auto flex items-center">
-          <UTooltip text="Collapse sidebar">
-            <UDashboardSidebarCollapse />
-          </UTooltip>
-        </div>
       </template>
 
-      <template #default="{ collapsed }">
+      <template #default="{ collapsed, collapse }">
+        <div class="mb-1 hidden lg:flex" :class="collapsed ? 'justify-center' : 'justify-end'">
+          <UTooltip :text="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+            <UButton
+              :icon="
+                collapsed ? 'i-heroicons-chevron-double-right' : 'i-heroicons-chevron-double-left'
+              "
+              :label="collapsed ? undefined : 'Collapse'"
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              :square="collapsed"
+              :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+              @click="collapse(!collapsed)"
+            />
+          </UTooltip>
+        </div>
+
         <UNavigationMenu
           :items="navItems"
           orientation="vertical"
@@ -83,12 +95,7 @@
       </template>
 
       <template #footer="{ collapsed }">
-        <div class="w-full space-y-1">
-          <div v-if="collapsed" class="flex justify-center">
-            <UTooltip text="Expand sidebar">
-              <UDashboardSidebarCollapse />
-            </UTooltip>
-          </div>
+        <div class="w-full">
           <RomStatus :collapsed="collapsed" />
         </div>
       </template>

@@ -12,7 +12,7 @@
       <div class="ms-auto flex items-center gap-1">
         <UTooltip v-if="collapsible" text="Collapse level browser">
           <UButton
-            icon="i-heroicons-chevron-double-left"
+            icon="i-heroicons-x-mark"
             color="neutral"
             variant="ghost"
             size="xs"
