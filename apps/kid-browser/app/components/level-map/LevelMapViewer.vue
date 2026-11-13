@@ -72,9 +72,10 @@
         </UButton>
       </div>
       <span
-        class="bg-default/80 text-muted rounded-md px-2 py-1 font-mono text-[11px] backdrop-blur"
+        class="bg-default/80 text-muted rounded-md px-2 py-1 font-mono text-[11px] whitespace-nowrap backdrop-blur"
       >
-        {{ zoomLabel }} · {{ widthBlocks }}×{{ heightBlocks }} cells
+        {{ zoomLabel }} · {{ widthBlocks }}×{{ heightBlocks
+        }}<span class="hidden sm:inline"> cells</span>
       </span>
     </div>
 
@@ -96,7 +97,7 @@
     <div
       class="border-default bg-default/85 pointer-events-none absolute inset-x-0 bottom-0 border-t px-2 py-1"
     >
-      <p class="text-muted truncate font-mono text-[11px]">{{ hoverText }}</p>
+      <p class="text-muted font-mono text-[10px] leading-tight sm:text-[11px]">{{ hoverText }}</p>
     </div>
   </div>
 </template>

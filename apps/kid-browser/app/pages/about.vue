@@ -2,9 +2,6 @@
   <UDashboardPanel id="about" :ui="{ body: 'gap-0 overflow-hidden p-0 sm:p-0' }">
     <template #header>
       <UDashboardNavbar title="About" icon="i-heroicons-information-circle">
-        <template #leading>
-          <UDashboardSidebarCollapse />
-        </template>
         <template #right>
           <UBadge color="neutral" variant="subtle" size="sm" :label="`v${appVersion}`" />
         </template>

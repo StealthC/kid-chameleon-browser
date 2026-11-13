@@ -28,11 +28,16 @@
               map.graphics ? 'ROM tiles' : map.graphicsError ? 'Colour fallback' : 'No graphics'
             "
           />
-          <UBadge class="shrink-0 whitespace-nowrap" color="neutral" variant="subtle" size="sm">
+          <UBadge
+            class="hidden shrink-0 whitespace-nowrap xl:inline-flex"
+            color="neutral"
+            variant="subtle"
+            size="sm"
+          >
             background {{ map.header.backgroundType }}
           </UBadge>
           <UBadge
-            class="shrink-0 whitespace-nowrap"
+            class="hidden shrink-0 whitespace-nowrap xl:inline-flex"
             v-if="map.graphics?.background"
             color="neutral"
             variant="subtle"
@@ -40,7 +45,7 @@
             :label="`${map.graphics.background.format} bg`"
           />
           <UBadge
-            class="shrink-0 whitespace-nowrap"
+            class="hidden shrink-0 whitespace-nowrap xl:inline-flex"
             v-if="map.header.murderWall"
             color="warning"
             variant="subtle"
@@ -48,7 +53,7 @@
             :label="`murder wall ${map.header.murderWallVariant ? 'right' : 'left'}`"
           />
           <UBadge
-            class="shrink-0 whitespace-nowrap"
+            class="hidden shrink-0 whitespace-nowrap xl:inline-flex"
             v-if="map.header.misc"
             color="neutral"
             variant="subtle"
@@ -57,7 +62,7 @@
             misc {{ map.header.misc }}
           </UBadge>
           <NuxtLink
-            class="text-primary shrink-0 text-[11px] hover:underline"
+            class="text-primary hidden shrink-0 text-[11px] hover:underline xl:inline"
             :to="getResourceRoute(map.headerAddress)"
           >
             Header resource

@@ -2,10 +2,6 @@
   <UDashboardPanel id="levels" :ui="{ body: 'gap-0 overflow-hidden p-0 sm:p-0' }">
     <template #header>
       <UDashboardNavbar title="Levels" icon="i-heroicons-map">
-        <template #leading>
-          <UDashboardSidebarCollapse />
-        </template>
-
         <template #right>
           <UButton
             v-if="!isDesktop && levelItems.length > 0"
@@ -24,7 +20,13 @@
     <template #body>
       <RequiresRom>
         <div class="flex h-full min-h-0">
-          <USplitter v-if="isDesktop" id="levels-split" :items="splitItems" class="h-full w-full">
+          <USplitter
+            v-if="isDesktop"
+            id="levels-split"
+            :items="splitItems"
+            class="h-full w-full"
+            :ui="{ handle: 'transition-colors hover:bg-elevated/40' }"
+          >
             <template #levels="{ collapsed, expand, collapse }">
               <aside class="border-default h-full w-full min-w-0 border-e">
                 <LevelMapBrowser
@@ -67,6 +69,14 @@
                 :error="mapError"
                 @update:layers="layers = $event"
               />
+            </template>
+
+            <template #resize-handle>
+              <div class="flex h-full w-full items-center justify-center">
+                <span
+                  class="bg-accented group-hover:bg-primary/60 h-10 w-0.5 rounded-full opacity-0 transition-opacity group-hover:opacity-100"
+                />
+              </div>
             </template>
           </USplitter>
 

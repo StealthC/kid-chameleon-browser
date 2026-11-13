@@ -34,6 +34,11 @@
             </span>
           </span>
         </NuxtLink>
+        <div v-if="!collapsed" class="ms-auto flex items-center">
+          <UTooltip text="Collapse sidebar">
+            <UDashboardSidebarCollapse />
+          </UTooltip>
+        </div>
       </template>
 
       <template #default="{ collapsed }">
@@ -78,7 +83,12 @@
       </template>
 
       <template #footer="{ collapsed }">
-        <div class="w-full">
+        <div class="w-full space-y-1">
+          <div v-if="collapsed" class="flex justify-center">
+            <UTooltip text="Expand sidebar">
+              <UDashboardSidebarCollapse />
+            </UTooltip>
+          </div>
           <RomStatus :collapsed="collapsed" />
         </div>
       </template>

@@ -2,10 +2,6 @@
   <UDashboardPanel id="resources" :ui="{ body: 'gap-0 overflow-hidden p-0 sm:p-0' }">
     <template #header>
       <UDashboardNavbar title="Resources" icon="i-heroicons-squares-2x2">
-        <template #leading>
-          <UDashboardSidebarCollapse />
-        </template>
-
         <template #right>
           <UButton
             v-if="!isDesktop && rom && selectedResource !== null"
@@ -32,6 +28,7 @@
             id="resources-split"
             :items="splitItems"
             class="h-full w-full"
+            :ui="{ handle: 'transition-colors hover:bg-elevated/40' }"
           >
             <template #browser="{ collapsed, expand, collapse }">
               <aside class="border-default h-full w-full min-w-0 border-e">
@@ -104,6 +101,14 @@
                     :description="`Browse ${totalResources.toLocaleString()} discovered resources and inspect previews, metadata, references and raw bytes.`"
                   />
                 </div>
+              </div>
+            </template>
+
+            <template #resize-handle>
+              <div class="flex h-full w-full items-center justify-center">
+                <span
+                  class="bg-accented group-hover:bg-primary/60 h-10 w-0.5 rounded-full opacity-0 transition-opacity group-hover:opacity-100"
+                />
               </div>
             </template>
           </USplitter>

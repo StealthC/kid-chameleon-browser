@@ -33,7 +33,7 @@
             {{ romDetails.header.region.trim() || 'Unknown region' }}
           </p>
         </div>
-        <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">
+        <div class="flex w-full flex-wrap items-center gap-2 xl:w-auto xl:shrink-0">
           <UButton
             icon="i-heroicons-squares-2x2"
             color="neutral"
@@ -73,7 +73,7 @@
       </dl>
     </section>
 
-    <div class="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.85fr)]">
+    <div class="grid items-start gap-4 xl:grid-cols-2">
       <AppPanel title="File details" icon="i-heroicons-document" :fill="false">
         <dl class="space-y-2 text-sm">
           <div
@@ -82,7 +82,7 @@
             class="grid grid-cols-[8rem_minmax(0,1fr)] gap-2"
           >
             <dt class="text-muted">{{ key }}</dt>
-            <dd class="text-highlighted font-mono text-xs break-all">{{ value }}</dd>
+            <dd class="text-highlighted font-mono text-[11px] break-all">{{ value }}</dd>
           </div>
         </dl>
       </AppPanel>
@@ -99,45 +99,45 @@
           </div>
         </dl>
       </AppPanel>
-
-      <AppPanel title="Resource types" icon="i-heroicons-chart-bar" :fill="false">
-        <template #actions>
-          <UButton
-            icon="i-heroicons-arrow-right"
-            color="neutral"
-            variant="ghost"
-            size="xs"
-            to="/resources"
-            aria-label="Open resource browser"
-          />
-        </template>
-        <ul class="space-y-1">
-          <li v-for="entry in typeEntries" :key="entry.type">
-            <button
-              type="button"
-              class="group hover:bg-elevated/70 flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-colors"
-              :title="`Browse ${entry.label}`"
-              @click="browseType(entry.type)"
-            >
-              <span class="min-w-0 flex-1">
-                <span class="flex items-baseline justify-between gap-2">
-                  <span class="text-default group-hover:text-highlighted truncate text-xs">
-                    {{ entry.label }}
-                  </span>
-                  <span class="text-muted font-mono text-[10px]">{{ entry.count }}</span>
-                </span>
-                <span class="bg-elevated mt-1 block h-1 overflow-hidden rounded-full">
-                  <span
-                    class="bg-primary/70 block h-full rounded-full"
-                    :style="{ width: `${entry.percent}%` }"
-                  />
-                </span>
-              </span>
-            </button>
-          </li>
-        </ul>
-      </AppPanel>
     </div>
+
+    <AppPanel title="Resource types" icon="i-heroicons-chart-bar" :fill="false">
+      <template #actions>
+        <UButton
+          icon="i-heroicons-arrow-right"
+          color="neutral"
+          variant="ghost"
+          size="xs"
+          to="/resources"
+          aria-label="Open resource browser"
+        />
+      </template>
+      <ul class="grid gap-x-6 gap-y-1 sm:grid-cols-2 xl:grid-cols-3">
+        <li v-for="entry in typeEntries" :key="entry.type">
+          <button
+            type="button"
+            class="group hover:bg-elevated/70 flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-colors"
+            :title="`Browse ${entry.label}`"
+            @click="browseType(entry.type)"
+          >
+            <span class="min-w-0 flex-1">
+              <span class="flex items-baseline justify-between gap-2">
+                <span class="text-default group-hover:text-highlighted truncate text-xs">
+                  {{ entry.label }}
+                </span>
+                <span class="text-muted font-mono text-[10px]">{{ entry.count }}</span>
+              </span>
+              <span class="bg-elevated mt-1 block h-1 overflow-hidden rounded-full">
+                <span
+                  class="bg-primary/70 block h-full rounded-full"
+                  :style="{ width: `${entry.percent}%` }"
+                />
+              </span>
+            </span>
+          </button>
+        </li>
+      </ul>
+    </AppPanel>
 
     <AppPanel title="Discovered addresses" icon="i-heroicons-table-cells" :padded="false">
       <template #actions>

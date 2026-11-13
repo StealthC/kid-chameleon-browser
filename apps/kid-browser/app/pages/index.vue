@@ -2,10 +2,6 @@
   <UDashboardPanel id="overview" :ui="{ body: 'gap-0 overflow-hidden p-0' }">
     <template #header>
       <UDashboardNavbar title="Overview" icon="i-heroicons-home">
-        <template #leading>
-          <UDashboardSidebarCollapse />
-        </template>
-
         <template #right>
           <UButton v-if="!rom" icon="i-heroicons-arrow-up-tray" size="sm" @click="openRomDialog">
             Load ROM

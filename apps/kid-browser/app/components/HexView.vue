@@ -43,7 +43,7 @@
           </span>
         </div>
 
-        <div v-if="toolsOpen" class="grid gap-2 lg:grid-cols-3">
+        <div v-if="toolsOpen" class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
           <div class="border-default bg-muted/30 rounded-md border p-2">
             <label class="text-dimmed text-[10px] tracking-wide uppercase" for="hex-jump-offset">
               Jump to offset
@@ -92,7 +92,7 @@
             </div>
           </div>
 
-          <div class="border-default bg-muted/30 rounded-md border p-2 lg:col-span-1">
+          <div class="border-default bg-muted/30 rounded-md border p-2 sm:col-span-2 xl:col-span-1">
             <label class="text-dimmed text-[10px] tracking-wide uppercase" for="hex-search">
               Search bytes
             </label>
