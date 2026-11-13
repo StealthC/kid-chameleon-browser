@@ -7,53 +7,61 @@
       :default-size="15"
       :min-size="13"
       :max-size="19"
-      :collapsed-size="4"
+      :collapsed-size="4.5"
       :ui="{
         root: 'bg-muted/30',
-        header: 'px-3',
+        header: 'px-2',
         body: 'gap-1 px-2 py-3',
         footer: 'border-t border-default px-2 py-2',
       }"
     >
-      <template #header="{ collapsed }">
-        <NuxtLink
-          to="/"
-          class="focus-visible:ring-primary/60 flex min-w-0 items-center gap-2.5 rounded-md outline-none focus-visible:ring-2"
-          :class="collapsed ? 'mx-auto' : ''"
-          aria-label="Kid Chameleon Browser home"
+      <template #header="{ collapsed, collapse }">
+        <div
+          class="flex min-w-0 flex-1 items-center gap-1"
+          :class="collapsed ? 'justify-center' : ''"
         >
-          <img src="/logo.png" alt="" class="ring-default size-8 shrink-0 rounded-lg ring-1" />
-          <span v-if="!collapsed" class="min-w-0">
-            <span class="text-highlighted block truncate text-sm font-semibold tracking-tight">
-              Kid Chameleon
+          <NuxtLink
+            to="/"
+            class="focus-visible:ring-primary/60 flex min-w-0 items-center gap-2.5 rounded-md outline-none focus-visible:ring-2"
+            :class="collapsed ? '' : 'flex-1'"
+            aria-label="Kid Chameleon Browser home"
+          >
+            <img
+              src="/logo.png"
+              alt=""
+              class="ring-default shrink-0 rounded-lg ring-1"
+              :class="collapsed ? 'size-7' : 'size-8'"
+            />
+            <span v-if="!collapsed" class="min-w-0">
+              <span class="text-highlighted block truncate text-sm font-semibold tracking-tight">
+                Kid Chameleon
+              </span>
+              <span
+                class="text-muted block truncate text-[10px] font-medium tracking-widest uppercase"
+              >
+                ROM Browser
+              </span>
             </span>
-            <span
-              class="text-muted block truncate text-[10px] font-medium tracking-widest uppercase"
-            >
-              ROM Browser
-            </span>
-          </span>
-        </NuxtLink>
+          </NuxtLink>
+          <div class="hidden shrink-0 lg:flex">
+            <UTooltip :text="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+              <UButton
+                :icon="
+                  collapsed ? 'i-heroicons-chevron-double-right' : 'i-heroicons-chevron-double-left'
+                "
+                color="neutral"
+                variant="ghost"
+                size="xs"
+                square
+                :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+                @click="collapse(!collapsed)"
+              />
+            </UTooltip>
+          </div>
+        </div>
       </template>
 
-      <template #default="{ collapsed, collapse }">
-        <div class="mb-1 hidden lg:flex" :class="collapsed ? 'justify-center' : 'justify-end'">
-          <UTooltip :text="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
-            <UButton
-              :icon="
-                collapsed ? 'i-heroicons-chevron-double-right' : 'i-heroicons-chevron-double-left'
-              "
-              :label="collapsed ? undefined : 'Collapse'"
-              color="neutral"
-              variant="ghost"
-              size="xs"
-              :square="collapsed"
-              :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
-              @click="collapse(!collapsed)"
-            />
-          </UTooltip>
-        </div>
-
+      <template #default="{ collapsed }">
         <UNavigationMenu
           :items="navItems"
           orientation="vertical"
