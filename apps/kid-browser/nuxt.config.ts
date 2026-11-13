@@ -1,4 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import packageJson from './package.json'
+
 export default defineNuxtConfig({
   ssr: false,
   compatibilityDate: '2025-07-15',
@@ -41,7 +43,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      appVersion: process.env.npm_package_version ?? '0.0.0',
+      appVersion: process.env.npm_package_version ?? packageJson.version,
     },
   },
 })

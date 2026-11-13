@@ -9,6 +9,19 @@
         size="sm"
         :label="`${filteredLevelItems.length} / ${levelItems.length}`"
       />
+      <div class="ms-auto flex items-center gap-1">
+        <UTooltip v-if="collapsible" text="Collapse level browser">
+          <UButton
+            icon="i-heroicons-chevron-double-left"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            square
+            aria-label="Collapse level browser"
+            @click="emit('collapse')"
+          />
+        </UTooltip>
+      </div>
     </header>
 
     <div class="border-default shrink-0 border-b p-2">
@@ -70,8 +83,13 @@ import { computed, ref } from 'vue'
 import { isLoadedResource, type LevelHeaderRomResourceLoaded } from '@repo/kid-util'
 import { useLevelIndex } from '~/composables/useLevelMap'
 
+defineProps<{
+  collapsible?: boolean
+}>()
+
 const emit = defineEmits<{
   select: [levelIndex: number]
+  collapse: []
 }>()
 
 const route = useRoute()

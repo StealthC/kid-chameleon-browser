@@ -5,7 +5,7 @@
         <img src="/logo.png" alt="" class="ring-default size-14 shrink-0 rounded-xl ring-1" />
         <div class="min-w-0 flex-1">
           <div class="flex flex-wrap items-center gap-2">
-            <h1 class="text-highlighted truncate text-lg font-semibold tracking-tight">
+            <h1 class="text-highlighted min-w-0 text-lg font-semibold tracking-tight break-words">
               {{ romName }}
             </h1>
             <UBadge
@@ -33,7 +33,7 @@
             {{ romDetails.header.region.trim() || 'Unknown region' }}
           </p>
         </div>
-        <div class="flex shrink-0 flex-wrap items-center gap-2">
+        <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">
           <UButton
             icon="i-heroicons-squares-2x2"
             color="neutral"
@@ -73,8 +73,8 @@
       </dl>
     </section>
 
-    <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.85fr)]">
-      <AppPanel title="File details" icon="i-heroicons-document">
+    <div class="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.85fr)]">
+      <AppPanel title="File details" icon="i-heroicons-document" :fill="false">
         <dl class="space-y-2 text-sm">
           <div
             v-for="[key, value] in Object.entries(details['File Details'])"
@@ -87,7 +87,7 @@
         </dl>
       </AppPanel>
 
-      <AppPanel title="ROM header" icon="i-heroicons-cpu-chip">
+      <AppPanel title="ROM header" icon="i-heroicons-cpu-chip" :fill="false">
         <dl class="space-y-2 text-sm">
           <div
             v-for="[key, value] in Object.entries(details['ROM Header'])"
@@ -100,7 +100,7 @@
         </dl>
       </AppPanel>
 
-      <AppPanel title="Resource types" icon="i-heroicons-chart-bar">
+      <AppPanel title="Resource types" icon="i-heroicons-chart-bar" :fill="false">
         <template #actions>
           <UButton
             icon="i-heroicons-arrow-right"

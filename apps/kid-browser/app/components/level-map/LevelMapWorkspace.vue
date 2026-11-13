@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-full min-h-0 flex-col">
+  <div class="flex h-full min-h-0 w-full flex-col">
     <div class="border-default flex h-11 shrink-0 items-center gap-2 border-b px-3">
       <div class="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
         <div class="min-w-0 shrink-0">
@@ -13,13 +13,14 @@
         </div>
 
         <template v-if="map">
-          <UBadge color="neutral" variant="subtle" size="sm">
+          <UBadge class="shrink-0 whitespace-nowrap" color="neutral" variant="subtle" size="sm">
             0x{{ map.header.levelIndex.toString(16).toUpperCase().padStart(2, '0') }}
           </UBadge>
-          <UBadge color="neutral" variant="subtle" size="sm">
+          <UBadge class="shrink-0 whitespace-nowrap" color="neutral" variant="subtle" size="sm">
             theme {{ map.header.themeIndex }}
           </UBadge>
           <UBadge
+            class="shrink-0 whitespace-nowrap"
             :color="map.graphics ? 'success' : map.graphicsError ? 'warning' : 'neutral'"
             variant="subtle"
             size="sm"
@@ -27,10 +28,11 @@
               map.graphics ? 'ROM tiles' : map.graphicsError ? 'Colour fallback' : 'No graphics'
             "
           />
-          <UBadge color="neutral" variant="subtle" size="sm">
+          <UBadge class="shrink-0 whitespace-nowrap" color="neutral" variant="subtle" size="sm">
             background {{ map.header.backgroundType }}
           </UBadge>
           <UBadge
+            class="shrink-0 whitespace-nowrap"
             v-if="map.graphics?.background"
             color="neutral"
             variant="subtle"
@@ -38,13 +40,20 @@
             :label="`${map.graphics.background.format} bg`"
           />
           <UBadge
+            class="shrink-0 whitespace-nowrap"
             v-if="map.header.murderWall"
             color="warning"
             variant="subtle"
             size="sm"
             :label="`murder wall ${map.header.murderWallVariant ? 'right' : 'left'}`"
           />
-          <UBadge v-if="map.header.misc" color="neutral" variant="subtle" size="sm">
+          <UBadge
+            class="shrink-0 whitespace-nowrap"
+            v-if="map.header.misc"
+            color="neutral"
+            variant="subtle"
+            size="sm"
+          >
             misc {{ map.header.misc }}
           </UBadge>
           <NuxtLink
@@ -59,13 +68,7 @@
       <div class="flex shrink-0 items-center gap-1">
         <UButton
           v-if="showLegendButton"
-          :icon="
-            isXl
-              ? legendOpen
-                ? 'i-heroicons-x-mark'
-                : 'i-heroicons-adjustments-horizontal'
-              : 'i-heroicons-square-3-stack-3d'
-          "
+          icon="i-heroicons-square-3-stack-3d"
           color="neutral"
           :variant="legendOpen && isXl ? 'soft' : 'ghost'"
           size="xs"

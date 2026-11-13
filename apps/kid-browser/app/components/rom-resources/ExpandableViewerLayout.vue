@@ -6,7 +6,7 @@
         : 'h-full w-full'
     "
   >
-    <div class="flex h-full min-h-0 flex-col gap-2 lg:flex-row">
+    <div class="relative flex h-full min-h-0 flex-col gap-2 xl:flex-row">
       <div
         class="border-default bg-muted/20 relative min-h-0 flex-1 overflow-hidden rounded-lg border p-1.5"
       >
@@ -43,9 +43,16 @@
         <slot name="viewer" :expanded="expanded" />
       </div>
 
+      <div
+        v-if="sidebarOpen"
+        class="absolute inset-0 z-20 bg-black/40 backdrop-blur-sm xl:hidden"
+        aria-hidden="true"
+        @click="sidebarOpen = false"
+      />
+
       <aside
         v-if="sidebarOpen"
-        class="border-default bg-elevated/30 flex h-52 shrink-0 flex-col overflow-hidden rounded-lg border lg:h-auto lg:w-80"
+        class="border-default bg-default/95 xl:bg-elevated/30 absolute inset-y-0 right-0 z-30 flex w-80 max-w-[calc(100%-1rem)] flex-col overflow-hidden rounded-lg border shadow-2xl backdrop-blur xl:static xl:z-auto xl:h-auto xl:w-80 xl:max-w-none xl:shadow-none"
       >
         <header class="border-default flex h-9 shrink-0 items-center gap-2 border-b px-3">
           <UIcon name="i-heroicons-adjustments-horizontal" class="text-primary size-4" />
@@ -72,8 +79,9 @@
 </template>
 
 <script setup lang="ts">
-import { useStorage } from '@vueuse/core'
+import { useMediaQuery, useStorage } from '@vueuse/core'
 
 const expanded = defineModel<boolean>('expanded', { default: false })
-const sidebarOpen = useStorage('kid-browser-viewer-controls', true)
+const isWide = useMediaQuery('(min-width: 1280px)')
+const sidebarOpen = useStorage('kid-browser-viewer-controls', isWide.value)
 </script>

@@ -6,15 +6,6 @@
           <UDashboardSidebarCollapse />
         </template>
 
-        <template #trailing>
-          <UBadge
-            color="neutral"
-            variant="subtle"
-            size="sm"
-            :label="`${levelItems.length} levels`"
-          />
-        </template>
-
         <template #right>
           <UButton
             v-if="!isDesktop && levelItems.length > 0"
@@ -33,16 +24,15 @@
     <template #body>
       <RequiresRom>
         <div class="flex h-full min-h-0">
-          <USplitter
-            v-if="isDesktop"
-            id="levels-split"
-            auto-save-id="kid-browser-levels-split"
-            :items="splitItems"
-            class="h-full w-full"
-          >
-            <template #levels="{ collapsed, expand }">
+          <USplitter v-if="isDesktop" id="levels-split" :items="splitItems" class="h-full w-full">
+            <template #levels="{ collapsed, expand, collapse }">
               <aside class="border-default h-full w-full min-w-0 border-e">
-                <LevelMapBrowser v-if="!collapsed" @select="onLevelSelect" />
+                <LevelMapBrowser
+                  v-if="!collapsed"
+                  collapsible
+                  @select="onLevelSelect"
+                  @collapse="collapse()"
+                />
                 <div v-else class="flex h-full flex-col items-center gap-2 py-3">
                   <UTooltip text="Expand level browser">
                     <UButton

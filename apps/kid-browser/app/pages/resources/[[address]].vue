@@ -6,19 +6,9 @@
           <UDashboardSidebarCollapse />
         </template>
 
-        <template #trailing>
-          <UBadge
-            v-if="rom"
-            color="neutral"
-            variant="subtle"
-            size="sm"
-            :label="resourceCountLabel"
-          />
-        </template>
-
         <template #right>
           <UButton
-            v-if="!isDesktop && rom"
+            v-if="!isDesktop && rom && selectedResource !== null"
             icon="i-heroicons-list-bullet"
             color="neutral"
             variant="soft"
@@ -40,13 +30,17 @@
           <USplitter
             v-if="isDesktop"
             id="resources-split"
-            auto-save-id="kid-browser-resources-split"
             :items="splitItems"
             class="h-full w-full"
           >
-            <template #browser="{ collapsed, expand }">
+            <template #browser="{ collapsed, expand, collapse }">
               <aside class="border-default h-full w-full min-w-0 border-e">
-                <ResourceList v-if="!collapsed" @navigate="onResourceNavigate" />
+                <ResourceList
+                  v-if="!collapsed"
+                  collapsible
+                  @navigate="onResourceNavigate"
+                  @collapse="collapse()"
+                />
                 <div v-else class="flex h-full flex-col items-center gap-2 py-3">
                   <UTooltip text="Expand resource browser">
                     <UButton
@@ -183,13 +177,6 @@ const rawAddress = computed(() => route.params.address)
 const selectedResource = computed(() =>
   typeof rawAddress.value === 'string' ? parseAddressOrNull(rawAddress.value) : null,
 )
-const resourceCountLabel = computed(
-  () =>
-    `${totalResources.value.toLocaleString()} ${
-      totalResources.value === 1 ? 'resource' : 'resources'
-    }`,
-)
-
 const splitItems: SplitterItem[] = [
   {
     id: 'resource-browser',

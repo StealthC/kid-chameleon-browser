@@ -10,6 +10,17 @@
         :label="`${filteredCount} / ${totalResources}`"
       />
       <div class="ms-auto flex items-center gap-1">
+        <UTooltip v-if="collapsible" text="Collapse resource browser">
+          <UButton
+            icon="i-heroicons-chevron-double-left"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            square
+            aria-label="Collapse resource browser"
+            @click="emit('collapse')"
+          />
+        </UTooltip>
         <UTooltip v-if="hasActiveFilters" text="Clear filters">
           <UButton
             icon="i-heroicons-x-mark"
@@ -97,7 +108,7 @@
       />
     </div>
 
-    <div class="min-h-0 flex-1 overflow-y-auto p-1">
+    <div ref="listContainer" class="min-h-0 flex-1 overflow-y-auto p-1">
       <template v-if="activeTab === 'resources'">
         <NuxtLink
           v-for="resource in filteredResources"
@@ -190,13 +201,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useResourcesIndex } from '~/composables/useResourcesIndex'
 import { addressFormat, getNameForType, getResourceRoute } from '~/utils/index'
 import { formatCompactSize } from '~/utils/resourceSearch'
 
+defineProps<{
+  collapsible?: boolean
+}>()
+
 const emit = defineEmits<{
   navigate: [address: number]
+  collapse: []
 }>()
 
 const {
@@ -236,6 +252,22 @@ function setActiveTab(value: unknown) {
   activeTab.value = value as 'types' | 'resources'
 }
 
+const listContainer = ref<HTMLDivElement | null>(null)
+
+watch(
+  () => selectedAddress.value,
+  async (address) => {
+    if (address === null) {
+      return
+    }
+    await nextTick()
+    listContainer.value
+      ?.querySelector<HTMLElement>('[aria-current="page"]')
+      ?.scrollIntoView({ block: 'nearest' })
+  },
+  { immediate: true },
+)
+
 const tabItems = [
   { label: 'Resources', value: 'resources', icon: 'i-heroicons-list-bullet' },
   { label: 'Types', value: 'types', icon: 'i-heroicons-tag' },
@@ -264,7 +296,7 @@ const confidenceItems = [
 ]
 
 const loadedItems = [
-  { label: 'Any decode state', value: 'all' },
+  { label: 'Any decode', value: 'all' },
   { label: 'Decoded', value: 'loaded' },
   { label: 'Not decoded', value: 'unloaded' },
 ]

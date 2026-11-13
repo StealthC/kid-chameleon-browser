@@ -7,6 +7,15 @@
   >
     <template #actions>
       <UButton
+        :label="toolsOpen ? 'Hide tools' : 'Tools'"
+        icon="i-heroicons-adjustments-horizontal"
+        color="neutral"
+        :variant="toolsOpen ? 'soft' : 'ghost'"
+        size="xs"
+        :aria-pressed="toolsOpen"
+        @click="toolsOpen = !toolsOpen"
+      />
+      <UButton
         :label="copiedAll ? 'Copied' : 'Copy all'"
         icon="i-heroicons-clipboard-document"
         color="neutral"
@@ -34,7 +43,7 @@
           </span>
         </div>
 
-        <div class="grid gap-2 lg:grid-cols-3">
+        <div v-if="toolsOpen" class="grid gap-2 lg:grid-cols-3">
           <div class="border-default bg-muted/30 rounded-md border p-2">
             <label class="text-dimmed text-[10px] tracking-wide uppercase" for="hex-jump-offset">
               Jump to offset
@@ -274,6 +283,7 @@
 </template>
 
 <script setup lang="ts">
+import { useMediaQuery } from '@vueuse/core'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { addressFormat } from '~/utils/index'
 import {
@@ -323,6 +333,8 @@ const rangeEndInclusive = computed(() =>
 )
 const rangeLabel = computed(() => formatHexRange(baseAddress.value, props.data.length))
 
+const isMobile = useMediaQuery('(max-width: 767px)')
+const toolsOpen = ref(!isMobile.value)
 const page = ref(0)
 const pageState = computed(() => getHexPageState(props.data.length, page.value, pageSize.value))
 

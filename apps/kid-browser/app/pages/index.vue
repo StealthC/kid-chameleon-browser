@@ -7,12 +7,6 @@
         </template>
 
         <template #right>
-          <UBadge
-            v-if="rom"
-            color="neutral"
-            variant="subtle"
-            :label="`${stats.resources.toLocaleString()} resources`"
-          />
           <UButton v-if="!rom" icon="i-heroicons-arrow-up-tray" size="sm" @click="openRomDialog">
             Load ROM
           </UButton>
@@ -44,19 +38,10 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
 import useRomStore from '~/stores/romStore'
 
 useHead({ title: 'Overview · Kid Chameleon Browser' })
 
 const { rom } = storeToRefs(useRomStore())
 const { openRomDialog } = useRomDialog()
-
-const stats = computed(() => {
-  const manager = rom.value?.resources
-  if (!manager) {
-    return { resources: 0 }
-  }
-  return { resources: manager.resources.size }
-})
 </script>

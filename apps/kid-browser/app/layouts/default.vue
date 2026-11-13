@@ -51,7 +51,7 @@
           </p>
           <div class="grid grid-cols-2 gap-1.5">
             <div class="border-default bg-elevated/30 rounded-md border px-2 py-1.5">
-              <p class="text-muted text-[10px]">Resources</p>
+              <p class="text-muted text-[10px]">Discovered</p>
               <p class="text-highlighted font-mono text-sm font-semibold">
                 {{ stats.resources.toLocaleString() }}
               </p>
@@ -97,10 +97,14 @@ import { computed } from 'vue'
 import useRomStore from '~/stores/romStore'
 
 const route = useRoute()
-const { rom } = storeToRefs(useRomStore())
+const { rom, romFullLoaded } = storeToRefs(useRomStore())
 const appVersion = useRuntimeConfig().public.appVersion
 
 const stats = computed(() => {
+  // Resource maps are populated asynchronously after `rom` is assigned. Depend on
+  // `romFullLoaded` so the counts and nav badges refresh when discovery completes.
+  void romFullLoaded.value
+
   const manager = rom.value?.resources
   if (!manager) {
     return { resources: 0, decoded: 0, types: 0, levels: 0 }

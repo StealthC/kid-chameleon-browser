@@ -13,6 +13,7 @@
           variant="subtle"
           size="sm"
           :label="getNameForType(resource.type)"
+          class="hidden sm:inline-flex"
         />
         <UBadge
           v-if="resource?.name"
@@ -28,7 +29,7 @@
           variant="subtle"
           size="sm"
           label="Possible"
-          class="hidden md:inline-flex"
+          class="hidden xl:inline-flex"
           title="Heuristic discovery; verify references before relying on this resource."
         />
         <UBadge
@@ -37,7 +38,7 @@
           variant="subtle"
           size="sm"
           label="Decoded"
-          class="hidden md:inline-flex"
+          class="hidden xl:inline-flex"
         />
       </div>
 
@@ -55,7 +56,7 @@
               @click="goBack"
             />
           </UTooltip>
-          <span class="text-dimmed hidden font-mono text-[10px] sm:inline">
+          <span class="text-dimmed hidden font-mono text-[10px] xl:inline">
             {{ historyPosition }}
           </span>
           <UTooltip text="History forward (Alt+Right)">
@@ -87,7 +88,9 @@
               @click="goToListOffset(-1)"
             />
           </UTooltip>
-          <span class="text-dimmed hidden font-mono text-[10px] sm:inline">{{ listPosition }}</span>
+          <span class="text-dimmed hidden font-mono text-[10px] xl:inline">
+            {{ listPosition }}
+          </span>
           <UTooltip text="Next in filtered list">
             <UButton
               icon="i-heroicons-chevron-down"
@@ -104,7 +107,7 @@
 
         <USeparator orientation="vertical" class="h-4" />
 
-        <div class="flex items-center gap-0.5">
+        <div class="hidden items-center gap-0.5 xl:flex">
           <UTooltip text="Previous related resource">
             <UButton
               icon="i-heroicons-arrow-uturn-left"
@@ -117,9 +120,9 @@
               @click="goToRelated(-1)"
             />
           </UTooltip>
-          <span class="text-dimmed hidden font-mono text-[10px] sm:inline">{{
-            relatedPosition
-          }}</span>
+          <span class="text-dimmed hidden font-mono text-[10px] xl:inline">
+            {{ relatedPosition }}
+          </span>
           <UTooltip text="Next related resource">
             <UButton
               icon="i-heroicons-arrow-uturn-right"

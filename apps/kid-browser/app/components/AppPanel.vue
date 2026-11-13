@@ -1,7 +1,8 @@
 <template>
   <section
     v-bind="$attrs"
-    class="border-default bg-elevated/30 flex h-full min-h-0 flex-col overflow-hidden rounded-lg border"
+    class="border-default bg-elevated/30 flex min-h-0 flex-col overflow-hidden rounded-lg border"
+    :class="fill ? 'h-full' : ''"
   >
     <header
       v-if="title || icon || $slots.header || $slots.actions"
@@ -39,9 +40,11 @@ withDefaults(
     title?: string
     icon?: string
     padded?: boolean
+    fill?: boolean
   }>(),
   {
     padded: true,
+    fill: true,
   },
 )
 </script>
