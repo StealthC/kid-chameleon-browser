@@ -96,9 +96,7 @@
               <p class="text-highlighted font-mono text-sm font-semibold">{{ stats.levels }}</p>
             </div>
           </div>
-          <p class="text-dimmed px-1 pt-1 text-[10px] leading-tight">
-            v{{ appVersion }} · Data stays local
-          </p>
+          <p class="text-dimmed px-1 pt-1 text-[10px] leading-tight">Data stays local</p>
         </div>
       </template>
 
@@ -123,7 +121,6 @@ import useRomStore from '~/stores/romStore'
 
 const route = useRoute()
 const { rom, romFullLoaded } = storeToRefs(useRomStore())
-const appVersion = useRuntimeConfig().public.appVersion
 
 const stats = computed(() => {
   // Resource maps are populated asynchronously after `rom` is assigned. Depend on
@@ -164,7 +161,6 @@ const navItems = computed<NavigationMenuItem[]>(() => [
     icon: 'i-heroicons-map',
     to: '/levels',
     active: route.path.startsWith('/levels'),
-    badge: stats.value.levels > 0 ? String(stats.value.levels) : undefined,
     tooltip: true,
   },
   {
@@ -172,7 +168,6 @@ const navItems = computed<NavigationMenuItem[]>(() => [
     icon: 'i-heroicons-squares-2x2',
     to: '/resources',
     active: route.path.startsWith('/resources'),
-    badge: stats.value.resources > 0 ? formatBadge(stats.value.resources) : undefined,
     tooltip: true,
   },
   {
@@ -183,8 +178,4 @@ const navItems = computed<NavigationMenuItem[]>(() => [
     tooltip: true,
   },
 ])
-
-function formatBadge(value: number): string {
-  return value >= 1000 ? `${(value / 1000).toFixed(1)}k` : String(value)
-}
 </script>

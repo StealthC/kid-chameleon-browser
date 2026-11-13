@@ -1,7 +1,7 @@
 <template>
   <UDashboardPanel id="levels" :ui="{ body: 'gap-0 overflow-hidden p-0 sm:p-0' }">
     <template #header>
-      <UDashboardNavbar title="Levels" icon="i-heroicons-map">
+      <UDashboardNavbar title="Levels" icon="i-heroicons-map" class="lg:hidden">
         <template #right>
           <UButton
             v-if="!isDesktop && levelItems.length > 0"

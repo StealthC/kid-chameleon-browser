@@ -47,6 +47,7 @@
             Level maps
           </UButton>
           <UButton
+            class="lg:hidden"
             icon="i-heroicons-arrow-path"
             color="neutral"
             variant="ghost"

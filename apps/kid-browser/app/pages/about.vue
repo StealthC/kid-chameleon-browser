@@ -1,11 +1,7 @@
 <template>
   <UDashboardPanel id="about" :ui="{ body: 'gap-0 overflow-hidden p-0 sm:p-0' }">
     <template #header>
-      <UDashboardNavbar title="About" icon="i-heroicons-information-circle">
-        <template #right>
-          <UBadge color="neutral" variant="subtle" size="sm" :label="`v${appVersion}`" />
-        </template>
-      </UDashboardNavbar>
+      <UDashboardNavbar title="About" icon="i-heroicons-information-circle" class="lg:hidden" />
     </template>
 
     <template #body>
@@ -13,9 +9,16 @@
         <div class="mx-auto grid w-full max-w-6xl gap-4 p-4 sm:p-6 lg:grid-cols-2">
           <UCard class="lg:col-span-2">
             <template #header>
-              <div class="flex items-center gap-2">
+              <div class="flex flex-wrap items-center gap-2">
                 <UIcon name="i-heroicons-cpu-chip" class="text-primary size-5" />
                 <h1 class="text-highlighted text-base font-semibold">Kid Chameleon Browser</h1>
+                <UBadge
+                  class="ms-auto"
+                  color="neutral"
+                  variant="subtle"
+                  size="sm"
+                  :label="`v${appVersion}`"
+                />
               </div>
             </template>
             <p class="text-default text-sm leading-relaxed">

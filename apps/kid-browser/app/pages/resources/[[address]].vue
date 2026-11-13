@@ -1,7 +1,7 @@
 <template>
   <UDashboardPanel id="resources" :ui="{ body: 'gap-0 overflow-hidden p-0 sm:p-0' }">
     <template #header>
-      <UDashboardNavbar title="Resources" icon="i-heroicons-squares-2x2">
+      <UDashboardNavbar title="Resources" icon="i-heroicons-squares-2x2" class="lg:hidden">
         <template #right>
           <UButton
             v-if="!isDesktop && rom && selectedResource !== null"
